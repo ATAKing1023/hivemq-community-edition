@@ -133,7 +133,7 @@ public class InternalConfigurations {
     public static final AtomicInteger RETAINED_MESSAGE_QUEUE_SIZE = new AtomicInteger(100_000);
 
     //The configuration if rocks db is used instead of xodus for retained messages.
-    public static final AtomicReference<PersistenceType> RETAINED_MESSAGE_PERSISTENCE_TYPE = new AtomicReference<>(PersistenceType.FILE_NATIVE);
+    public static final AtomicReference<PersistenceType> RETAINED_MESSAGE_PERSISTENCE_TYPE = new AtomicReference<>(PersistenceType.FILE_DISTRIBUTED);
 
     //The memory that is used for rocksdb memtable as a portion of the RAM for the retained message persistence. (size = RAM/configValue)
     public static final int RETAINED_MESSAGE_MEMTABLE_SIZE_PORTION = 32;
@@ -164,7 +164,7 @@ public class InternalConfigurations {
     public static final AtomicInteger PAYLOAD_PERSISTENCE_BUCKET_COUNT = new AtomicInteger(64);
 
     //The configuration if rocks db is used instead of xodus for payload persistence.
-    public static final AtomicReference<PersistenceType> PAYLOAD_PERSISTENCE_TYPE = new AtomicReference<>(PersistenceType.FILE_NATIVE);
+    public static final AtomicReference<PersistenceType> PAYLOAD_PERSISTENCE_TYPE = new AtomicReference<>(PersistenceType.FILE_DISTRIBUTED);
 
     // In case we tried to decrement a reference count that was already zero, a stacktrace will be logged to warn, if this flag is true (default is debug)
     public static final boolean LOG_REFERENCE_COUNTING_STACKTRACE_AS_WARNING = false;

@@ -21,7 +21,7 @@ import com.hivemq.extension.sdk.api.annotations.NotNull;
  * @author Florian Limpöck
  */
 public enum PersistenceType {
-    FILE, FILE_NATIVE;
+    FILE, FILE_NATIVE, FILE_DISTRIBUTED;
 
     private static final PersistenceType DEFAULT = FILE_NATIVE;
 

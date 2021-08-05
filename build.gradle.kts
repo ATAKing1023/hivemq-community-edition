@@ -115,6 +115,7 @@ dependencies {
 
     // persistence
     implementation("org.rocksdb:rocksdbjni:${property("rocksdb.version")}")
+    implementation("com.alipay.sofa:jraft-rheakv-core:${property("rheakv.version")}")
     implementation("org.jetbrains.xodus:xodus-openAPI:${property("xodus.version")}") {
         exclude("org.jetbrains", "annotations")
     }

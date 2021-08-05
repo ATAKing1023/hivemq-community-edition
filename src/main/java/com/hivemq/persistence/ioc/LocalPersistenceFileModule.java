@@ -72,6 +72,11 @@ class LocalPersistenceFileModule extends SingletonModule<Class<LocalPersistenceF
             install(new LocalPersistenceRocksDBModule(persistenceInjector));
         }
 
+        if (payloadPersistenceType == PersistenceType.FILE_DISTRIBUTED ||
+                retainedPersistenceType == PersistenceType.FILE_DISTRIBUTED) {
+            install(new LocalPersistenceRheaKVModule(persistenceInjector));
+        }
+
         bindLocalPersistence(ClientSessionLocalPersistence.class,
                 ClientSessionXodusLocalPersistence.class,
                 ClientSessionLocalProvider.class);

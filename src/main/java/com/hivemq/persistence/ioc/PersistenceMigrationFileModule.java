@@ -63,6 +63,11 @@ public class PersistenceMigrationFileModule extends SingletonModule<Class<Persis
             install(new PersistenceMigrationRocksDBModule());
         }
 
+        if (retainedPersistenceType == PersistenceType.FILE_DISTRIBUTED ||
+                payloadPersistenceType == PersistenceType.FILE_DISTRIBUTED) {
+            install(new PersistenceMigrationRheaKVModule());
+        }
+
         bind(ClientSessionLocalPersistence.class).toProvider(ClientSessionLocalProvider.class).in(Singleton.class);
         bind(ClientSessionSubscriptionLocalPersistence.class).toProvider(ClientSessionSubscriptionLocalProvider.class).in(Singleton.class);
         bind(ClientQueueLocalPersistence.class).to(ClientQueueXodusLocalPersistence.class).in(Singleton.class);
