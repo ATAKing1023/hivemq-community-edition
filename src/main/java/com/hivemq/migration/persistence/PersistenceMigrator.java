@@ -18,11 +18,7 @@ package com.hivemq.migration.persistence;
 
 import com.hivemq.bootstrap.ioc.lazysingleton.LazySingleton;
 import com.hivemq.extension.sdk.api.annotations.NotNull;
-import com.hivemq.migration.MigrationUnit;
-import com.hivemq.migration.Migrations;
-import com.hivemq.migration.TypeMigration;
-import com.hivemq.migration.ValueMigration;
-import com.hivemq.migration.meta.PersistenceType;
+import com.hivemq.migration.*;
 import com.hivemq.migration.persistence.payload.PublishPayloadTypeMigration;
 import com.hivemq.migration.persistence.queue.ClientQueuePayloadIDMigration;
 import com.hivemq.migration.persistence.retained.RetainedMessagePayloadIDMigration;
@@ -62,18 +58,18 @@ public class PersistenceMigrator {
         this.clientQueuePayloadIDMigrationProvider = clientQueuePayloadIDMigrationProvider;
     }
 
-    public void migratePersistenceTypes(final Map<MigrationUnit, PersistenceType> migrations) {
+    public void migratePersistenceTypes(final Map<MigrationUnit, PersistenceTypePair> migrations) {
 
         final long start = System.currentTimeMillis();
         migrationlog.info("Start File Persistence migration.");
         log.info("Migrating File Persistences (this can take a few minutes).");
 
-        for (final Map.Entry<MigrationUnit, PersistenceType> migration : migrations.entrySet()) {
+        for (final Map.Entry<MigrationUnit, PersistenceTypePair> migration : migrations.entrySet()) {
 
             final TypeMigration migrator;
 
             final MigrationUnit migrationUnit = migration.getKey();
-            final PersistenceType persistenceType = migration.getValue();
+            final PersistenceTypePair persistenceTypePair = migration.getValue();
 
             switch (migrationUnit) {
                 case FILE_PERSISTENCE_PUBLISH_PAYLOAD:
@@ -87,20 +83,20 @@ public class PersistenceMigrator {
             }
 
             final long startOne = System.currentTimeMillis();
-            migrationlog.info("Migrating {} to type {}.", migrationUnit, persistenceType);
-            log.debug("Migrating {} to type {}.", migrationUnit, persistenceType);
+            migrationlog.info("Migrating {} from type {} to type {}.", migrationUnit, persistenceTypePair.getPreviousType(), persistenceTypePair.getCurrentType());
+            log.debug("Migrating {} from type {} to type {}.", migrationUnit, persistenceTypePair.getPreviousType(), persistenceTypePair.getCurrentType());
 
-            migrator.migrateToType(persistenceType);
+            migrator.migrate(persistenceTypePair.getPreviousType(), persistenceTypePair.getCurrentType());
 
             migrationlog.info(
-                    "Migrated {} to type {} successfully in {} ms",
+                    "Migrating {} from type {} to type {} successfully in {} ms",
                     migrationUnit,
-                    persistenceType,
+                    persistenceTypePair.getPreviousType(), persistenceTypePair.getCurrentType(),
                     (System.currentTimeMillis() - startOne));
             log.debug(
-                    "Migrated {} to type {} successfully in {} ms",
+                    "Migrating {} from type {} to type {} successfully in {} ms",
                     migrationUnit,
-                    persistenceType,
+                    persistenceTypePair.getPreviousType(), persistenceTypePair.getCurrentType(),
                     (System.currentTimeMillis() - startOne));
         }
 

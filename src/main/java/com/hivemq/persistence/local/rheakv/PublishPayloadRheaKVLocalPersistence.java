@@ -30,6 +30,7 @@ import com.hivemq.extension.sdk.api.annotations.Nullable;
 import com.hivemq.migration.meta.PersistenceType;
 import com.hivemq.persistence.PersistenceStartup;
 import com.hivemq.persistence.payload.PublishPayloadLocalPersistence;
+import com.hivemq.persistence.payload.PublishPayloadRocksDBLocalPersistence;
 import com.hivemq.util.LocalPersistenceFileUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -50,7 +51,7 @@ public class PublishPayloadRheaKVLocalPersistence extends RheaKVLocalPersistence
     @VisibleForTesting
     static final Logger log = LoggerFactory.getLogger(PublishPayloadRheaKVLocalPersistence.class);
 
-    public static final String PERSISTENCE_VERSION = "040500_R";
+    public static final String PERSISTENCE_VERSION = PublishPayloadRocksDBLocalPersistence.PERSISTENCE_VERSION;
 
     private long maxId = 0;
 

@@ -31,6 +31,7 @@ import com.hivemq.migration.meta.PersistenceType;
 import com.hivemq.persistence.PersistenceStartup;
 import com.hivemq.persistence.RetainedMessage;
 import com.hivemq.persistence.local.xodus.PublishTopicTree;
+import com.hivemq.persistence.local.xodus.RetainedMessageRocksDBLocalPersistence;
 import com.hivemq.persistence.local.xodus.RetainedMessageXodusSerializer;
 import com.hivemq.persistence.payload.PublishPayloadPersistence;
 import com.hivemq.persistence.retained.RetainedMessageLocalPersistence;
@@ -61,7 +62,7 @@ public class RetainedMessageRheaKVLocalPersistence extends RheaKVLocalPersistenc
 
     private static final Logger log = LoggerFactory.getLogger(RetainedMessageRheaKVLocalPersistence.class);
 
-    public static final String PERSISTENCE_VERSION = "040500_R";
+    public static final String PERSISTENCE_VERSION = RetainedMessageRocksDBLocalPersistence.PERSISTENCE_VERSION;
     @VisibleForTesting
     public final @NotNull PublishTopicTree[] topicTrees;
     private final @NotNull PublishPayloadPersistence payloadPersistence;

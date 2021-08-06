@@ -15,10 +15,11 @@
  */
 package com.hivemq.persistence.ioc.provider.local;
 
-import com.hivemq.extension.sdk.api.annotations.NotNull;
 import com.hivemq.bootstrap.ioc.lazysingleton.LazySingleton;
 import com.hivemq.configuration.service.InternalConfigurations;
+import com.hivemq.extension.sdk.api.annotations.NotNull;
 import com.hivemq.migration.meta.PersistenceType;
+import com.hivemq.persistence.local.rheakv.RetainedMessageRheaKVLocalPersistence;
 import com.hivemq.persistence.local.xodus.RetainedMessageRocksDBLocalPersistence;
 import com.hivemq.persistence.local.xodus.RetainedMessageXodusLocalPersistence;
 import com.hivemq.persistence.retained.RetainedMessageLocalPersistence;
@@ -35,13 +36,17 @@ import javax.inject.Provider;
 @LazySingleton
 public class RetainedMessageLocalPersistenceProvider implements Provider<RetainedMessageLocalPersistence> {
 
+    private final @NotNull Provider<RetainedMessageRheaKVLocalPersistence> rheaKVProvider;
     private final @NotNull Provider<RetainedMessageRocksDBLocalPersistence> rocksDBProvider;
     private final @NotNull Provider<RetainedMessageXodusLocalPersistence> xodusProvider;
     private final @NotNull PersistenceType persistenceType;
 
     @Inject
-    public RetainedMessageLocalPersistenceProvider(final @NotNull Provider<RetainedMessageRocksDBLocalPersistence> rocksDBProvider,
-                                                   final @NotNull Provider<RetainedMessageXodusLocalPersistence> xodusProvider) {
+    public RetainedMessageLocalPersistenceProvider(
+            final @NotNull Provider<RetainedMessageRheaKVLocalPersistence> rheaKVProvider,
+            final @NotNull Provider<RetainedMessageRocksDBLocalPersistence> rocksDBProvider,
+            final @NotNull Provider<RetainedMessageXodusLocalPersistence> xodusProvider) {
+        this.rheaKVProvider = rheaKVProvider;
         this.rocksDBProvider = rocksDBProvider;
         this.xodusProvider = xodusProvider;
         this.persistenceType = InternalConfigurations.RETAINED_MESSAGE_PERSISTENCE_TYPE.get();
@@ -50,7 +55,9 @@ public class RetainedMessageLocalPersistenceProvider implements Provider<Retaine
     @NotNull
     @Override
     public RetainedMessageLocalPersistence get() {
-        if(persistenceType == PersistenceType.FILE_NATIVE) {
+        if (persistenceType == PersistenceType.FILE_DISTRIBUTED) {
+            return rheaKVProvider.get();
+        } else if (persistenceType == PersistenceType.FILE_NATIVE) {
             return rocksDBProvider.get();
         } else {
             return xodusProvider.get();

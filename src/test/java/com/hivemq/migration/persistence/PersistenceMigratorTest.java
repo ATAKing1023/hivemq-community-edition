@@ -17,6 +17,7 @@ package com.hivemq.migration.persistence;
 
 import com.google.common.collect.ImmutableMap;
 import com.hivemq.migration.MigrationUnit;
+import com.hivemq.migration.PersistenceTypePair;
 import com.hivemq.migration.meta.PersistenceType;
 import com.hivemq.migration.persistence.payload.PublishPayloadTypeMigration;
 import com.hivemq.migration.persistence.queue.ClientQueuePayloadIDMigration;
@@ -55,12 +56,12 @@ public class PersistenceMigratorTest {
     public void test_migrate_all_to_native() {
 
         persistenceMigrator.migratePersistenceTypes(ImmutableMap.of(
-                MigrationUnit.FILE_PERSISTENCE_PUBLISH_PAYLOAD, PersistenceType.FILE_NATIVE,
-                MigrationUnit.FILE_PERSISTENCE_RETAINED_MESSAGES, PersistenceType.FILE_NATIVE));
+                MigrationUnit.FILE_PERSISTENCE_PUBLISH_PAYLOAD, new PersistenceTypePair(PersistenceType.FILE, PersistenceType.FILE_NATIVE),
+                MigrationUnit.FILE_PERSISTENCE_RETAINED_MESSAGES, new PersistenceTypePair(PersistenceType.FILE, PersistenceType.FILE_NATIVE)));
 
 
-        verify(publishPayloadTypeMigration).migrateToType(PersistenceType.FILE_NATIVE);
-        verify(retainedMessageTypeMigration).migrateToType(PersistenceType.FILE_NATIVE);
+        verify(publishPayloadTypeMigration).migrate(PersistenceType.FILE, PersistenceType.FILE_NATIVE);
+        verify(retainedMessageTypeMigration).migrate(PersistenceType.FILE, PersistenceType.FILE_NATIVE);
 
     }
 
@@ -68,11 +69,11 @@ public class PersistenceMigratorTest {
     public void test_migrate_all_to_file() {
 
         persistenceMigrator.migratePersistenceTypes(ImmutableMap.of(
-                MigrationUnit.FILE_PERSISTENCE_PUBLISH_PAYLOAD, PersistenceType.FILE,
-                MigrationUnit.FILE_PERSISTENCE_RETAINED_MESSAGES, PersistenceType.FILE));
+                MigrationUnit.FILE_PERSISTENCE_PUBLISH_PAYLOAD, new PersistenceTypePair(PersistenceType.FILE_NATIVE, PersistenceType.FILE),
+                MigrationUnit.FILE_PERSISTENCE_RETAINED_MESSAGES, new PersistenceTypePair(PersistenceType.FILE_NATIVE, PersistenceType.FILE)));
 
-        verify(publishPayloadTypeMigration).migrateToType(PersistenceType.FILE);
-        verify(retainedMessageTypeMigration).migrateToType(PersistenceType.FILE);
+        verify(publishPayloadTypeMigration).migrate(PersistenceType.FILE_NATIVE, PersistenceType.FILE);
+        verify(retainedMessageTypeMigration).migrate(PersistenceType.FILE_NATIVE, PersistenceType.FILE);
 
     }
 
@@ -80,11 +81,11 @@ public class PersistenceMigratorTest {
     public void test_migrate_publish_to_file_and_retained_to_native() {
 
         persistenceMigrator.migratePersistenceTypes(ImmutableMap.of(
-                MigrationUnit.FILE_PERSISTENCE_PUBLISH_PAYLOAD, PersistenceType.FILE,
-                MigrationUnit.FILE_PERSISTENCE_RETAINED_MESSAGES, PersistenceType.FILE_NATIVE));
+                MigrationUnit.FILE_PERSISTENCE_PUBLISH_PAYLOAD, new PersistenceTypePair(PersistenceType.FILE_NATIVE, PersistenceType.FILE),
+                MigrationUnit.FILE_PERSISTENCE_RETAINED_MESSAGES, new PersistenceTypePair(PersistenceType.FILE, PersistenceType.FILE_NATIVE)));
 
-        verify(publishPayloadTypeMigration).migrateToType(PersistenceType.FILE);
-        verify(retainedMessageTypeMigration).migrateToType(PersistenceType.FILE_NATIVE);
+        verify(publishPayloadTypeMigration).migrate(PersistenceType.FILE_NATIVE, PersistenceType.FILE);
+        verify(retainedMessageTypeMigration).migrate(PersistenceType.FILE, PersistenceType.FILE_NATIVE);
 
     }
 
@@ -92,11 +93,11 @@ public class PersistenceMigratorTest {
     public void test_migrate_publish_to_nativr_and_retained_to_file() {
 
         persistenceMigrator.migratePersistenceTypes(ImmutableMap.of(
-                MigrationUnit.FILE_PERSISTENCE_PUBLISH_PAYLOAD, PersistenceType.FILE_NATIVE,
-                MigrationUnit.FILE_PERSISTENCE_RETAINED_MESSAGES, PersistenceType.FILE));
+                MigrationUnit.FILE_PERSISTENCE_PUBLISH_PAYLOAD, new PersistenceTypePair(PersistenceType.FILE, PersistenceType.FILE_NATIVE),
+                MigrationUnit.FILE_PERSISTENCE_RETAINED_MESSAGES, new PersistenceTypePair(PersistenceType.FILE_NATIVE, PersistenceType.FILE)));
 
-        verify(publishPayloadTypeMigration).migrateToType(PersistenceType.FILE_NATIVE);
-        verify(retainedMessageTypeMigration).migrateToType(PersistenceType.FILE);
+        verify(publishPayloadTypeMigration).migrate(PersistenceType.FILE, PersistenceType.FILE_NATIVE);
+        verify(retainedMessageTypeMigration).migrate(PersistenceType.FILE_NATIVE, PersistenceType.FILE);
 
     }
 }

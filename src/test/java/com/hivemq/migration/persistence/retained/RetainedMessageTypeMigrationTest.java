@@ -28,6 +28,7 @@ import com.hivemq.extension.sdk.api.annotations.NotNull;
 import com.hivemq.lifecycle.LifecycleModule;
 import com.hivemq.migration.MigrationUnit;
 import com.hivemq.migration.Migrations;
+import com.hivemq.migration.PersistenceTypePair;
 import com.hivemq.migration.logging.PayloadExceptionLogging;
 import com.hivemq.migration.meta.MetaFileService;
 import com.hivemq.migration.meta.MetaInformation;
@@ -152,10 +153,10 @@ public class RetainedMessageTypeMigrationTest {
     @Test
     public void test_retained_xodus_to_rocksdb() throws Exception {
 
-        final Map<MigrationUnit, PersistenceType> migrations = Migrations.checkForTypeMigration(systemInformation);
+        final Map<MigrationUnit, PersistenceTypePair> migrations = Migrations.checkForTypeMigration(systemInformation);
 
         assertEquals(2, migrations.size());
-        assertEquals(PersistenceType.FILE_NATIVE, migrations.get(MigrationUnit.FILE_PERSISTENCE_RETAINED_MESSAGES));
+        assertEquals(PersistenceType.FILE_NATIVE, migrations.get(MigrationUnit.FILE_PERSISTENCE_RETAINED_MESSAGES).getCurrentType());
 
         final Injector persistenceInjector = GuiceBootstrap.persistenceInjector(systemInformation,
                 new MetricRegistry(),
@@ -204,10 +205,10 @@ public class RetainedMessageTypeMigrationTest {
 
         InternalConfigurations.RETAINED_MESSAGE_PERSISTENCE_TYPE.set(PersistenceType.FILE);
 
-        final Map<MigrationUnit, PersistenceType> migrations = Migrations.checkForTypeMigration(systemInformation);
+        final Map<MigrationUnit, PersistenceTypePair> migrations = Migrations.checkForTypeMigration(systemInformation);
 
         assertEquals(1, migrations.size());
-        assertEquals(PersistenceType.FILE, migrations.get(MigrationUnit.FILE_PERSISTENCE_RETAINED_MESSAGES));
+        assertEquals(PersistenceType.FILE, migrations.get(MigrationUnit.FILE_PERSISTENCE_RETAINED_MESSAGES).getCurrentType());
 
         final Injector persistenceInjector = GuiceBootstrap.persistenceInjector(systemInformation,
                 new MetricRegistry(),
@@ -261,7 +262,7 @@ public class RetainedMessageTypeMigrationTest {
 
         InternalConfigurations.RETAINED_MESSAGE_PERSISTENCE_TYPE.set(PersistenceType.FILE);
 
-        final Map<MigrationUnit, PersistenceType> migrations = Migrations.checkForTypeMigration(systemInformation);
+        final Map<MigrationUnit, PersistenceTypePair> migrations = Migrations.checkForTypeMigration(systemInformation);
 
         assertEquals(1, migrations.size());
         assertFalse(migrations.containsKey(MigrationUnit.FILE_PERSISTENCE_RETAINED_MESSAGES));

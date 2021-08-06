@@ -27,7 +27,8 @@ public interface TypeMigration {
     /**
      * migrate a persistence from a {@link PersistenceType} to another {@link PersistenceType}.
      *
-     * @param persistenceType the persistenceType to migrate to.
+     * @param fromType the persistenceType to migrate from.
+     * @param toType   the persistenceType to migrate to.
      */
-    void migrateToType(@NotNull PersistenceType persistenceType);
+    void migrate(@NotNull PersistenceType fromType, @NotNull PersistenceType toType);
 }

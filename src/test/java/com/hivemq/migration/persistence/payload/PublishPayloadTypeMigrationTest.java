@@ -18,16 +18,17 @@ package com.hivemq.migration.persistence.payload;
 import com.codahale.metrics.MetricRegistry;
 import com.google.common.collect.ImmutableSet;
 import com.google.inject.Injector;
-import com.hivemq.extension.sdk.api.annotations.NotNull;
 import com.hivemq.bootstrap.ioc.GuiceBootstrap;
 import com.hivemq.configuration.ConfigurationBootstrap;
 import com.hivemq.configuration.HivemqId;
 import com.hivemq.configuration.info.SystemInformation;
 import com.hivemq.configuration.service.FullConfigurationService;
 import com.hivemq.configuration.service.InternalConfigurations;
+import com.hivemq.extension.sdk.api.annotations.NotNull;
 import com.hivemq.lifecycle.LifecycleModule;
 import com.hivemq.migration.MigrationUnit;
 import com.hivemq.migration.Migrations;
+import com.hivemq.migration.PersistenceTypePair;
 import com.hivemq.migration.meta.MetaFileService;
 import com.hivemq.migration.meta.MetaInformation;
 import com.hivemq.migration.meta.PersistenceType;
@@ -50,7 +51,8 @@ import java.io.File;
 import java.io.IOException;
 import java.util.Map;
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 import static org.mockito.Mockito.when;
 
 /**
@@ -99,11 +101,11 @@ public class PublishPayloadTypeMigrationTest {
     public void test_payload_migration_xodus_to_rocks() throws Exception {
 
 
-        final Map<MigrationUnit, PersistenceType>
+        final Map<MigrationUnit, PersistenceTypePair>
                 migrations = Migrations.checkForTypeMigration(systemInformation);
 
         assertEquals(2, migrations.size());
-        assertEquals(PersistenceType.FILE_NATIVE, migrations.get(MigrationUnit.FILE_PERSISTENCE_PUBLISH_PAYLOAD));
+        assertEquals(PersistenceType.FILE_NATIVE, migrations.get(MigrationUnit.FILE_PERSISTENCE_PUBLISH_PAYLOAD).getCurrentType());
 
         final Injector persistenceInjector =
                 GuiceBootstrap.persistenceInjector(systemInformation, new MetricRegistry(), new HivemqId(), configurationService, new LifecycleModule());
@@ -139,10 +141,10 @@ public class PublishPayloadTypeMigrationTest {
         MetaFileService.writeMetaFile(systemInformation, getMetaInformation());
         InternalConfigurations.PAYLOAD_PERSISTENCE_TYPE.set(PersistenceType.FILE);
 
-        final Map<MigrationUnit, PersistenceType> migrations = Migrations.checkForTypeMigration(systemInformation);
+        final Map<MigrationUnit, PersistenceTypePair> migrations = Migrations.checkForTypeMigration(systemInformation);
 
         assertEquals(1, migrations.size());
-        assertEquals(PersistenceType.FILE, migrations.get(MigrationUnit.FILE_PERSISTENCE_PUBLISH_PAYLOAD));
+        assertEquals(PersistenceType.FILE, migrations.get(MigrationUnit.FILE_PERSISTENCE_PUBLISH_PAYLOAD).getCurrentType());
 
         final Injector persistenceInjector = GuiceBootstrap.persistenceInjector(systemInformation, new MetricRegistry(), new HivemqId(), configurationService, new LifecycleModule());
         final PersistenceStartup persistenceStartup = persistenceInjector.getInstance(PersistenceStartup.class);
@@ -177,7 +179,7 @@ public class PublishPayloadTypeMigrationTest {
 
         InternalConfigurations.PAYLOAD_PERSISTENCE_TYPE.set(PersistenceType.FILE);
 
-        final Map<MigrationUnit, PersistenceType> migrations = Migrations.checkForTypeMigration(systemInformation);
+        final Map<MigrationUnit, PersistenceTypePair> migrations = Migrations.checkForTypeMigration(systemInformation);
 
         assertEquals(1, migrations.size());
         assertFalse(migrations.containsKey(MigrationUnit.FILE_PERSISTENCE_PUBLISH_PAYLOAD));

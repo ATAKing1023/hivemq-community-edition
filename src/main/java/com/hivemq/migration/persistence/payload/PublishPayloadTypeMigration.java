@@ -15,14 +15,14 @@
  */
 package com.hivemq.migration.persistence.payload;
 
-import com.hivemq.extension.sdk.api.annotations.NotNull;
 import com.hivemq.configuration.info.SystemInformation;
-import com.hivemq.configuration.service.InternalConfigurations;
+import com.hivemq.extension.sdk.api.annotations.NotNull;
 import com.hivemq.migration.Migrations;
 import com.hivemq.migration.TypeMigration;
 import com.hivemq.migration.meta.MetaFileService;
 import com.hivemq.migration.meta.MetaInformation;
 import com.hivemq.migration.meta.PersistenceType;
+import com.hivemq.persistence.local.rheakv.PublishPayloadRheaKVLocalPersistence;
 import com.hivemq.persistence.payload.PublishPayloadLocalPersistence;
 import com.hivemq.persistence.payload.PublishPayloadRocksDBLocalPersistence;
 import com.hivemq.persistence.payload.PublishPayloadXodusLocalPersistence;
@@ -34,8 +34,7 @@ import javax.inject.Inject;
 import javax.inject.Provider;
 import java.io.File;
 
-import static com.hivemq.migration.meta.PersistenceType.FILE;
-import static com.hivemq.migration.meta.PersistenceType.FILE_NATIVE;
+import static com.hivemq.migration.meta.PersistenceType.*;
 
 /**
  * @author Florian Limpöck
@@ -47,63 +46,42 @@ public class PublishPayloadTypeMigration implements TypeMigration {
 
     private final @NotNull SystemInformation systemInformation;
     private final @NotNull LocalPersistenceFileUtil localPersistenceFileUtil;
+    private final @NotNull Provider<PublishPayloadRheaKVLocalPersistence> persistenceRheaKVProvider;
     private final @NotNull Provider<PublishPayloadRocksDBLocalPersistence> persistenceRocksDBProvider;
     private final @NotNull Provider<PublishPayloadXodusLocalPersistence> persistenceXodusProvider;
 
     @Inject
     public PublishPayloadTypeMigration(final @NotNull SystemInformation systemInformation,
             final @NotNull LocalPersistenceFileUtil localPersistenceFileUtil,
+            final @NotNull Provider<PublishPayloadRheaKVLocalPersistence> persistenceRheaKVProvider,
             final @NotNull Provider<PublishPayloadRocksDBLocalPersistence> persistenceRocksDBProvider,
             final @NotNull Provider<PublishPayloadXodusLocalPersistence> persistenceXodusProvider) {
         this.systemInformation = systemInformation;
         this.localPersistenceFileUtil = localPersistenceFileUtil;
+        this.persistenceRheaKVProvider = persistenceRheaKVProvider;
         this.persistenceRocksDBProvider = persistenceRocksDBProvider;
         this.persistenceXodusProvider = persistenceXodusProvider;
     }
 
     @Override
-    public void migrateToType(final @NotNull PersistenceType type) {
-        if (type.equals(FILE_NATIVE)) {
-            migrateToRocksDB();
-        } else if(type.equals(PersistenceType.FILE)) {
-            migrateToXodus();
-        } else {
-            throw new IllegalArgumentException("Unknown persistence type " + type + " for publish payload migration");
+    public void migrate(final @NotNull PersistenceType fromType, final @NotNull PersistenceType toType) {
+        if (oldFolderMissing(fromType)) {
+            return;
         }
+        migrateFromTo(getLocalPersistence(fromType), getLocalPersistence(toType), toType);
     }
 
-    private void migrateToXodus() {
-
-        final File persistenceFolder = localPersistenceFileUtil.getVersionedLocalPersistenceFolder(PublishPayloadLocalPersistence.PERSISTENCE_NAME, PublishPayloadRocksDBLocalPersistence.PERSISTENCE_VERSION);
+    private boolean oldFolderMissing(final PersistenceType persistenceType) {
+        final String version = persistenceType == FILE ? PublishPayloadXodusLocalPersistence.PERSISTENCE_VERSION : PublishPayloadRocksDBLocalPersistence.PERSISTENCE_VERSION;
+        final File persistenceFolder = localPersistenceFileUtil.getVersionedLocalPersistenceFolder(PublishPayloadLocalPersistence.PERSISTENCE_NAME, version);
 
         final File publish_payload_store_0 = new File(persistenceFolder, "publish_payload_store_0");
         if (!publish_payload_store_0.exists()) {
             migrationLog.info("No (old) persistence folder (publish_payload) present, skipping migration.");
             log.debug("No (old) persistence folder (publish_payload) present, skipping migration.");
-            return;
+            return true;
         }
-
-        final PublishPayloadXodusLocalPersistence xodusPersistence = persistenceXodusProvider.get();
-        final PublishPayloadRocksDBLocalPersistence rocksdbPersistence = persistenceRocksDBProvider.get();
-
-        migrateFromTo(rocksdbPersistence, xodusPersistence, FILE);
-    }
-
-    private void migrateToRocksDB() {
-
-        final File persistenceFolder = localPersistenceFileUtil.getVersionedLocalPersistenceFolder(PublishPayloadLocalPersistence.PERSISTENCE_NAME, PublishPayloadXodusLocalPersistence.PERSISTENCE_VERSION);
-
-        final File publish_payload_store_0 = new File(persistenceFolder, "publish_payload_store_0");
-        if (!publish_payload_store_0.exists()) {
-            migrationLog.info("No (old) persistence folder (publish_payload) present, skipping migration.");
-            log.debug("No (old) persistence folder (publish_payload) present, skipping migration.");
-            return;
-        }
-
-        final PublishPayloadXodusLocalPersistence xodusPersistence = persistenceXodusProvider.get();
-        final PublishPayloadRocksDBLocalPersistence rocksdbPersistence = persistenceRocksDBProvider.get();
-
-        migrateFromTo(xodusPersistence, rocksdbPersistence, FILE_NATIVE);
+        return false;
     }
 
     private void migrateFromTo(final @NotNull PublishPayloadLocalPersistence from, final @NotNull PublishPayloadLocalPersistence to, final @NotNull PersistenceType persistenceType) {
@@ -122,10 +100,22 @@ public class PublishPayloadTypeMigration implements TypeMigration {
         from.closeDB();
     }
 
+    private PublishPayloadLocalPersistence getLocalPersistence(final PersistenceType type) {
+        if (type == FILE_DISTRIBUTED) {
+            return persistenceRheaKVProvider.get();
+        } else if (type == FILE_NATIVE) {
+            return persistenceRocksDBProvider.get();
+        } else if (type == FILE) {
+            return persistenceXodusProvider.get();
+        } else {
+            throw new IllegalArgumentException("Unknown persistence type " + type + " for publish payload migration");
+        }
+    }
+
     private void savePersistenceType(final @NotNull PersistenceType persistenceType) {
         final MetaInformation metaFile = MetaFileService.readMetaFile(systemInformation);
         metaFile.setPublishPayloadPersistenceType(persistenceType);
-        metaFile.setPublishPayloadPersistenceVersion(persistenceType == FILE_NATIVE ? PublishPayloadRocksDBLocalPersistence.PERSISTENCE_VERSION : PublishPayloadXodusLocalPersistence.PERSISTENCE_VERSION);
+        metaFile.setPublishPayloadPersistenceVersion(persistenceType == FILE ? PublishPayloadXodusLocalPersistence.PERSISTENCE_VERSION : PublishPayloadRocksDBLocalPersistence.PERSISTENCE_VERSION);
         MetaFileService.writeMetaFile(systemInformation, metaFile);
     }
 

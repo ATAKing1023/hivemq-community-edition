@@ -50,7 +50,7 @@ public class Migrations {
     private static final Logger MIGRATION_LOGGER = LoggerFactory.getLogger(MIGRATION_LOGGER_NAME);
 
     @NotNull
-    public static Map<MigrationUnit, PersistenceType> checkForTypeMigration(final @NotNull SystemInformation systemInformation) {
+    public static Map<MigrationUnit, PersistenceTypePair> checkForTypeMigration(final @NotNull SystemInformation systemInformation) {
 
         MIGRATION_LOGGER.info("Checking for migrations (HiveMQ version {}).", systemInformation.getHiveMQVersion());
 
@@ -94,13 +94,13 @@ public class Migrations {
         final PersistenceType currentRetainedType = InternalConfigurations.RETAINED_MESSAGE_PERSISTENCE_TYPE.get();
         final PersistenceType currentPayloadType = InternalConfigurations.PAYLOAD_PERSISTENCE_TYPE.get();
 
-        final Map<MigrationUnit, PersistenceType> neededMigrations = new EnumMap<>(MigrationUnit.class);
+        final Map<MigrationUnit, PersistenceTypePair> neededMigrations = new EnumMap<>(MigrationUnit.class);
 
         if (!previousPayloadType.equals(currentPayloadType) && isPreviousPersistenceExistent(systemInformation, PublishPayloadLocalPersistence.PERSISTENCE_NAME)) {
-            neededMigrations.put(MigrationUnit.FILE_PERSISTENCE_PUBLISH_PAYLOAD, currentPayloadType);
+            neededMigrations.put(MigrationUnit.FILE_PERSISTENCE_PUBLISH_PAYLOAD, new PersistenceTypePair(previousPayloadType, currentPayloadType));
         }
         if (!previousRetainedType.equals(currentRetainedType) && isPreviousPersistenceExistent(systemInformation, RetainedMessageLocalPersistence.PERSISTENCE_NAME)) {
-            neededMigrations.put(MigrationUnit.FILE_PERSISTENCE_RETAINED_MESSAGES, currentRetainedType);
+            neededMigrations.put(MigrationUnit.FILE_PERSISTENCE_RETAINED_MESSAGES, new PersistenceTypePair(previousRetainedType, currentRetainedType));
         }
 
         if (neededMigrations.isEmpty()) {
@@ -192,7 +192,7 @@ public class Migrations {
         return new File(systemInformation.getDataFolder() + File.separator + LocalPersistenceFileUtil.PERSISTENCE_SUBFOLDER_NAME, persistence).exists();
     }
 
-    public static void migrate(final Injector persistenceInjector, final @NotNull Map<MigrationUnit, PersistenceType> typeMigrations, final @NotNull Set<MigrationUnit> valueMigrations) {
+    public static void migrate(final Injector persistenceInjector, final @NotNull Map<MigrationUnit, PersistenceTypePair> typeMigrations, final @NotNull Set<MigrationUnit> valueMigrations) {
 
         MIGRATION_LOGGER.info("Start migration.");
 

@@ -36,7 +36,7 @@ import com.hivemq.lifecycle.LifecycleModule;
 import com.hivemq.metrics.MetricRegistryLogger;
 import com.hivemq.migration.MigrationUnit;
 import com.hivemq.migration.Migrations;
-import com.hivemq.migration.meta.PersistenceType;
+import com.hivemq.migration.PersistenceTypePair;
 import com.hivemq.persistence.PersistenceStartup;
 import com.hivemq.persistence.payload.PublishPayloadPersistence;
 import com.hivemq.statistics.UsageStatistics;
@@ -132,7 +132,7 @@ public class HiveMQServer {
 
         //must happen before persistence injector bootstrap as it creates the persistence folder.
         log.trace("Checking for migrations");
-        final Map<MigrationUnit, PersistenceType> migrations = Migrations.checkForTypeMigration(systemInformation);
+        final Map<MigrationUnit, PersistenceTypePair> migrations = Migrations.checkForTypeMigration(systemInformation);
         final Set<MigrationUnit> valueMigrations = Migrations.checkForValueMigration(systemInformation);
 
         final LifecycleModule lifecycleModule = new LifecycleModule();
