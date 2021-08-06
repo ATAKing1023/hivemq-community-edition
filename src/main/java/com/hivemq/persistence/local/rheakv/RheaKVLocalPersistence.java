@@ -72,12 +72,12 @@ public abstract class RheaKVLocalPersistence implements LocalPersistence, FilePe
     protected abstract String getVersion();
 
     /**
-     * 存储监听端口规则：6000+存储序号*100+桶的序号
+     * 存储监听端口规则：6000+存储内容类型的序号*100+桶的序号
      *
-     * @return 当前存储的唯一序号（0-10）
+     * @return 存储内容类型
      */
     @NotNull
-    protected abstract int getUniqueIndex();
+    protected abstract ContentType getContentType();
 
     @NotNull
     protected abstract Logger getLogger();
@@ -197,7 +197,7 @@ public abstract class RheaKVLocalPersistence implements LocalPersistence, FilePe
         final File persistenceFolder =
                 localPersistenceFileUtil.getVersionedLocalPersistenceFolder(getName(), getVersion());
 
-        final int port = START_PORT + getUniqueIndex() * 100 + bucketIndex;
+        final int port = START_PORT + getContentType().ordinal() * 100 + bucketIndex;
         final RheaKVStoreOptions options = new RheaKVStoreOptions();
         options.setClusterId(1L);
         options.setClusterName("HiveMQ");
@@ -216,5 +216,10 @@ public abstract class RheaKVLocalPersistence implements LocalPersistence, FilePe
         options.setOnlyLeaderRead(false);
         options.setFailoverRetries(2);
         return options;
+    }
+
+    protected enum ContentType {
+        PUBLISH_PAYLOAD,
+        RETAINED_MESSAGE
     }
 }

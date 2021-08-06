@@ -100,9 +100,10 @@ public class RetainedMessageRheaKVLocalPersistence extends RheaKVLocalPersistenc
         return PERSISTENCE_VERSION;
     }
 
+    @NotNull
     @Override
-    protected int getUniqueIndex() {
-        return 2;
+    protected ContentType getContentType() {
+        return ContentType.RETAINED_MESSAGE;
     }
 
     @NotNull
@@ -173,7 +174,9 @@ public class RetainedMessageRheaKVLocalPersistence extends RheaKVLocalPersistenc
                 payloadPersistence.decrementReferenceCounter(message.getPublishId());
                 retainMessageCounter.decrementAndGet();
             }
-            bucket.bDelete(keys);
+            if (!keys.isEmpty()) {
+                bucket.bDelete(keys);
+            }
         } catch (final Exception e) {
             log.error("An error occurred while clearing the retained message persistence.");
             log.debug("Original Exception:", e);
@@ -317,7 +320,9 @@ public class RetainedMessageRheaKVLocalPersistence extends RheaKVLocalPersistenc
                     topicTree.remove(topic);
                 }
             }
-            bucket.bDelete(keys);
+            if (!keys.isEmpty()) {
+                bucket.bDelete(keys);
+            }
         } catch (final Exception e) {
             log.error("An error occurred while cleaning up retained messages.");
             log.debug("Original Exception:", e);

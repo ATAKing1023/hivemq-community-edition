@@ -79,8 +79,9 @@ public class PublishPayloadRheaKVLocalPersistence extends RheaKVLocalPersistence
     }
 
     @Override
-    protected int getUniqueIndex() {
-        return 1;
+    @NotNull
+    protected ContentType getContentType() {
+        return ContentType.PUBLISH_PAYLOAD;
     }
 
     @Override
