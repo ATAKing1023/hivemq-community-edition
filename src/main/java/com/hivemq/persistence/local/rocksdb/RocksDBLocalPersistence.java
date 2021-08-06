@@ -109,11 +109,11 @@ public abstract class RocksDBLocalPersistence implements LocalPersistence, FileP
             options.setTableFormatConfig(tableConfig);
             options.setWriteBufferSize(memtableSize);
 
-            options.setStatsPersistPeriodSec(InternalConfigurations.ROCKSDB_STATS_PERSIST_PERIOD);
+//            options.setStatsPersistPeriodSec(InternalConfigurations.ROCKSDB_STATS_PERSIST_PERIOD);
             options.setStatsDumpPeriodSec(InternalConfigurations.ROCKSDB_STATS_PERSIST_PERIOD);
             options.setMaxLogFileSize(InternalConfigurations.ROCKSDB_MAX_LOG_FILE_SIZE);
             options.setKeepLogFileNum(InternalConfigurations.ROCKSDB_LOG_FILE_NUMBER);
-            options.setStatsHistoryBufferSize(InternalConfigurations.ROCKSDB_STATS_HISTORY_BUFFER_SIZE);
+//            options.setStatsHistoryBufferSize(InternalConfigurations.ROCKSDB_STATS_HISTORY_BUFFER_SIZE);
 
             for (int i = 0; i < bucketCount; i++) {
                 final File persistenceFile = new File(persistenceFolder, name + "_" + i);
@@ -149,11 +149,11 @@ public abstract class RocksDBLocalPersistence implements LocalPersistence, FileP
             options.setTableFormatConfig(tableConfig);
             options.setWriteBufferSize(memtableSize);
 
-            options.setStatsPersistPeriodSec(InternalConfigurations.ROCKSDB_STATS_PERSIST_PERIOD);
+//            options.setStatsPersistPeriodSec(InternalConfigurations.ROCKSDB_STATS_PERSIST_PERIOD);
             options.setStatsDumpPeriodSec(InternalConfigurations.ROCKSDB_STATS_PERSIST_PERIOD);
             options.setMaxLogFileSize(InternalConfigurations.ROCKSDB_MAX_LOG_FILE_SIZE);
             options.setKeepLogFileNum(InternalConfigurations.ROCKSDB_LOG_FILE_NUMBER);
-            options.setStatsHistoryBufferSize(InternalConfigurations.ROCKSDB_STATS_HISTORY_BUFFER_SIZE);
+//            options.setStatsHistoryBufferSize(InternalConfigurations.ROCKSDB_STATS_HISTORY_BUFFER_SIZE);
 
             final File persistenceFolder = localPersistenceFileUtil.getVersionedLocalPersistenceFolder(name, version);
             final CountDownLatch counter = new CountDownLatch(bucketCount);

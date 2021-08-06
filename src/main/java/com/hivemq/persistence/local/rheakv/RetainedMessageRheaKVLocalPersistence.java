@@ -99,6 +99,11 @@ public class RetainedMessageRheaKVLocalPersistence extends RheaKVLocalPersistenc
         return PERSISTENCE_VERSION;
     }
 
+    @Override
+    protected int getUniqueIndex() {
+        return 2;
+    }
+
     @NotNull
     @Override
     protected Logger getLogger() {

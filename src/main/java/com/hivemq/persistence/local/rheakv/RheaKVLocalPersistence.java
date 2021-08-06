@@ -43,7 +43,8 @@ import static com.google.common.base.Preconditions.checkArgument;
  */
 public abstract class RheaKVLocalPersistence implements LocalPersistence, FilePersistence {
 
-    protected static final int DEFAULT_BUFFER_SIZE = 64;
+    protected static final int DEFAULT_BUFFER_SIZE = 8192;
+    private static final int START_PORT = 6000;
 
     protected final AtomicBoolean stopped = new AtomicBoolean(false);
     protected final @NotNull RheaKVStore[] buckets;
@@ -51,8 +52,6 @@ public abstract class RheaKVLocalPersistence implements LocalPersistence, FilePe
     private final @NotNull PersistenceStartup persistenceStartup;
     private final int bucketCount;
     private final boolean enabled;
-
-    private final RheaKVStoreOptions rheaKVStoreOptions;
 
     protected RheaKVLocalPersistence(
             final @NotNull LocalPersistenceFileUtil localPersistenceFileUtil,
@@ -64,7 +63,6 @@ public abstract class RheaKVLocalPersistence implements LocalPersistence, FilePe
         this.localPersistenceFileUtil = localPersistenceFileUtil;
         this.persistenceStartup = persistenceStartup;
         this.enabled = enabled;
-        this.rheaKVStoreOptions = createRheaKVStoreOptions();
     }
 
     @NotNull
@@ -72,6 +70,14 @@ public abstract class RheaKVLocalPersistence implements LocalPersistence, FilePe
 
     @NotNull
     protected abstract String getVersion();
+
+    /**
+     * 存储监听端口规则：6000+存储序号*100+桶的序号
+     *
+     * @return 当前存储的唯一序号（0-10）
+     */
+    @NotNull
+    protected abstract int getUniqueIndex();
 
     @NotNull
     protected abstract Logger getLogger();
@@ -94,14 +100,20 @@ public abstract class RheaKVLocalPersistence implements LocalPersistence, FilePe
         final Logger logger = getLogger();
 
         for (int i = 0; i < bucketCount; i++) {
-            final RheaKVStore rheaKVStore = new DefaultRheaKVStore();
-            final boolean success = rheaKVStore.init(rheaKVStoreOptions);
-            if (!success) {
-                logger.error("An error occurred while opening the {} persistence. Is another HiveMQ instance running?",
-                        name);
+            try {
+                final RheaKVStore rheaKVStore = new DefaultRheaKVStore();
+                final boolean success = rheaKVStore.init(createRheaKVStoreOptions(i));
+                buckets[i] = rheaKVStore;
+                if (!success) {
+                    logger.error(
+                            "An error occurred while opening the {} persistence. Is another HiveMQ instance running?",
+                            name);
+                    throw new UnrecoverableException();
+                }
+            } catch (final Throwable t) { // 因为RocksDB版本问题，可能会抛出NoSuchMethodError
+                logger.error("Error opening the {} persistence", name, t);
                 throw new UnrecoverableException();
             }
-            buckets[i] = rheaKVStore;
         }
 
         init();
@@ -117,16 +129,21 @@ public abstract class RheaKVLocalPersistence implements LocalPersistence, FilePe
             for (int i = 0; i < bucketCount; i++) {
                 final int finalI = i;
                 persistenceStartup.submitEnvironmentCreate(() -> {
-                    final RheaKVStore rheaKVStore = new DefaultRheaKVStore();
-                    final boolean success = rheaKVStore.init(rheaKVStoreOptions);
-                    if (!success) {
-                        logger.error(
-                                "An error occurred while opening the {} persistence. Is another HiveMQ instance running?",
-                                name);
+                    try {
+                        final RheaKVStore rheaKVStore = new DefaultRheaKVStore();
+                        final boolean success = rheaKVStore.init(createRheaKVStoreOptions(finalI));
+                        buckets[finalI] = rheaKVStore;
+                        counter.countDown();
+                        if (!success) {
+                            logger.error(
+                                    "An error occurred while opening the {} persistence. Is another HiveMQ instance running?",
+                                    name);
+                            throw new UnrecoverableException();
+                        }
+                    } catch (final Throwable t) { // 因为RocksDB版本问题，可能会抛出NoSuchMethodError
+                        logger.error("Error opening the {} persistence", name, t);
                         throw new UnrecoverableException();
                     }
-                    buckets[finalI] = rheaKVStore;
-                    counter.countDown();
                 });
             }
             counter.await();
@@ -175,10 +192,12 @@ public abstract class RheaKVLocalPersistence implements LocalPersistence, FilePe
         checkArgument(bucketIndex >= 0 && bucketIndex < buckets.length, "Invalid bucket index: " + bucketIndex);
     }
 
-    private RheaKVStoreOptions createRheaKVStoreOptions() {
+    // FIXME 读取配置文件，并支持集群
+    private RheaKVStoreOptions createRheaKVStoreOptions(final int bucketIndex) {
         final File persistenceFolder =
                 localPersistenceFileUtil.getVersionedLocalPersistenceFolder(getName(), getVersion());
 
+        final int port = START_PORT + getUniqueIndex() * 100 + bucketIndex;
         final RheaKVStoreOptions options = new RheaKVStoreOptions();
         options.setClusterId(1L);
         options.setClusterName("HiveMQ");
@@ -191,9 +210,9 @@ public abstract class RheaKVLocalPersistence implements LocalPersistence, FilePe
         rocksDBOptions.setDbPath(new File(persistenceFolder, "rhea_db/").getPath());
         storeEngineOptions.setRocksDBOptions(rocksDBOptions);
         storeEngineOptions.setRaftDataPath(new File(persistenceFolder, "rhea_raft/").getPath());
-        storeEngineOptions.setServerAddress(new Endpoint("127.0.0.1", 8181));
-        storeEngineOptions.setInitialServerList("127.0.0.1:8181");
+        storeEngineOptions.setServerAddress(new Endpoint("127.0.0.1", port));
         options.setStoreEngineOptions(storeEngineOptions);
+        options.setInitialServerList("127.0.0.1:" + port);
         options.setOnlyLeaderRead(false);
         options.setFailoverRetries(2);
         return options;

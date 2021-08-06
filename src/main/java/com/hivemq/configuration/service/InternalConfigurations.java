@@ -62,7 +62,7 @@ public class InternalConfigurations {
     //the factor to multiply core size with to calculate thread count for initializing persistences
     public static final AtomicInteger PERSISTENCE_STARTUP_THREAD_POOL_SIZE = new AtomicInteger(AVAILABLE_PROCESSORS_TIMES_FOUR);
 
-    public static final AtomicInteger PERSISTENCE_BUCKET_COUNT = new AtomicInteger(64);
+    public static final AtomicInteger PERSISTENCE_BUCKET_COUNT = new AtomicInteger(1);
     public static final AtomicInteger SINGLE_WRITER_THREAD_POOL_SIZE = new AtomicInteger(AVAILABLE_PROCESSORS_TIMES_TWO);
     public static final AtomicInteger SINGLE_WRITER_CREDITS_PER_EXECUTION = new AtomicInteger(65);
     public static final AtomicInteger SINGLE_WRITER_CHECK_SCHEDULE = new AtomicInteger(500);
@@ -161,7 +161,7 @@ public class InternalConfigurations {
     // The amount of threads in the cleanup job thread pool.
     public static final AtomicInteger PAYLOAD_PERSISTENCE_CLEANUP_THREADS = new AtomicInteger(AVAILABLE_PROCESSORS_TIMES_TWO);
     // The bucket count for the payload persistence.
-    public static final AtomicInteger PAYLOAD_PERSISTENCE_BUCKET_COUNT = new AtomicInteger(64);
+    public static final AtomicInteger PAYLOAD_PERSISTENCE_BUCKET_COUNT = new AtomicInteger(1);
 
     //The configuration if rocks db is used instead of xodus for payload persistence.
     public static final AtomicReference<PersistenceType> PAYLOAD_PERSISTENCE_TYPE = new AtomicReference<>(PersistenceType.FILE_DISTRIBUTED);

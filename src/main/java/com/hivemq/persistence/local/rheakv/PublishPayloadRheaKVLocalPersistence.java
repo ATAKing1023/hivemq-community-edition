@@ -78,6 +78,11 @@ public class PublishPayloadRheaKVLocalPersistence extends RheaKVLocalPersistence
     }
 
     @Override
+    protected int getUniqueIndex() {
+        return 1;
+    }
+
+    @Override
     @NotNull
     protected Logger getLogger() {
         return log;
