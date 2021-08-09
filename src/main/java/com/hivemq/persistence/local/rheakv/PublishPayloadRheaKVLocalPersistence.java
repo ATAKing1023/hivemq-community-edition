@@ -23,6 +23,7 @@ import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.ImmutableList;
 import com.google.inject.Inject;
 import com.hivemq.bootstrap.ioc.lazysingleton.LazySingleton;
+import com.hivemq.configuration.service.FullConfigurationService;
 import com.hivemq.configuration.service.InternalConfigurations;
 import com.hivemq.exceptions.UnrecoverableException;
 import com.hivemq.extension.sdk.api.annotations.NotNull;
@@ -58,10 +59,12 @@ public class PublishPayloadRheaKVLocalPersistence extends RheaKVLocalPersistence
     @Inject
     public PublishPayloadRheaKVLocalPersistence(
             final @NotNull LocalPersistenceFileUtil localPersistenceFileUtil,
-            final @NotNull PersistenceStartup persistenceStartup) {
+            final @NotNull PersistenceStartup persistenceStartup,
+            final @NotNull FullConfigurationService configurationService) {
         super(
                 localPersistenceFileUtil,
                 persistenceStartup,
+                configurationService.clusterConfigurationService(),
                 InternalConfigurations.PAYLOAD_PERSISTENCE_BUCKET_COUNT.get(),
                 InternalConfigurations.PAYLOAD_PERSISTENCE_TYPE.get() == PersistenceType.FILE_DISTRIBUTED);
     }
@@ -112,8 +115,7 @@ public class PublishPayloadRheaKVLocalPersistence extends RheaKVLocalPersistence
             }
             maxId = max;
         } catch (final Exception e) {
-            log.error("An error occurred while preparing the Publish Payload persistence.");
-            log.debug("Original Exception:", e);
+            log.error("An error occurred while preparing the Publish Payload persistence.", e);
             throw new UnrecoverableException(false);
         }
     }

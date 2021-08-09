@@ -22,6 +22,7 @@ import com.alipay.sofa.jraft.rhea.storage.KVEntry;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.ImmutableMap;
 import com.hivemq.bootstrap.ioc.lazysingleton.LazySingleton;
+import com.hivemq.configuration.service.FullConfigurationService;
 import com.hivemq.configuration.service.InternalConfigurations;
 import com.hivemq.exceptions.UnrecoverableException;
 import com.hivemq.extension.sdk.api.annotations.NotNull;
@@ -73,9 +74,11 @@ public class RetainedMessageRheaKVLocalPersistence extends RheaKVLocalPersistenc
     public RetainedMessageRheaKVLocalPersistence(
             final @NotNull LocalPersistenceFileUtil localPersistenceFileUtil,
             final @NotNull PublishPayloadPersistence payloadPersistence,
-            final @NotNull PersistenceStartup persistenceStartup) {
+            final @NotNull PersistenceStartup persistenceStartup,
+            final @NotNull FullConfigurationService configurationService) {
         super(localPersistenceFileUtil,
                 persistenceStartup,
+                configurationService.clusterConfigurationService(),
                 InternalConfigurations.PERSISTENCE_BUCKET_COUNT.get(),
                 InternalConfigurations.RETAINED_MESSAGE_PERSISTENCE_TYPE.get() == PersistenceType.FILE_DISTRIBUTED);
 
@@ -134,8 +137,7 @@ public class RetainedMessageRheaKVLocalPersistence extends RheaKVLocalPersistenc
                 }
             }
         } catch (final Exception e) {
-            log.error("An error occurred while preparing the Retained Message persistence.");
-            log.debug("Original Exception:", e);
+            log.error("An error occurred while preparing the Retained Message persistence.", e);
             throw new UnrecoverableException(false);
         }
     }
@@ -152,8 +154,7 @@ public class RetainedMessageRheaKVLocalPersistence extends RheaKVLocalPersistenc
                 }
             }
         } catch (final Exception e) {
-            log.error("An error occurred while preparing the Retained Message persistence.");
-            log.debug("Original Exception:", e);
+            log.error("An error occurred while preparing the Retained Message persistence.", e);
             throw new UnrecoverableException(false);
         }
     }
@@ -178,8 +179,7 @@ public class RetainedMessageRheaKVLocalPersistence extends RheaKVLocalPersistenc
                 bucket.bDelete(keys);
             }
         } catch (final Exception e) {
-            log.error("An error occurred while clearing the retained message persistence.");
-            log.debug("Original Exception:", e);
+            log.error("An error occurred while clearing the retained message persistence.", e);
         }
     }
 
@@ -210,8 +210,7 @@ public class RetainedMessageRheaKVLocalPersistence extends RheaKVLocalPersistenc
             payloadPersistence.decrementReferenceCounter(message.getPublishId());
             retainMessageCounter.decrementAndGet();
         } catch (final Exception e) {
-            log.error("An error occurred while removing a retained message.");
-            log.debug("Original Exception:", e);
+            log.error("An error occurred while removing a retained message.", e);
         }
     }
 
@@ -221,8 +220,7 @@ public class RetainedMessageRheaKVLocalPersistence extends RheaKVLocalPersistenc
         try {
             return tryGetLocally(topic, 0, bucketIndex);
         } catch (final Exception e) {
-            log.error("An error occurred while getting a retained message.");
-            log.debug("Original Exception:", e);
+            log.error("An error occurred while getting a retained message.", e);
             return null;
         }
     }
@@ -281,8 +279,7 @@ public class RetainedMessageRheaKVLocalPersistence extends RheaKVLocalPersistenc
                 retainMessageCounter.incrementAndGet();
             }
         } catch (final Exception e) {
-            log.error("An error occurred while persisting a retained message.");
-            log.debug("Original Exception:", e);
+            log.error("An error occurred while persisting a retained message.", e);
         }
 
     }
@@ -324,8 +321,7 @@ public class RetainedMessageRheaKVLocalPersistence extends RheaKVLocalPersistenc
                 bucket.bDelete(keys);
             }
         } catch (final Exception e) {
-            log.error("An error occurred while cleaning up retained messages.");
-            log.debug("Original Exception:", e);
+            log.error("An error occurred while cleaning up retained messages.", e);
         }
     }
 

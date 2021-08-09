@@ -33,6 +33,7 @@ public class ConfigurationServiceImpl implements FullConfigurationService {
     private final SecurityConfigurationService securityConfigurationService;
     private final UsageStatisticsConfig usageStatisticsConfig;
     private final PersistenceConfigurationService persistenceConfigurationService;
+    private final ClusterConfigurationService clusterConfigurationService;
 
     public ConfigurationServiceImpl(
             final ListenerConfigurationService listenerConfigurationService,
@@ -40,13 +41,15 @@ public class ConfigurationServiceImpl implements FullConfigurationService {
             final RestrictionsConfigurationService restrictionsConfigurationService,
             final SecurityConfigurationService securityConfigurationService,
             final UsageStatisticsConfig usageStatisticsConfig,
-            final PersistenceConfigurationService persistenceConfigurationService) {
+            final PersistenceConfigurationService persistenceConfigurationService,
+            final ClusterConfigurationService clusterConfigurationService) {
         this.listenerConfigurationService = listenerConfigurationService;
         this.mqttConfigurationService = mqttConfigurationService;
         this.restrictionsConfigurationService = restrictionsConfigurationService;
         this.securityConfigurationService = securityConfigurationService;
         this.usageStatisticsConfig = usageStatisticsConfig;
         this.persistenceConfigurationService = persistenceConfigurationService;
+        this.clusterConfigurationService = clusterConfigurationService;
     }
 
     @Override
@@ -77,5 +80,10 @@ public class ConfigurationServiceImpl implements FullConfigurationService {
     @Override
     public PersistenceConfigurationService persistenceConfigurationService() {
         return persistenceConfigurationService;
+    }
+
+    @Override
+    public ClusterConfigurationService clusterConfigurationService() {
+        return clusterConfigurationService;
     }
 }

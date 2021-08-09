@@ -50,6 +50,9 @@ public class HiveMQConfigEntity {
     @XmlElementRef(required = false)
     private @NotNull PersistenceEntity persistence = new PersistenceEntity();
 
+    @XmlElementRef(required = false)
+    private @NotNull ClusterEntity cluster = new ClusterEntity();
+
     public @NotNull List<ListenerEntity> getListenerConfig() {
         return listeners;
     }
@@ -72,5 +75,9 @@ public class HiveMQConfigEntity {
 
     public @NotNull PersistenceEntity getPersistenceConfig() {
         return persistence;
+    }
+
+    public @NotNull ClusterEntity getClusterConfig() {
+        return cluster;
     }
 }

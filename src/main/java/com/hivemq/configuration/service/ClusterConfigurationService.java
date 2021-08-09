@@ -15,19 +15,25 @@
  */
 package com.hivemq.configuration.service;
 
-import com.hivemq.statistics.UsageStatisticsConfig;
+import com.hivemq.configuration.entity.ClusterEntity;
+import com.hivemq.extension.sdk.api.annotations.NotNull;
 
 /**
- * @author Christoph Schäbel
+ * @author ankang
  */
-public interface FullConfigurationService extends ConfigurationService {
+public interface ClusterConfigurationService {
 
-    UsageStatisticsConfig usageStatisticsConfiguration();
+    /**
+     * 获取集群配置
+     *
+     * @return 集群配置
+     */
+    @NotNull ClusterEntity getClusterConfig();
 
-    SecurityConfigurationService securityConfiguration();
-
-    PersistenceConfigurationService persistenceConfigurationService();
-
-    ClusterConfigurationService clusterConfigurationService();
-
+    /**
+     * 设置集群配置
+     *
+     * @param clusterConfig 集群配置
+     */
+    void setClusterConfig(@NotNull final ClusterEntity clusterConfig);
 }

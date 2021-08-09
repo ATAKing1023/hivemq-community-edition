@@ -160,6 +160,13 @@ dependencies {
     implementation("org.jctools:jctools-core:${property("jctools.version")}")
 }
 
+dependencies {
+    compileOnly("org.projectlombok:lombok:${property("lombok.version")}")
+    annotationProcessor("org.projectlombok:lombok:${property("lombok.version")}")
+
+    testCompileOnly("org.projectlombok:lombok:${property("lombok.version")}")
+    testAnnotationProcessor("org.projectlombok:lombok:${property("lombok.version")}")
+}
 
 /* ******************** test ******************** */
 
