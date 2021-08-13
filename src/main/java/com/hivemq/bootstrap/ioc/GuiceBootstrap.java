@@ -23,6 +23,7 @@ import com.google.inject.Injector;
 import com.google.inject.Stage;
 import com.hivemq.bootstrap.ioc.lazysingleton.LazySingletonModule;
 import com.hivemq.bootstrap.netty.ioc.NettyModule;
+import com.hivemq.cluster.ClusterModule;
 import com.hivemq.configuration.HivemqId;
 import com.hivemq.configuration.info.SystemInformation;
 import com.hivemq.configuration.ioc.ConfigurationModule;
@@ -81,6 +82,8 @@ public class GuiceBootstrap {
                 new MQTTHandlerModule(persistenceInjector),
                 /* Binds the persistence */
                 new PersistenceModule(persistenceInjector, fullConfigurationService.persistenceConfigurationService()),
+                // 集群模块
+                new ClusterModule(),
                 /* Binds statistics */
                 new MetricsModule(metricRegistry, persistenceInjector),
                 /* Binds throttling specific classes */

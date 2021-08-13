@@ -37,6 +37,13 @@ public class ClusterEntity {
      */
     @XmlElement(name = "name", required = true)
     private @Nullable String name = "HiveMQ";
+
+    /**
+     * 集群服务监听的端口
+     */
+    @XmlElement(name = "rpc-port", required = true)
+    private int rpcPort = 8181;
+
     /**
      * 存储服务监听的起始端口
      */
@@ -56,6 +63,10 @@ public class ClusterEntity {
 
     public @NotNull String getName() {
         return name;
+    }
+
+    public int getRpcPort() {
+        return rpcPort;
     }
 
     public int getStartPort() {
