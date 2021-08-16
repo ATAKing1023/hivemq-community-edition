@@ -23,9 +23,11 @@ import com.alipay.sofa.jraft.RaftGroupService;
 import com.alipay.sofa.jraft.RouteTable;
 import com.alipay.sofa.jraft.conf.Configuration;
 import com.alipay.sofa.jraft.entity.PeerId;
+import com.alipay.sofa.jraft.option.CliOptions;
 import com.alipay.sofa.jraft.option.NodeOptions;
 import com.alipay.sofa.jraft.rpc.RaftRpcServerFactory;
 import com.alipay.sofa.jraft.rpc.impl.BoltRpcServer;
+import com.alipay.sofa.jraft.rpc.impl.cli.CliClientServiceImpl;
 import com.hivemq.common.shutdown.HiveMQShutdownHook;
 import com.hivemq.common.shutdown.ShutdownHooks;
 import com.hivemq.configuration.entity.ClusterEntity;
@@ -35,7 +37,9 @@ import com.hivemq.exceptions.UnrecoverableException;
 import com.hivemq.extension.sdk.api.annotations.NotNull;
 import lombok.extern.slf4j.Slf4j;
 
+import javax.annotation.PostConstruct;
 import javax.inject.Inject;
+import javax.inject.Singleton;
 import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
@@ -47,12 +51,17 @@ import java.util.List;
  * @since 2021/8/11
  */
 @Slf4j
+@Singleton
 public class ClusterServerManager {
 
+    private final @NotNull ShutdownHooks registry;
     private final @NotNull SystemInformation systemInformation;
-    private final @NotNull RpcServer rpcServer;
-    private final PeerId peerId;
-    private final Configuration initialConfiguration;
+    private final @NotNull FullConfigurationService fullConfigurationService;
+
+    private RpcServer rpcServer;
+    private CliClientServiceImpl cliClientService;
+    private PeerId peerId;
+    private Configuration initialConfiguration;
 
     private final List<RaftGroupService> raftGroupServices = new ArrayList<>();
 
@@ -61,7 +70,13 @@ public class ClusterServerManager {
             final @NotNull ShutdownHooks registry,
             final @NotNull SystemInformation systemInformation,
             final @NotNull FullConfigurationService fullConfigurationService) {
+        this.registry = registry;
         this.systemInformation = systemInformation;
+        this.fullConfigurationService = fullConfigurationService;
+    }
+
+    @PostConstruct
+    public void postConstruct() {
         final ClusterEntity clusterConfig = fullConfigurationService.clusterConfigurationService().getClusterConfig();
         this.peerId = getPeerId(clusterConfig);
         this.initialConfiguration = getInitialConfiguration(clusterConfig);
@@ -75,7 +90,11 @@ public class ClusterServerManager {
             log.error("Failed to start RPC server", e);
             throw new UnrecoverableException();
         }
-        registry.add(new HiveMQShutdownHook() {
+
+        this.cliClientService = new CliClientServiceImpl();
+        this.cliClientService.init(new CliOptions());
+
+        this.registry.add(new HiveMQShutdownHook() {
             @Override
             public String name() {
                 return "raft-group-service";
@@ -100,7 +119,7 @@ public class ClusterServerManager {
         for (final UserProcessor<?> processor : processors) {
             log.info("Register user processor: {}", processor);
             // 注册业务处理器
-            this.rpcServer.registerUserProcessor(processor);
+            rpcServer.registerUserProcessor(processor);
         }
     }
 
@@ -118,6 +137,15 @@ public class ClusterServerManager {
         raftGroupServices.add(raftGroupService);
         log.info("Start RaftGroupService: {}", raftGroupService.getGroupId());
         return raftGroupService.start(false);
+    }
+
+    /**
+     * 获取命令行客户端服务
+     *
+     * @return 命令行客户端服务
+     */
+    public CliClientServiceImpl getCliClientService() {
+        return cliClientService;
     }
 
     private NodeOptions createNodeOptions(final EnhancedStateMachine stateMachine) {
