@@ -17,6 +17,9 @@
 package com.hivemq.cluster;
 
 import com.hivemq.bootstrap.ioc.SingletonModule;
+import com.hivemq.cluster.clientsession.ClientSessionClient;
+import com.hivemq.cluster.clientsession.ClientSessionService;
+import com.hivemq.cluster.clientsession.ClientSessionStateMachine;
 
 import javax.inject.Singleton;
 
@@ -34,6 +37,9 @@ public class ClusterModule extends SingletonModule<Class<ClusterModule>> {
 
     @Override
     protected void configure() {
-        bind(ClusterServerManager.class).in(Singleton.class);
+        bind(ClusterServerManager.class).asEagerSingleton();
+        bind(ClientSessionStateMachine.class).in(Singleton.class);
+        bind(ClientSessionService.class).in(Singleton.class);
+        bind(ClientSessionClient.class).in(Singleton.class);
     }
 }
