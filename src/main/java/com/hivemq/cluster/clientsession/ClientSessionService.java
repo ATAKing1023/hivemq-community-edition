@@ -20,6 +20,7 @@ import com.alipay.remoting.rpc.protocol.UserProcessor;
 import com.hivemq.cluster.AbstractRaftService;
 import com.hivemq.cluster.ClusterServerManager;
 import com.hivemq.cluster.clientsession.rpc.ClientSessionAddRequestProcessor;
+import com.hivemq.cluster.clientsession.rpc.ClientSessionRemoveRequestProcessor;
 import com.hivemq.cluster.clientsession.rpc.ClientSessionResponse;
 
 import javax.inject.Inject;
@@ -47,6 +48,7 @@ public class ClientSessionService
     protected Iterable<UserProcessor<?>> getProcessors() {
         final List<UserProcessor<?>> processors = new ArrayList<>();
         processors.add(new ClientSessionAddRequestProcessor(this));
+        processors.add(new ClientSessionRemoveRequestProcessor(this));
         return processors;
     }
 }

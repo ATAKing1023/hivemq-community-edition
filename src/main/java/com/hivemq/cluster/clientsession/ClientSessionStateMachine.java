@@ -54,6 +54,10 @@ public class ClientSessionStateMachine extends AbstractStateMachine<ClientSessio
                         request.getQueueLimit());
                 break;
             case REMOVE:
+                future = clientSessionPersistence.clientDisconnected(
+                        request.getClientId(),
+                        request.isSendWill(),
+                        request.getSessionExpiryInterval());
                 break;
         }
         return future;
