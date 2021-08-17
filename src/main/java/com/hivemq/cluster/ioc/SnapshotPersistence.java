@@ -14,29 +14,24 @@
  * limitations under the License.
  */
 
-package com.hivemq.cluster;
+package com.hivemq.cluster.ioc;
 
-import com.alipay.sofa.jraft.StateMachine;
+import com.google.inject.BindingAnnotation;
+
+import java.lang.annotation.Retention;
+import java.lang.annotation.Target;
+
+import static java.lang.annotation.ElementType.*;
+import static java.lang.annotation.RetentionPolicy.RUNTIME;
 
 /**
- * 增强的状态机接口
+ * Raft快照持久化IoC注解
  *
  * @author ankang
- * @since 2021/8/12
+ * @since 2021/8/17
  */
-public interface EnhancedStateMachine extends StateMachine {
-
-    /**
-     * 当前节点是否是Leader
-     *
-     * @return true-是；false-否
-     */
-    boolean isLeader();
-
-    /**
-     * 获取状态机所属集群分组ID
-     *
-     * @return 集群分组ID
-     */
-    String getGroupId();
+@BindingAnnotation
+@Target({FIELD, PARAMETER, METHOD})
+@Retention(RUNTIME)
+public @interface SnapshotPersistence {
 }

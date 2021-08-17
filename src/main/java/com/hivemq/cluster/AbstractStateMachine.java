@@ -18,14 +18,20 @@ package com.hivemq.cluster;
 
 import com.alipay.remoting.exception.CodecException;
 import com.alipay.remoting.serialization.SerializerManager;
+import com.alipay.sofa.jraft.Closure;
 import com.alipay.sofa.jraft.Iterator;
+import com.alipay.sofa.jraft.Status;
 import com.alipay.sofa.jraft.core.StateMachineAdapter;
+import com.alipay.sofa.jraft.error.RaftError;
+import com.alipay.sofa.jraft.storage.snapshot.SnapshotReader;
+import com.alipay.sofa.jraft.storage.snapshot.SnapshotWriter;
 import lombok.extern.slf4j.Slf4j;
 
 import java.nio.ByteBuffer;
 import java.util.Arrays;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
+import java.util.concurrent.atomic.AtomicLong;
 
 /**
  * 状态机抽象实现
@@ -39,6 +45,11 @@ import java.util.concurrent.Future;
 @Slf4j
 public abstract class AbstractStateMachine<P, R extends AbstractResponse, C extends AbstractClosure<P, R>>
         extends StateMachineAdapter implements EnhancedStateMachine {
+
+    /**
+     * Leader term
+     */
+    private final AtomicLong leaderTerm = new AtomicLong(-1);
 
     @Override
     public void onApply(final Iterator iter) {
@@ -61,7 +72,7 @@ public abstract class AbstractStateMachine<P, R extends AbstractResponse, C exte
                 }
             }
             if (request != null) {
-                log.info("{} at logIndex={}", request, iter.getIndex());
+                log.debug("{} at logIndex={}", request, iter.getIndex());
                 final Future<?> future = doApply(request);
                 if (future != null) {
                     try {
@@ -79,6 +90,50 @@ public abstract class AbstractStateMachine<P, R extends AbstractResponse, C exte
         }
     }
 
+    @Override
+    public void onSnapshotSave(final SnapshotWriter writer, final Closure done) {
+        log.info("Saving snapshot for {}", getGroupId());
+        try {
+            doSnapshotSave(writer);
+            done.run(Status.OK());
+        } catch (final Exception e) {
+            done.run(new Status(RaftError.EIO, "Error saving snapshot %s", e.getMessage()));
+        }
+    }
+
+    @Override
+    public boolean onSnapshotLoad(final SnapshotReader reader) {
+        if (isLeader()) {
+            log.warn("Leader is not supposed to load snapshot");
+            return false;
+        }
+        log.info("Loading snapshot for {}", getGroupId());
+        try {
+            doSnapshotLoad(reader);
+            return true;
+        } catch (final Exception e) {
+            log.error("Error loading snapshot", e);
+        }
+        return false;
+    }
+
+    @Override
+    public void onLeaderStart(final long term) {
+        super.onLeaderStart(term);
+        leaderTerm.set(term);
+    }
+
+    @Override
+    public void onLeaderStop(final Status status) {
+        super.onLeaderStop(status);
+        leaderTerm.set(-1L);
+    }
+
+    @Override
+    public boolean isLeader() {
+        return leaderTerm.get() > 0;
+    }
+
     /**
      * 应用请求
      *
@@ -86,6 +141,22 @@ public abstract class AbstractStateMachine<P, R extends AbstractResponse, C exte
      * @return 执行Future对象
      */
     protected abstract Future<?> doApply(P request);
+
+    /**
+     * 保存快照
+     *
+     * @param writer 快照写入类
+     * @throws Exception 发生异常
+     */
+    protected abstract void doSnapshotSave(SnapshotWriter writer) throws Exception;
+
+    /**
+     * 读取快照
+     *
+     * @param reader 快照读取类
+     * @throws Exception 发生异常
+     */
+    protected abstract void doSnapshotLoad(SnapshotReader reader) throws Exception;
 
     /**
      * 获取状态机对应的请求类

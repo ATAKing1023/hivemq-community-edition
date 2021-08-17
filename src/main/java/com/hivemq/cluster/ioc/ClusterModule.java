@@ -14,9 +14,11 @@
  * limitations under the License.
  */
 
-package com.hivemq.cluster;
+package com.hivemq.cluster.ioc;
 
+import com.google.inject.Injector;
 import com.hivemq.bootstrap.ioc.SingletonModule;
+import com.hivemq.cluster.ClusterServerManager;
 import com.hivemq.cluster.clientsession.ClientSessionClient;
 import com.hivemq.cluster.clientsession.ClientSessionService;
 import com.hivemq.cluster.clientsession.ClientSessionStateMachine;
@@ -31,12 +33,17 @@ import javax.inject.Singleton;
  */
 public class ClusterModule extends SingletonModule<Class<ClusterModule>> {
 
-    public ClusterModule() {
+    private final Injector persistenceInjector;
+
+    public ClusterModule(final Injector persistenceInjector) {
         super(ClusterModule.class);
+        this.persistenceInjector = persistenceInjector;
     }
 
     @Override
     protected void configure() {
+        install(new SnapshotPersistenceModule(persistenceInjector));
+
         bind(ClusterServerManager.class).asEagerSingleton();
         bind(ClientSessionStateMachine.class).in(Singleton.class);
         bind(ClientSessionService.class).in(Singleton.class);

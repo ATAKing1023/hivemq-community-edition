@@ -19,6 +19,7 @@ import com.codahale.metrics.MetricRegistry;
 import com.google.common.util.concurrent.ListeningScheduledExecutorService;
 import com.hivemq.bootstrap.ioc.SingletonModule;
 import com.hivemq.bootstrap.ioc.lazysingleton.LazySingleton;
+import com.hivemq.cluster.ioc.SnapshotPersistenceModule;
 import com.hivemq.common.shutdown.ShutdownHooks;
 import com.hivemq.configuration.service.PersistenceConfigurationService;
 import com.hivemq.extension.sdk.api.annotations.NotNull;
@@ -63,6 +64,7 @@ public class PersistenceMigrationModule extends SingletonModule<Class<Persistenc
             install(new PersistenceMigrationFileModule());
         } else {
             install(new LocalPersistenceMemoryModule(null));
+            install(new SnapshotPersistenceModule(null));
         }
 
         if (persistenceConfigurationService.getMode() == PersistenceConfigurationService.PersistenceMode.IN_MEMORY) {
