@@ -23,6 +23,7 @@ import com.google.inject.Inject;
 import com.hivemq.extension.sdk.api.annotations.NotNull;
 
 import java.util.Collection;
+import java.util.Map;
 import java.util.Set;
 
 /**
@@ -32,6 +33,10 @@ public class FutureUtils {
 
     @Inject
     public static AbstractFutureUtils delegate;
+
+    public static <T> @NotNull ListenableFuture<Void> toVoidFuture(final @NotNull ListenableFuture<T> future) {
+        return delegate.toVoidFuture(future);
+    }
 
     public static @NotNull ListenableFuture<Void> mergeVoidFutures(
             final @NotNull ListenableFuture<Void> future1, final @NotNull ListenableFuture<Void> future2) {
@@ -54,5 +59,10 @@ public class FutureUtils {
     public static <E, C extends Collection<Set<E>>> @NotNull ListenableFuture<Set<E>> combineSetResults(
             final @NotNull ListenableFuture<C> collectionFuture) {
         return delegate.combineSetResults(collectionFuture);
+    }
+
+    public static <K, V, C extends Collection<Map<K, V>>> @NotNull ListenableFuture<Map<K, V>> combineMapResults(
+            final @NotNull ListenableFuture<C> collectionFuture) {
+        return delegate.combineMapResults(collectionFuture);
     }
 }

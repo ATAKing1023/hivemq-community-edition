@@ -24,9 +24,7 @@ import com.hivemq.extension.sdk.api.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.Collection;
-import java.util.HashSet;
-import java.util.Set;
+import java.util.*;
 import java.util.concurrent.Executor;
 import java.util.concurrent.ExecutorService;
 
@@ -37,6 +35,10 @@ public abstract class AbstractFutureUtils {
 
     private static final Logger log = LoggerFactory.getLogger(AbstractFutureUtils.class);
     private static final AnyToVoidFunction ANY_TO_VOID_FUNCTION = new AnyToVoidFunction();
+
+    public @NotNull <T> ListenableFuture<Void> toVoidFuture(final @NotNull ListenableFuture<T> future) {
+        return Futures.transform(future, ANY_TO_VOID_FUNCTION, MoreExecutors.directExecutor());
+    }
 
     public @NotNull ListenableFuture<Void> mergeVoidFutures(
             final @NotNull ListenableFuture<Void> future1, final @NotNull ListenableFuture<Void> future2) {
@@ -88,6 +90,9 @@ public abstract class AbstractFutureUtils {
     public abstract <E, C extends Collection<Set<E>>> @NotNull ListenableFuture<Set<E>> combineSetResults(
             @NotNull ListenableFuture<C> collectionFuture);
 
+    public abstract <K, V, C extends Collection<Map<K, V>>> @NotNull ListenableFuture<Map<K, V>> combineMapResults(
+            @NotNull ListenableFuture<C> collectionFuture);
+
     public <E, C extends Collection<Set<E>>> @NotNull ListenableFuture<Set<E>> combineSetResults(
             final @NotNull ListenableFuture<C> collectionFuture, final @NotNull Executor executor) {
 
@@ -104,6 +109,32 @@ public abstract class AbstractFutureUtils {
                     resultSet.addAll(set);
                 }
                 resultFuture.set(resultSet);
+            }
+
+            @Override
+            public void onFailure(final @NotNull Throwable t) {
+                resultFuture.setException(t);
+            }
+        }, executor);
+        return resultFuture;
+    }
+
+    public <K, V, C extends Collection<Map<K, V>>> @NotNull ListenableFuture<Map<K, V>> combineMapResults(
+            final @NotNull ListenableFuture<C> collectionFuture, final @NotNull Executor executor) {
+
+        final SettableFuture<Map<K, V>> resultFuture = SettableFuture.create();
+        Futures.addCallback(collectionFuture, new FutureCallback<C>() {
+            @Override
+            public void onSuccess(final @Nullable C result) {
+                if (result == null) {
+                    resultFuture.set(null);
+                    return;
+                }
+                final Map<K, V> resultMap = new HashMap<>();
+                for (final Map<K, V> map : result) {
+                    resultMap.putAll(map);
+                }
+                resultFuture.set(resultMap);
             }
 
             @Override

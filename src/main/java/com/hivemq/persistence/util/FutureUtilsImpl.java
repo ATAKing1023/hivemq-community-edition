@@ -25,6 +25,7 @@ import com.hivemq.persistence.ioc.annotation.Persistence;
 
 import javax.inject.Singleton;
 import java.util.Collection;
+import java.util.Map;
 import java.util.Set;
 
 /**
@@ -50,5 +51,11 @@ public class FutureUtilsImpl extends AbstractFutureUtils {
     public <E, C extends Collection<Set<E>>> @NotNull ListenableFuture<Set<E>> combineSetResults(
             final @NotNull ListenableFuture<C> collectionFuture) {
         return super.combineSetResults(collectionFuture, persistenceExecutorService);
+    }
+
+    @Override
+    public <K, V, C extends Collection<Map<K, V>>> @NotNull ListenableFuture<Map<K, V>> combineMapResults(
+            final @NotNull ListenableFuture<C> collectionFuture) {
+        return super.combineMapResults(collectionFuture, persistenceExecutorService);
     }
 }
