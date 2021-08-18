@@ -14,23 +14,26 @@
  * limitations under the License.
  */
 
-package com.hivemq.cluster;
+package com.hivemq.cluster.clientsession.rpc;
+
+import com.hivemq.extension.sdk.api.annotations.NotNull;
+import com.hivemq.mqtt.message.subscribe.Topic;
+import lombok.Value;
+
+import java.io.Serializable;
+import java.util.Set;
 
 /**
- * Raft群组ID常量
+ * 客户端会话订阅新增事件
  *
  * @author ankang
- * @since 2021/8/14
+ * @since 2021/8/18
  */
-public final class GroupIds {
+@Value
+public class ClientSessionSubscriptionAddRequest implements Serializable {
 
-    /**
-     * 客户端会话
-     */
-    public static final String CLIENT_SESSION = "client-session";
+    public static final long serialVersionUID = 1L;
 
-    /**
-     * 客户端会话订阅
-     */
-    public static final String CLIENT_SESSION_SUBSCRIPTION = "client-session-subscription";
+    @NotNull String clientId;
+    @NotNull Set<Topic> topics;
 }

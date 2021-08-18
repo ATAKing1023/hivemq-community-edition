@@ -14,23 +14,19 @@
  * limitations under the License.
  */
 
-package com.hivemq.cluster;
+package com.hivemq.cluster.clientsession.rpc;
+
+import com.hivemq.cluster.AbstractResponse;
+
+import java.io.Serializable;
 
 /**
- * Raft群组ID常量
+ * 客户端会话订阅操作响应
  *
  * @author ankang
- * @since 2021/8/14
+ * @since 2021/8/11
  */
-public final class GroupIds {
+public class ClientSessionSubscriptionResponse extends AbstractResponse implements Serializable {
 
-    /**
-     * 客户端会话
-     */
-    public static final String CLIENT_SESSION = "client-session";
-
-    /**
-     * 客户端会话订阅
-     */
-    public static final String CLIENT_SESSION_SUBSCRIPTION = "client-session-subscription";
+    public static final long serialVersionUID = 1L;
 }
