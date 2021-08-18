@@ -16,12 +16,10 @@
 
 package com.hivemq.cluster.clientsession;
 
-import com.alipay.sofa.jraft.storage.snapshot.SnapshotReader;
-import com.alipay.sofa.jraft.storage.snapshot.SnapshotWriter;
 import com.google.common.collect.ImmutableList;
 import com.google.common.util.concurrent.ListenableFuture;
-import com.hivemq.cluster.AbstractStateMachine;
 import com.hivemq.cluster.GroupIds;
+import com.hivemq.cluster.LocalPersistenceBasedStateMachine;
 import com.hivemq.cluster.clientsession.rpc.ClientSessionResponse;
 import com.hivemq.cluster.ioc.SnapshotPersistence;
 import com.hivemq.persistence.ProducerQueues;
@@ -37,7 +35,6 @@ import javax.inject.Singleton;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
-import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 
 /**
@@ -48,29 +45,26 @@ import java.util.concurrent.Future;
  */
 @Slf4j
 @Singleton
-public class ClientSessionStateMachine
-        extends AbstractStateMachine<ClientSessionOperation, ClientSessionResponse, ClientSessionClosure> {
+public class ClientSessionStateMachine extends
+        LocalPersistenceBasedStateMachine<ClientSessionLocalPersistence, ClientSessionOperation, ClientSessionResponse, ClientSessionClosure> {
 
     private final ClientSessionPersistence clientSessionPersistence;
-    private final ClientSessionLocalPersistence clientSessionLocalPersistence;
-    private final ClientSessionLocalPersistence snapshotPersistence;
     private final ProducerQueues singleWriter;
 
     @Inject
     public ClientSessionStateMachine(
             final ClientSessionPersistence clientSessionPersistence,
-            final ClientSessionLocalPersistence clientSessionLocalPersistence,
+            final ClientSessionLocalPersistence localPersistence,
             final @SnapshotPersistence ClientSessionLocalPersistence snapshotPersistence,
             final SingleWriterService singleWriterService) {
+        super(localPersistence, snapshotPersistence);
         this.clientSessionPersistence = clientSessionPersistence;
-        this.clientSessionLocalPersistence = clientSessionLocalPersistence;
-        this.snapshotPersistence = snapshotPersistence;
         this.singleWriter = singleWriterService.getClientSessionQueue();
     }
 
     @Override
     protected Future<?> doApply(final ClientSessionOperation request) {
-        Future<Void> future = null;
+        Future<?> future = null;
         switch (request.getType()) {
             case ADD:
                 future = clientSessionPersistence.clientConnected(request.getClientId(),
@@ -89,22 +83,19 @@ public class ClientSessionStateMachine
     }
 
     @Override
-    protected void doSnapshotSave(final SnapshotWriter writer) throws Exception {
-        transfer(clientSessionLocalPersistence, snapshotPersistence);
+    protected Class<ClientSessionOperation> getRequestClass() {
+        return ClientSessionOperation.class;
     }
 
     @Override
-    protected void doSnapshotLoad(final SnapshotReader reader) throws Exception {
-        transfer(snapshotPersistence, clientSessionLocalPersistence);
+    public String getGroupId() {
+        return GroupIds.CLIENT_SESSION;
     }
 
-    private void transfer(
+    @Override
+    protected void transfer(
             final ClientSessionLocalPersistence fromPersistence, final ClientSessionLocalPersistence toPersistence)
-            throws InterruptedException, ExecutionException {
-        // 当前存储和要转移的存储相同，忽略即可
-        if (fromPersistence == toPersistence) {
-            return;
-        }
+            throws Exception {
         final List<ListenableFuture<Void>> cleanupFutures =
                 singleWriter.submitToAllQueues((bucketIndex, queueBuckets, queueIndex) -> {
                     for (final Integer bucket : queueBuckets) {
@@ -113,6 +104,7 @@ public class ClientSessionStateMachine
                     return null;
                 });
         FutureUtils.voidFutureFromList(ImmutableList.copyOf(cleanupFutures)).get();
+
         final ListenableFuture<List<Set<String>>> getAllFuture =
                 singleWriter.submitToAllQueuesAsList((bucketIndex, queueBuckets, queueIndex) -> {
                     final Set<String> clientIds = new HashSet<>();
@@ -122,6 +114,7 @@ public class ClientSessionStateMachine
                     return clientIds;
                 });
         final Set<String> clientIds = FutureUtils.combineSetResults(getAllFuture).get();
+
         for (final String clientId : clientIds) {
             final ClientSession session = fromPersistence.getSession(clientId);
             singleWriter.submit(clientId, (bucketIndex, queueBuckets, queueIndex) -> {
@@ -130,15 +123,5 @@ public class ClientSessionStateMachine
                 return null;
             });
         }
-    }
-
-    @Override
-    protected Class<ClientSessionOperation> getRequestClass() {
-        return ClientSessionOperation.class;
-    }
-
-    @Override
-    public String getGroupId() {
-        return GroupIds.CLIENT_SESSION;
     }
 }
