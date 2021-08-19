@@ -16,7 +16,7 @@
 
 package com.hivemq.cluster.clientsession.rpc;
 
-import com.hivemq.cluster.AbstractResponse;
+import com.hivemq.cluster.BaseResponse;
 
 import java.io.Serializable;
 
@@ -26,7 +26,7 @@ import java.io.Serializable;
  * @author ankang
  * @since 2021/8/11
  */
-public class ClientSessionResponse extends AbstractResponse implements Serializable {
+public class ClientSessionResponse extends BaseResponse implements Serializable {
 
     public static final long serialVersionUID = 1L;
 }

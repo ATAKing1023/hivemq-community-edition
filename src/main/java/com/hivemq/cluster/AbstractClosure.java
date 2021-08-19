@@ -28,7 +28,7 @@ import com.alipay.sofa.jraft.error.RaftError;
  * @author ankang
  * @since 2021/8/11
  */
-public abstract class AbstractClosure<P, R extends AbstractResponse> implements EnhancedClosure<P, R> {
+public abstract class AbstractClosure<P, R extends BaseResponse> implements EnhancedClosure<P, R> {
 
     /**
      * 请求

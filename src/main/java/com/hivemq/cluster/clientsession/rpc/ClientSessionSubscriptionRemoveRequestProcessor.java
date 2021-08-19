@@ -58,7 +58,7 @@ public class ClientSessionSubscriptionRemoveRequestProcessor extends
     }
 
     @Override
-    public String interest() {
-        return ClientSessionSubscriptionRemoveRequest.class.getName();
+    protected Class<ClientSessionSubscriptionRemoveRequest> getRequestClass() {
+        return ClientSessionSubscriptionRemoveRequest.class;
     }
 }

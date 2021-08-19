@@ -59,7 +59,7 @@ public class ClientSessionAddRequestProcessor extends
     }
 
     @Override
-    public String interest() {
-        return ClientSessionAddRequest.class.getName();
+    protected Class<ClientSessionAddRequest> getRequestClass() {
+        return ClientSessionAddRequest.class;
     }
 }

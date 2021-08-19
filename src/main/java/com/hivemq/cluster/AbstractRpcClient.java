@@ -34,14 +34,14 @@ import lombok.extern.slf4j.Slf4j;
  * @since 2021/8/16
  */
 @Slf4j
-public abstract class AbstractClientService implements ClientService {
+public abstract class AbstractRpcClient implements RpcClient {
 
     private static final int REFRESH_TIMEOUT_MILLIS = 1000;
     private static final int INVOCATION_TIMEOUT_MILLIS = 5000;
 
     private final CliClientServiceImpl cliClientService;
 
-    protected AbstractClientService(final ClusterServerManager clusterServerManager) {
+    protected AbstractRpcClient(final ClusterServerManager clusterServerManager) {
         this.cliClientService = clusterServerManager.getCliClientService();
     }
 
@@ -60,9 +60,33 @@ public abstract class AbstractClientService implements ClientService {
                 log.warn("No leader");
                 throw new RaftException(EnumOutter.ErrorType.ERROR_TYPE_META, RaftError.EPERM, "No leader");
             }
+            invokeAsync(request, future, leader);
+        } catch (final Throwable e) {
+            future.setException(e);
+        }
+        return future;
+    }
+
+    private void invokeAsync(final Object request, final SettableFuture<Object> future, final PeerId leader) {
+        try {
             cliClientService.getRpcClient().invokeAsync(leader.getEndpoint(), request, (result, err) -> {
                 if (err == null) {
-                    future.set(result);
+                    if (result instanceof BaseResponse) {
+                        final BaseResponse response = (BaseResponse) result;
+                        if (response.isSuccess()) {
+                            future.set(result);
+                        } else if (response.getRedirect() != null) {
+                            final PeerId newLeader = PeerId.parsePeer(response.getRedirect());
+                            log.info("Leader changed from {} to {}", leader, newLeader);
+                            invokeAsync(request, future, newLeader);
+                        } else {
+                            future.setException(new RuntimeException(
+                                    "Server error, message: " + response.getErrorMsg()));
+                        }
+                    } else {
+                        future.setException(new RuntimeException(
+                                "Expect result of type BaseResponse but received" + result));
+                    }
                 } else {
                     future.setException(err);
                 }
@@ -70,7 +94,5 @@ public abstract class AbstractClientService implements ClientService {
         } catch (final Throwable e) {
             future.setException(e);
         }
-
-        return future;
     }
 }

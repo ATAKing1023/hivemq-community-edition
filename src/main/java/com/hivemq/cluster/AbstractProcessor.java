@@ -32,7 +32,7 @@ import com.alipay.sofa.jraft.Closure;
  * @author ankang
  * @since 2021/8/13
  */
-public abstract class AbstractProcessor<P, R extends AbstractResponse, C extends EnhancedClosure<P, R>, S extends RaftService<P, R, C>, T>
+public abstract class AbstractProcessor<P, R extends BaseResponse, C extends EnhancedClosure<P, R>, S extends RaftService<P, R, C>, T>
         extends AsyncUserProcessor<T> {
 
     private final S raftService;
@@ -46,6 +46,11 @@ public abstract class AbstractProcessor<P, R extends AbstractResponse, C extends
         final R response = createResponse();
         final C closure = createClosure(transform(request), response, status -> asyncCtx.sendResponse(response));
         raftService.apply(closure);
+    }
+
+    @Override
+    public String interest() {
+        return getRequestClass().getName();
     }
 
     /**
@@ -72,4 +77,6 @@ public abstract class AbstractProcessor<P, R extends AbstractResponse, C extends
      * @return 回调封装
      */
     protected abstract C createClosure(P request, R response, Closure done);
+
+    protected abstract Class<T> getRequestClass();
 }

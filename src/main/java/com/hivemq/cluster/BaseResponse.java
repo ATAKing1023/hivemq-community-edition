@@ -22,7 +22,7 @@ package com.hivemq.cluster;
  * @author ankang
  * @since 2021/8/11
  */
-public abstract class AbstractResponse {
+public abstract class BaseResponse {
 
     /**
      * 是否成功

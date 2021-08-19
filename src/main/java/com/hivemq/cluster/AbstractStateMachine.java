@@ -39,7 +39,7 @@ import java.util.concurrent.atomic.AtomicLong;
  * @since 2021/8/13
  */
 @Slf4j
-public abstract class AbstractStateMachine<P, R extends AbstractResponse, C extends AbstractClosure<P, R>>
+public abstract class AbstractStateMachine<P, R extends BaseResponse, C extends AbstractClosure<P, R>>
         extends StateMachineAdapter implements EnhancedStateMachine {
 
     /**

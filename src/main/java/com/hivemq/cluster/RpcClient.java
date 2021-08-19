@@ -14,31 +14,30 @@
  * limitations under the License.
  */
 
-package com.hivemq.cluster.clientsession;
+package com.hivemq.cluster;
 
-import com.hivemq.cluster.AbstractClientService;
-import com.hivemq.cluster.ClusterServerManager;
-import com.hivemq.cluster.GroupIds;
-
-import javax.inject.Inject;
-import javax.inject.Singleton;
+import com.google.common.util.concurrent.ListenableFuture;
 
 /**
- * 客户端会话操作客户端
+ * 客户端服务接口
  *
  * @author ankang
  * @since 2021/8/16
  */
-@Singleton
-public class ClientSessionClient extends AbstractClientService {
+public interface RpcClient {
 
-    @Inject
-    public ClientSessionClient(final ClusterServerManager clusterServerManager) {
-        super(clusterServerManager);
-    }
+    /**
+     * 执行远程调用
+     *
+     * @param request 请求
+     * @return Future对象
+     */
+    ListenableFuture<Object> invoke(Object request);
 
-    @Override
-    public String getGroupId() {
-        return GroupIds.CLIENT_SESSION;
-    }
+    /**
+     * 获取请求所属分组ID
+     *
+     * @return 集群分组ID
+     */
+    String getGroupId();
 }

@@ -37,7 +37,7 @@ import java.nio.ByteBuffer;
  * @since 2021/8/13
  */
 @Slf4j
-public abstract class AbstractRaftService<P, R extends AbstractResponse, C extends AbstractClosure<P, R>>
+public abstract class AbstractRaftService<P, R extends BaseResponse, C extends AbstractClosure<P, R>>
         implements RaftService<P, R, C> {
 
     private final Node node;

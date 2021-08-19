@@ -45,9 +45,9 @@ public class ClusterModule extends SingletonModule<Class<ClusterModule>> {
         bind(ClusterServerManager.class).asEagerSingleton();
         bind(ClientSessionStateMachine.class).in(Singleton.class);
         bind(ClientSessionService.class).in(Singleton.class);
-        bind(ClientSessionClient.class).in(Singleton.class);
+        bind(ClientSessionRpcClient.class).in(Singleton.class);
         bind(ClientSessionSubscriptionStateMachine.class).in(Singleton.class);
         bind(ClientSessionSubscriptionService.class).in(Singleton.class);
-        bind(ClientSessionSubscriptionClient.class).in(Singleton.class);
+        bind(ClientSessionSubscriptionRpcClient.class).in(Singleton.class);
     }
 }

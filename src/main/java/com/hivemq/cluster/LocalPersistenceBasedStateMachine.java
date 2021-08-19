@@ -35,7 +35,7 @@ import lombok.extern.slf4j.Slf4j;
  * @since 2021/8/18
  */
 @Slf4j
-public abstract class LocalPersistenceBasedStateMachine<T extends LocalPersistence, P, R extends AbstractResponse, C extends AbstractClosure<P, R>>
+public abstract class LocalPersistenceBasedStateMachine<T extends LocalPersistence, P, R extends BaseResponse, C extends AbstractClosure<P, R>>
         extends AbstractStateMachine<P, R, C> {
 
     private final T localPersistence;
