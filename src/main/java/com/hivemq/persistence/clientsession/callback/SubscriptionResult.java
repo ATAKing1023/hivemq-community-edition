@@ -21,8 +21,10 @@ import com.hivemq.extension.sdk.api.annotations.NotNull;
 import com.hivemq.extension.sdk.api.annotations.Nullable;
 import com.hivemq.mqtt.message.subscribe.Topic;
 
+import java.io.Serializable;
+
 @Immutable
-public class SubscriptionResult {
+public class SubscriptionResult implements Serializable {
 
     @NotNull
     private final Topic topic;

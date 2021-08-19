@@ -17,6 +17,9 @@
 package com.hivemq.cluster.clientsession.rpc;
 
 import com.hivemq.cluster.BaseResponse;
+import lombok.Data;
+import lombok.EqualsAndHashCode;
+import lombok.ToString;
 
 import java.io.Serializable;
 
@@ -26,7 +29,8 @@ import java.io.Serializable;
  * @author ankang
  * @since 2021/8/11
  */
+@Data
+@ToString(callSuper = true)
+@EqualsAndHashCode(callSuper = true)
 public class ClientSessionResponse extends BaseResponse implements Serializable {
-
-    public static final long serialVersionUID = 1L;
 }

@@ -83,6 +83,11 @@ public class ClientSessionStateMachine extends
     }
 
     @Override
+    protected void setResponseData(final ClientSessionClosure closure, final Object result) {
+        // not necessary
+    }
+
+    @Override
     protected Class<ClientSessionOperation> getRequestClass() {
         return ClientSessionOperation.class;
     }

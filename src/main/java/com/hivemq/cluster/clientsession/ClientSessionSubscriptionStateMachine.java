@@ -29,6 +29,7 @@ import com.hivemq.mqtt.message.subscribe.Topic;
 import com.hivemq.persistence.ProducerQueues;
 import com.hivemq.persistence.SingleWriterService;
 import com.hivemq.persistence.clientsession.ClientSessionSubscriptionPersistence;
+import com.hivemq.persistence.clientsession.callback.SubscriptionResult;
 import com.hivemq.persistence.local.ClientSessionSubscriptionLocalPersistence;
 import com.hivemq.persistence.util.FutureUtils;
 
@@ -77,6 +78,13 @@ public class ClientSessionSubscriptionStateMachine extends
                 break;
         }
         return future;
+    }
+
+    @Override
+    protected void setResponseData(final ClientSessionSubscriptionClosure closure, final Object result) {
+        if (closure.getRequest().getType() == ClientSessionSubscriptionOperation.Type.ADD) {
+            closure.getResponse().setSubscriptionResults((List<SubscriptionResult>) result);
+        }
     }
 
     @Override

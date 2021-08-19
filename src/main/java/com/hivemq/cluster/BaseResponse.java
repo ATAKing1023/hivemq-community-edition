@@ -16,12 +16,15 @@
 
 package com.hivemq.cluster;
 
+import lombok.Data;
+
 /**
  * 通用的响应内容
  *
  * @author ankang
  * @since 2021/8/11
  */
+@Data
 public abstract class BaseResponse {
 
     /**
@@ -36,28 +39,4 @@ public abstract class BaseResponse {
      * 错误信息
      */
     private String errorMsg;
-
-    public boolean isSuccess() {
-        return success;
-    }
-
-    public void setSuccess(final boolean success) {
-        this.success = success;
-    }
-
-    public String getRedirect() {
-        return redirect;
-    }
-
-    public void setRedirect(final String redirect) {
-        this.redirect = redirect;
-    }
-
-    public String getErrorMsg() {
-        return errorMsg;
-    }
-
-    public void setErrorMsg(final String errorMsg) {
-        this.errorMsg = errorMsg;
-    }
 }

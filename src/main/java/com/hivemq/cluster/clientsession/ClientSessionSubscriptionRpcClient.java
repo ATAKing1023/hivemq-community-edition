@@ -19,6 +19,7 @@ package com.hivemq.cluster.clientsession;
 import com.hivemq.cluster.AbstractRpcClient;
 import com.hivemq.cluster.ClusterServerManager;
 import com.hivemq.cluster.GroupIds;
+import com.hivemq.cluster.clientsession.rpc.ClientSessionSubscriptionResponse;
 
 import javax.inject.Inject;
 import javax.inject.Singleton;
@@ -30,7 +31,7 @@ import javax.inject.Singleton;
  * @since 2021/8/18
  */
 @Singleton
-public class ClientSessionSubscriptionRpcClient extends AbstractRpcClient {
+public class ClientSessionSubscriptionRpcClient extends AbstractRpcClient<ClientSessionSubscriptionResponse> {
 
     @Inject
     public ClientSessionSubscriptionRpcClient(final ClusterServerManager clusterServerManager) {

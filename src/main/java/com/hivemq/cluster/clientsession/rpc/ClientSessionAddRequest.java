@@ -32,8 +32,6 @@ import java.io.Serializable;
 @Value
 public class ClientSessionAddRequest implements Serializable {
 
-    public static final long serialVersionUID = 1L;
-
     @NotNull String clientId;
     boolean cleanStart;
     long sessionExpiryInterval;

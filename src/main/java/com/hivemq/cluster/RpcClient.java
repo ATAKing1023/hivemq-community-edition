@@ -21,10 +21,11 @@ import com.google.common.util.concurrent.ListenableFuture;
 /**
  * 客户端服务接口
  *
+ * @param <R> 响应类型
  * @author ankang
  * @since 2021/8/16
  */
-public interface RpcClient {
+public interface RpcClient<R> {
 
     /**
      * 执行远程调用
@@ -32,7 +33,7 @@ public interface RpcClient {
      * @param request 请求
      * @return Future对象
      */
-    ListenableFuture<Object> invoke(Object request);
+    ListenableFuture<R> invoke(Object request);
 
     /**
      * 获取请求所属分组ID

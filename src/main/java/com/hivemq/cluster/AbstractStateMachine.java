@@ -25,7 +25,6 @@ import lombok.extern.slf4j.Slf4j;
 
 import java.nio.ByteBuffer;
 import java.util.Arrays;
-import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 import java.util.concurrent.atomic.AtomicLong;
 
@@ -47,6 +46,7 @@ public abstract class AbstractStateMachine<P, R extends BaseResponse, C extends 
      */
     private final AtomicLong leaderTerm = new AtomicLong(-1);
 
+    @SuppressWarnings("unchecked")
     @Override
     public void onApply(final Iterator iter) {
         // 遍历日志
@@ -64,18 +64,19 @@ public abstract class AbstractStateMachine<P, R extends BaseResponse, C extends 
                     request = SerializerManager.getSerializer(SerializerManager.Hessian2)
                             .deserialize(data.array(), getRequestClass().getName());
                 } catch (final CodecException e) {
-                    log.error("Fail to decode {}, data: {}", getRequestClass(), Arrays.toString(data.array()), e);
+                    log.warn("Fail to decode {}, data: {}", getRequestClass(), Arrays.toString(data.array()), e);
                 }
             }
             if (request != null) {
                 log.debug("{} at logIndex={}", request, iter.getIndex());
-                final Future<?> future = doApply(request);
-                if (future != null) {
-                    try {
-                        future.get();
-                    } catch (final InterruptedException | ExecutionException e) {
-                        log.warn("Error applying {}", request, e);
+                try {
+                    final Future<?> future = doApply(request);
+                    final Object result = future.get();
+                    if (done != null) {
+                        setResponseData(done, result);
                     }
+                } catch (final Exception e) {
+                    log.warn("Error applying {}", request, e);
                 }
             }
             // 更新后，确保调用 done，返回应答给客户端。
@@ -110,6 +111,14 @@ public abstract class AbstractStateMachine<P, R extends BaseResponse, C extends 
      * @return 执行Future对象
      */
     protected abstract Future<?> doApply(P request);
+
+    /**
+     * 设置响应内容
+     *
+     * @param closure 回调
+     * @param result  执行结果
+     */
+    protected abstract void setResponseData(C closure, Object result);
 
     /**
      * 获取状态机对应的请求类

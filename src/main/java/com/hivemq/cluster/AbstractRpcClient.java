@@ -30,11 +30,12 @@ import lombok.extern.slf4j.Slf4j;
 /**
  * 客户端服务抽象实现
  *
+ * @param <R> 响应类型
  * @author ankang
  * @since 2021/8/16
  */
 @Slf4j
-public abstract class AbstractRpcClient implements RpcClient {
+public abstract class AbstractRpcClient<R extends BaseResponse> implements RpcClient<R> {
 
     private static final int REFRESH_TIMEOUT_MILLIS = 1000;
     private static final int INVOCATION_TIMEOUT_MILLIS = 5000;
@@ -46,8 +47,8 @@ public abstract class AbstractRpcClient implements RpcClient {
     }
 
     @Override
-    public ListenableFuture<Object> invoke(final Object request) {
-        final SettableFuture<Object> future = SettableFuture.create();
+    public ListenableFuture<R> invoke(final Object request) {
+        final SettableFuture<R> future = SettableFuture.create();
         try {
             final Status status =
                     RouteTable.getInstance().refreshLeader(cliClientService, getGroupId(), REFRESH_TIMEOUT_MILLIS);
@@ -67,25 +68,24 @@ public abstract class AbstractRpcClient implements RpcClient {
         return future;
     }
 
-    private void invokeAsync(final Object request, final SettableFuture<Object> future, final PeerId leader) {
+    @SuppressWarnings("unchecked")
+    private void invokeAsync(final Object request, final SettableFuture<R> future, final PeerId leader) {
         try {
             cliClientService.getRpcClient().invokeAsync(leader.getEndpoint(), request, (result, err) -> {
                 if (err == null) {
-                    if (result instanceof BaseResponse) {
-                        final BaseResponse response = (BaseResponse) result;
+                    try {
+                        final R response = (R) result;
                         if (response.isSuccess()) {
-                            future.set(result);
+                            future.set(response);
                         } else if (response.getRedirect() != null) {
                             final PeerId newLeader = PeerId.parsePeer(response.getRedirect());
                             log.info("Leader changed from {} to {}", leader, newLeader);
                             invokeAsync(request, future, newLeader);
                         } else {
-                            future.setException(new RuntimeException(
-                                    "Server error, message: " + response.getErrorMsg()));
+                            future.setException(new RuntimeException("Server error: " + response.getErrorMsg()));
                         }
-                    } else {
-                        future.setException(new RuntimeException(
-                                "Expect result of type BaseResponse but received" + result));
+                    } catch (final Exception e) {
+                        future.setException(e);
                     }
                 } else {
                     future.setException(err);

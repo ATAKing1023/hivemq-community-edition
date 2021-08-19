@@ -32,8 +32,6 @@ import java.util.Set;
 @Data
 public class ClientSessionSubscriptionOperation implements Serializable {
 
-    public static final long serialVersionUID = 1L;
-
     private @NotNull Type type;
     private @NotNull String clientId;
     private @NotNull Set<Topic> topicObjects;

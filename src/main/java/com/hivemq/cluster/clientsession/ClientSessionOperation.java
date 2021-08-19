@@ -32,8 +32,6 @@ import java.io.Serializable;
 @Data
 public class ClientSessionOperation implements Serializable {
 
-    public static final long serialVersionUID = 1L;
-
     private @NotNull Type type;
     private @NotNull String clientId;
     private boolean cleanStart;

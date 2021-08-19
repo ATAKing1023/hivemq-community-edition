@@ -17,8 +17,13 @@
 package com.hivemq.cluster.clientsession.rpc;
 
 import com.hivemq.cluster.BaseResponse;
+import com.hivemq.persistence.clientsession.callback.SubscriptionResult;
+import lombok.Data;
+import lombok.EqualsAndHashCode;
+import lombok.ToString;
 
 import java.io.Serializable;
+import java.util.List;
 
 /**
  * 客户端会话订阅操作响应
@@ -26,7 +31,22 @@ import java.io.Serializable;
  * @author ankang
  * @since 2021/8/11
  */
+@Data
+@ToString(callSuper = true)
+@EqualsAndHashCode(callSuper = true)
 public class ClientSessionSubscriptionResponse extends BaseResponse implements Serializable {
 
-    public static final long serialVersionUID = 1L;
+    private List<SubscriptionResult> subscriptionResults;
+
+    /**
+     * 获取单条订阅的订阅结果
+     *
+     * @return 订阅结果
+     */
+    public SubscriptionResult getSubscriptionResult() {
+        if (subscriptionResults == null || subscriptionResults.isEmpty()) {
+            return null;
+        }
+        return subscriptionResults.get(0);
+    }
 }
