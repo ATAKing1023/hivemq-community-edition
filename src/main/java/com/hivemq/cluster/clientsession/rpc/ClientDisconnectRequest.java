@@ -14,37 +14,23 @@
  * limitations under the License.
  */
 
-package com.hivemq.cluster.clientsession;
+package com.hivemq.cluster.clientsession.rpc;
 
 import com.hivemq.extension.sdk.api.annotations.NotNull;
-import com.hivemq.extension.sdk.api.annotations.Nullable;
-import com.hivemq.mqtt.message.connect.MqttWillPublish;
-import lombok.Data;
+import lombok.Value;
 
 import java.io.Serializable;
 
 /**
- * 客户端会话操作请求
+ * 客户端断开连接请求
  *
  * @author ankang
- * @since 2021/8/12
+ * @since 2021/8/30
  */
-@Data
-public class ClientSessionOperation implements Serializable {
+@Value
+public class ClientDisconnectRequest implements Serializable {
 
-    private @NotNull Type type;
-    private @NotNull String clientId;
-    private boolean cleanStart;
-    private boolean sendWill;
-    private long sessionExpiryInterval;
-    private @Nullable MqttWillPublish willPublish;
-    private @Nullable Long queueLimit;
+    @NotNull String clientId;
 
-    private String hivemqId;
-
-    public enum Type {
-        ADD,
-        REMOVE,
-        DISCONNECT
-    }
+    @NotNull String hivemqId;
 }

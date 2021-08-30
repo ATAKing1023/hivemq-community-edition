@@ -22,12 +22,16 @@ import com.hivemq.cluster.GroupIds;
 import com.hivemq.cluster.LocalPersistenceBasedStateMachine;
 import com.hivemq.cluster.clientsession.rpc.ClientSessionResponse;
 import com.hivemq.cluster.ioc.SnapshotPersistence;
+import com.hivemq.configuration.HivemqId;
+import com.hivemq.mqtt.message.reason.Mqtt5DisconnectReasonCode;
 import com.hivemq.persistence.ProducerQueues;
 import com.hivemq.persistence.SingleWriterService;
 import com.hivemq.persistence.clientsession.ClientSession;
 import com.hivemq.persistence.clientsession.ClientSessionPersistence;
+import com.hivemq.persistence.clientsession.ClientSessionPersistenceImpl;
 import com.hivemq.persistence.local.ClientSessionLocalPersistence;
 import com.hivemq.persistence.util.FutureUtils;
+import com.hivemq.util.ReasonStrings;
 import lombok.extern.slf4j.Slf4j;
 
 import javax.inject.Inject;
@@ -48,16 +52,19 @@ import java.util.concurrent.Future;
 public class ClientSessionStateMachine extends
         LocalPersistenceBasedStateMachine<ClientSessionLocalPersistence, ClientSessionOperation, ClientSessionResponse, ClientSessionClosure> {
 
+    private final HivemqId hivemqId;
     private final ClientSessionPersistence clientSessionPersistence;
     private final ProducerQueues singleWriter;
 
     @Inject
     public ClientSessionStateMachine(
+            final HivemqId hivemqId,
             final ClientSessionPersistence clientSessionPersistence,
             final ClientSessionLocalPersistence localPersistence,
             final @SnapshotPersistence ClientSessionLocalPersistence snapshotPersistence,
             final SingleWriterService singleWriterService) {
         super(localPersistence, snapshotPersistence);
+        this.hivemqId = hivemqId;
         this.clientSessionPersistence = clientSessionPersistence;
         this.singleWriter = singleWriterService.getClientSessionQueue();
     }
@@ -77,6 +84,15 @@ public class ClientSessionStateMachine extends
                 future = clientSessionPersistence.clientDisconnected(request.getClientId(),
                         request.isSendWill(),
                         request.getSessionExpiryInterval());
+                break;
+            case DISCONNECT:
+                if (!hivemqId.get().equals(request.getHivemqId())) {
+                    future = clientSessionPersistence.forceDisconnectClient(request.getClientId(),
+                            true,
+                            ClientSessionPersistenceImpl.DisconnectSource.CLUSTER,
+                            Mqtt5DisconnectReasonCode.SESSION_TAKEN_OVER,
+                            ReasonStrings.DISCONNECT_SESSION_TAKEN_OVER);
+                }
                 break;
         }
         return future;

@@ -71,7 +71,7 @@ public abstract class AbstractStateMachine<P, R extends BaseResponse, C extends 
                 log.debug("{} at logIndex={}", request, iter.getIndex());
                 try {
                     final Future<?> future = doApply(request);
-                    final Object result = future.get();
+                    final Object result = future == null ? null : future.get();
                     if (done != null) {
                         setResponseData(done, result);
                     }

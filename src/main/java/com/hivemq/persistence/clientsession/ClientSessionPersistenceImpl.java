@@ -249,8 +249,8 @@ public class ClientSessionPersistenceImpl extends AbstractPersistence implements
             channel.attr(ChannelAttributes.CLIENT_SESSION_EXPIRY_INTERVAL).set(session.getSessionExpiryInterval());
         }
 
-        final String logMessage = String.format("Disconnecting client with clientId '%s' forcibly via extension system.", clientId);
-        final String eventLogMessage = "Disconnected via extension system";
+        final String logMessage = String.format("Disconnecting client with clientId '%s' forcibly via %s system.", clientId, source);
+        final String eventLogMessage = String.format("Disconnected via %s system", source);
 
         final Mqtt5DisconnectReasonCode usedReasonCode =
                 reasonCode == null ? Mqtt5DisconnectReasonCode.ADMINISTRATIVE_ACTION : Mqtt5DisconnectReasonCode.valueOf(reasonCode.name());
@@ -482,7 +482,11 @@ public class ClientSessionPersistenceImpl extends AbstractPersistence implements
         /**
          * Extension system disconnected the client
          */
-        EXTENSION(0);
+        EXTENSION(0),
+        /**
+         * Cluster command disconnected the client
+         */
+        CLUSTER(1);
 
         final int number;
 
