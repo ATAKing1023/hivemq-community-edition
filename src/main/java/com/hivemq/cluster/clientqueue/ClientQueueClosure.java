@@ -14,28 +14,22 @@
  * limitations under the License.
  */
 
-package com.hivemq.cluster;
+package com.hivemq.cluster.clientqueue;
+
+import com.alipay.sofa.jraft.Closure;
+import com.hivemq.cluster.AbstractClosure;
+import com.hivemq.cluster.clientqueue.rpc.ClientQueueResponse;
 
 /**
- * Raft群组ID常量
+ * 客户端队列操作回调
  *
  * @author ankang
- * @since 2021/8/14
+ * @since 2021/9/3
  */
-public final class GroupIds {
+public class ClientQueueClosure extends AbstractClosure<ClientQueueOperation, ClientQueueResponse> {
 
-    /**
-     * 客户端会话
-     */
-    public static final String CLIENT_SESSION = "client-session";
-
-    /**
-     * 客户端会话订阅
-     */
-    public static final String CLIENT_SESSION_SUBSCRIPTION = "client-session-subscription";
-
-    /**
-     * 客户端队列
-     */
-    public static final String CLIENT_QUEUE = "client-queue";
+    public ClientQueueClosure(
+            final ClientQueueOperation request, final ClientQueueResponse response, final Closure done) {
+        super(request, response, done);
+    }
 }

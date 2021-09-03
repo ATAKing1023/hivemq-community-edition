@@ -14,28 +14,29 @@
  * limitations under the License.
  */
 
-package com.hivemq.cluster;
+package com.hivemq.cluster.clientqueue.rpc;
+
+import com.google.common.primitives.ImmutableIntArray;
+import com.hivemq.extension.sdk.api.annotations.NotNull;
+import com.hivemq.extension.sdk.api.annotations.Nullable;
+import com.hivemq.mqtt.message.publish.PUBLISH;
+import lombok.Value;
+
+import java.io.Serializable;
 
 /**
- * Raft群组ID常量
+ * 客户端队列消息发布请求
  *
  * @author ankang
- * @since 2021/8/14
+ * @since 2021/9/3
  */
-public final class GroupIds {
+@Value
+public class ClientQueuePublishRequest implements Serializable {
 
-    /**
-     * 客户端会话
-     */
-    public static final String CLIENT_SESSION = "client-session";
-
-    /**
-     * 客户端会话订阅
-     */
-    public static final String CLIENT_SESSION_SUBSCRIPTION = "client-session-subscription";
-
-    /**
-     * 客户端队列
-     */
-    public static final String CLIENT_QUEUE = "client-queue";
+    @NotNull String client;
+    @NotNull PUBLISH publish;
+    int subscriptionQos;
+    boolean shared;
+    boolean retainAsPublished;
+    @Nullable ImmutableIntArray subscriptionIdentifier;
 }

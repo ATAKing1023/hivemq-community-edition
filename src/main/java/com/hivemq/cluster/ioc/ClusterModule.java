@@ -19,6 +19,9 @@ package com.hivemq.cluster.ioc;
 import com.google.inject.Injector;
 import com.hivemq.bootstrap.ioc.SingletonModule;
 import com.hivemq.cluster.ClusterServerManager;
+import com.hivemq.cluster.clientqueue.ClientQueueRpcClient;
+import com.hivemq.cluster.clientqueue.ClientQueueService;
+import com.hivemq.cluster.clientqueue.ClientQueueStateMachine;
 import com.hivemq.cluster.clientsession.*;
 
 import javax.inject.Singleton;
@@ -49,5 +52,8 @@ public class ClusterModule extends SingletonModule<Class<ClusterModule>> {
         bind(ClientSessionSubscriptionStateMachine.class).in(Singleton.class);
         bind(ClientSessionSubscriptionService.class).in(Singleton.class);
         bind(ClientSessionSubscriptionRpcClient.class).in(Singleton.class);
+        bind(ClientQueueStateMachine.class).in(Singleton.class);
+        bind(ClientQueueService.class).in(Singleton.class);
+        bind(ClientQueueRpcClient.class).in(Singleton.class);
     }
 }
