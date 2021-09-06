@@ -56,7 +56,7 @@ public abstract class AbstractRaftService<P, R extends BaseResponse, C extends A
         }
         try {
             final Task task = new Task();
-            task.setData(ByteBuffer.wrap(SerializerManager.getSerializer(SerializerManager.Hessian2)
+            task.setData(ByteBuffer.wrap(SerializerManager.getSerializer(HessianCustomSerializer.INDEX)
                     .serialize(closure.getRequest())));
             task.setDone(closure);
             node.apply(task);

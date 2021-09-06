@@ -61,7 +61,7 @@ public abstract class AbstractStateMachine<P, R extends BaseResponse, C extends 
                 // 其他节点应用此日志
                 final ByteBuffer data = iter.getData();
                 try {
-                    request = SerializerManager.getSerializer(SerializerManager.Hessian2)
+                    request = SerializerManager.getSerializer(HessianCustomSerializer.INDEX)
                             .deserialize(data.array(), getRequestClass().getName());
                 } catch (final CodecException e) {
                     log.warn("Fail to decode {}, data: {}", getRequestClass(), Arrays.toString(data.array()), e);

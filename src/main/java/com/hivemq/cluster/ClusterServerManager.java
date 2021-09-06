@@ -16,8 +16,11 @@
 
 package com.hivemq.cluster;
 
+import com.alipay.remoting.CustomSerializer;
+import com.alipay.remoting.CustomSerializerManager;
 import com.alipay.remoting.rpc.RpcServer;
 import com.alipay.remoting.rpc.protocol.UserProcessor;
+import com.alipay.remoting.serialization.SerializerManager;
 import com.alipay.sofa.jraft.Node;
 import com.alipay.sofa.jraft.RaftGroupService;
 import com.alipay.sofa.jraft.RouteTable;
@@ -54,14 +57,15 @@ import java.util.List;
 @Singleton
 public class ClusterServerManager {
 
+    private static final CustomSerializer CUSTOM_SERIALIZER = new HessianCustomSerializer();
+
     private final @NotNull ShutdownHooks registry;
     private final @NotNull SystemInformation systemInformation;
-    private final @NotNull FullConfigurationService fullConfigurationService;
+    private final PeerId peerId;
+    private final Configuration initialConfiguration;
 
     private RpcServer rpcServer;
     private CliClientServiceImpl cliClientService;
-    private PeerId peerId;
-    private Configuration initialConfiguration;
 
     private final List<RaftGroupService> raftGroupServices = new ArrayList<>();
 
@@ -72,16 +76,20 @@ public class ClusterServerManager {
             final @NotNull FullConfigurationService fullConfigurationService) {
         this.registry = registry;
         this.systemInformation = systemInformation;
-        this.fullConfigurationService = fullConfigurationService;
+        final ClusterEntity clusterConfig = fullConfigurationService.clusterConfigurationService().getClusterConfig();
+        this.peerId = new PeerId(clusterConfig.getBindAddress(), clusterConfig.getRpcPort());
+        final List<PeerId> peerIds = new ArrayList<>();
+        for (final String address : clusterConfig.getNodeList()) {
+            peerIds.add(new PeerId(address, clusterConfig.getRpcPort()));
+        }
+        this.initialConfiguration = new Configuration(peerIds);
+        SerializerManager.addSerializer(HessianCustomSerializer.INDEX, HessianCustomSerializer.DEFAULT.getSerializer());
     }
 
     @PostConstruct
     public void postConstruct() {
-        final ClusterEntity clusterConfig = fullConfigurationService.clusterConfigurationService().getClusterConfig();
-        this.peerId = getPeerId(clusterConfig);
-        this.initialConfiguration = getInitialConfiguration(clusterConfig);
         log.info("Initializing raft cluster: peerId-[{}], initialConfiguration-[{}]", peerId, initialConfiguration);
-        this.rpcServer = new RpcServer(clusterConfig.getRpcPort());
+        this.rpcServer = new RpcServer(peerId.getIp(), peerId.getPort());
         RaftRpcServerFactory.addRaftRequestProcessors(new BoltRpcServer(this.rpcServer));
         try {
             this.rpcServer.startup();
@@ -120,6 +128,7 @@ public class ClusterServerManager {
             log.info("Register user processor: {}", processor);
             // 注册业务处理器
             rpcServer.registerUserProcessor(processor);
+            CustomSerializerManager.registerCustomSerializer(processor.interest(), CUSTOM_SERIALIZER);
         }
     }
 
@@ -163,18 +172,6 @@ public class ClusterServerManager {
         // 初始节点列表
         nodeOptions.setInitialConf(initialConfiguration);
         return nodeOptions;
-    }
-
-    private PeerId getPeerId(final ClusterEntity clusterConfig) {
-        return new PeerId(clusterConfig.getBindAddress(), clusterConfig.getRpcPort());
-    }
-
-    private Configuration getInitialConfiguration(final ClusterEntity clusterConfig) {
-        final List<PeerId> peerIds = new ArrayList<>();
-        for (final String address : clusterConfig.getNodeList()) {
-            peerIds.add(new PeerId(address, clusterConfig.getRpcPort()));
-        }
-        return new Configuration(peerIds);
     }
 
     private synchronized String getDataPath(final String name) {

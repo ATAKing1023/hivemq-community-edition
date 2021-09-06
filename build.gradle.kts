@@ -115,7 +115,6 @@ dependencies {
 
     // persistence
     implementation("org.rocksdb:rocksdbjni:${property("rocksdb.version")}")
-    implementation("com.alipay.sofa:jraft-rheakv-core:${property("rheakv.version")}")
     implementation("org.jetbrains.xodus:xodus-openAPI:${property("xodus.version")}") {
         exclude("org.jetbrains", "annotations")
     }
@@ -158,6 +157,11 @@ dependencies {
     implementation("net.openhft:zero-allocation-hashing:${property("zero-allocation-hashing.version")}")
     implementation("com.fasterxml.jackson.core:jackson-databind:${property("jackson.version")}")
     implementation("org.jctools:jctools-core:${property("jctools.version")}")
+    // sofa
+    implementation("com.alipay.sofa:jraft-rheakv-core:${property("sofa-jraft.version")}")
+    constraints {
+        implementation("com.alipay.sofa:hessian:${property("sofa-hessian.version")}")
+    }
 }
 
 dependencies {
