@@ -89,23 +89,23 @@ public class ClusterServerManager {
     @PostConstruct
     public void postConstruct() {
         log.info("Initializing raft cluster: peerId-[{}], initialConfiguration-[{}]", peerId, initialConfiguration);
-        this.rpcServer = new RpcServer(peerId.getIp(), peerId.getPort());
-        RaftRpcServerFactory.addRaftRequestProcessors(new BoltRpcServer(this.rpcServer));
+        rpcServer = new RpcServer(peerId.getIp(), peerId.getPort());
+        RaftRpcServerFactory.addRaftRequestProcessors(new BoltRpcServer(rpcServer));
         try {
-            this.rpcServer.startup();
+            rpcServer.startup();
             log.info("Successfully started RPC server");
         } catch (final Exception e) {
             log.error("Failed to start RPC server", e);
             throw new UnrecoverableException();
         }
 
-        this.cliClientService = new CliClientServiceImpl();
-        this.cliClientService.init(new CliOptions());
+        cliClientService = new CliClientServiceImpl();
+        cliClientService.init(new CliOptions());
 
-        this.registry.add(new HiveMQShutdownHook() {
+        registry.add(new HiveMQShutdownHook() {
             @Override
             public String name() {
-                return "raft-group-service";
+                return "raft-cluster";
             }
 
             @Override
@@ -114,6 +114,8 @@ public class ClusterServerManager {
                     log.info("Stop RaftGroupService: {}", raftGroupService.getGroupId());
                     raftGroupService.shutdown();
                 }
+                log.info("Stop RpcServer: {}:{}", rpcServer.ip(), rpcServer.port());
+                rpcServer.shutdown();
             }
         });
     }
@@ -128,7 +130,10 @@ public class ClusterServerManager {
             log.info("Register user processor: {}", processor);
             // 注册业务处理器
             rpcServer.registerUserProcessor(processor);
-            CustomSerializerManager.registerCustomSerializer(processor.interest(), CUSTOM_SERIALIZER);
+            // 重复注册会抛出异常
+            if (CustomSerializerManager.getCustomSerializer(processor.interest()) == null) {
+                CustomSerializerManager.registerCustomSerializer(processor.interest(), CUSTOM_SERIALIZER);
+            }
         }
     }
 
