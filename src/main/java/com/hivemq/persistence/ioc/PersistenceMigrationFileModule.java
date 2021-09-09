@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hivemq.persistence.ioc;
 
 import com.hivemq.bootstrap.ioc.SingletonModule;
@@ -25,10 +26,6 @@ import com.hivemq.persistence.ioc.provider.local.ClientSessionLocalProvider;
 import com.hivemq.persistence.ioc.provider.local.ClientSessionSubscriptionLocalProvider;
 import com.hivemq.persistence.local.ClientSessionLocalPersistence;
 import com.hivemq.persistence.local.ClientSessionSubscriptionLocalPersistence;
-import com.hivemq.persistence.local.xodus.RetainedMessageXodusLocalPersistence;
-import com.hivemq.persistence.payload.PublishPayloadLocalPersistence;
-import com.hivemq.persistence.payload.PublishPayloadXodusLocalPersistence;
-import com.hivemq.persistence.retained.RetainedMessageLocalPersistence;
 
 import javax.inject.Singleton;
 
@@ -48,25 +45,6 @@ public class PersistenceMigrationFileModule extends SingletonModule<Class<Persis
 
     @Override
     protected void configure() {
-
-        if (retainedPersistenceType == PersistenceType.FILE) {
-            bind(RetainedMessageLocalPersistence.class).to(RetainedMessageXodusLocalPersistence.class)
-                    .in(Singleton.class);
-        }
-        if (payloadPersistenceType == PersistenceType.FILE) {
-            bind(PublishPayloadLocalPersistence.class).to(PublishPayloadXodusLocalPersistence.class)
-                    .in(Singleton.class);
-        }
-
-        if (retainedPersistenceType == PersistenceType.FILE_NATIVE ||
-                payloadPersistenceType == PersistenceType.FILE_NATIVE) {
-            install(new PersistenceMigrationRocksDBModule());
-        }
-
-        if (retainedPersistenceType == PersistenceType.FILE_DISTRIBUTED ||
-                payloadPersistenceType == PersistenceType.FILE_DISTRIBUTED) {
-            install(new PersistenceMigrationRheaKVModule());
-        }
 
         bind(ClientSessionLocalPersistence.class).toProvider(ClientSessionLocalProvider.class).in(Singleton.class);
         bind(ClientSessionSubscriptionLocalPersistence.class).toProvider(ClientSessionSubscriptionLocalProvider.class).in(Singleton.class);

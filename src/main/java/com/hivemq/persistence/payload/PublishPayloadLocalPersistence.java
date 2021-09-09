@@ -16,14 +16,15 @@
 package com.hivemq.persistence.payload;
 
 import com.google.common.collect.ImmutableList;
+import com.hivemq.annotations.ReadOnly;
 import com.hivemq.extension.sdk.api.annotations.NotNull;
 import com.hivemq.extension.sdk.api.annotations.Nullable;
-import com.hivemq.annotations.ReadOnly;
+import com.hivemq.persistence.LocalPersistence;
 
 /**
  * @author Lukas Brandl
  */
-public interface PublishPayloadLocalPersistence {
+public interface PublishPayloadLocalPersistence extends LocalPersistence {
 
     String PERSISTENCE_NAME = "publish_payload_store";
 

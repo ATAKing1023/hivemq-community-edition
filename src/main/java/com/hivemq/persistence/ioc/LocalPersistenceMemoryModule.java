@@ -25,8 +25,6 @@ import com.hivemq.persistence.local.ClientSessionSubscriptionLocalPersistence;
 import com.hivemq.persistence.local.memory.ClientQueueMemoryLocalPersistence;
 import com.hivemq.persistence.local.memory.ClientSessionMemoryLocalPersistence;
 import com.hivemq.persistence.local.memory.ClientSessionSubscriptionMemoryLocalPersistence;
-import com.hivemq.persistence.local.memory.RetainedMessageMemoryLocalPersistence;
-import com.hivemq.persistence.retained.RetainedMessageLocalPersistence;
 
 import javax.inject.Singleton;
 
@@ -44,10 +42,6 @@ class LocalPersistenceMemoryModule extends SingletonModule<Class<LocalPersistenc
 
     @Override
     protected void configure() {
-
-
-        bindLocalPersistence(RetainedMessageLocalPersistence.class,
-                RetainedMessageMemoryLocalPersistence.class);
 
         bindLocalPersistence(ClientSessionSubscriptionLocalPersistence.class,
                 ClientSessionSubscriptionMemoryLocalPersistence.class);

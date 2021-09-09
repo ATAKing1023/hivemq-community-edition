@@ -178,7 +178,9 @@ public abstract class RheaKVLocalPersistence implements LocalPersistence, FilePe
     public void closeDB(final int bucketIndex) {
         checkBucketIndex(bucketIndex);
         final RheaKVStore bucket = buckets[bucketIndex];
-        bucket.shutdown();
+        if (bucket != null) {
+            bucket.shutdown();
+        }
     }
 
     @NotNull

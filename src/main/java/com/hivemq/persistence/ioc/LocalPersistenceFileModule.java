@@ -27,12 +27,8 @@ import com.hivemq.persistence.ioc.provider.local.ClientSessionLocalProvider;
 import com.hivemq.persistence.ioc.provider.local.ClientSessionSubscriptionLocalProvider;
 import com.hivemq.persistence.local.ClientSessionLocalPersistence;
 import com.hivemq.persistence.local.ClientSessionSubscriptionLocalPersistence;
-import com.hivemq.persistence.local.xodus.RetainedMessageXodusLocalPersistence;
 import com.hivemq.persistence.local.xodus.clientsession.ClientSessionSubscriptionXodusLocalPersistence;
 import com.hivemq.persistence.local.xodus.clientsession.ClientSessionXodusLocalPersistence;
-import com.hivemq.persistence.payload.PublishPayloadLocalPersistence;
-import com.hivemq.persistence.payload.PublishPayloadXodusLocalPersistence;
-import com.hivemq.persistence.retained.RetainedMessageLocalPersistence;
 
 import javax.inject.Singleton;
 
@@ -54,28 +50,6 @@ class LocalPersistenceFileModule extends SingletonModule<Class<LocalPersistenceF
 
     @Override
     protected void configure() {
-
-        /* Local */
-        if (payloadPersistenceType == PersistenceType.FILE) {
-            bindLocalPersistence(PublishPayloadLocalPersistence.class,
-                    PublishPayloadXodusLocalPersistence.class,
-                    null);
-        }
-        if (retainedPersistenceType == PersistenceType.FILE) {
-            bindLocalPersistence(RetainedMessageLocalPersistence.class,
-                    RetainedMessageXodusLocalPersistence.class,
-                    null);
-        }
-
-        if (payloadPersistenceType == PersistenceType.FILE_NATIVE ||
-                retainedPersistenceType == PersistenceType.FILE_NATIVE) {
-            install(new LocalPersistenceRocksDBModule(persistenceInjector));
-        }
-
-        if (payloadPersistenceType == PersistenceType.FILE_DISTRIBUTED ||
-                retainedPersistenceType == PersistenceType.FILE_DISTRIBUTED) {
-            install(new LocalPersistenceRheaKVModule(persistenceInjector));
-        }
 
         bindLocalPersistence(ClientSessionLocalPersistence.class,
                 ClientSessionXodusLocalPersistence.class,
