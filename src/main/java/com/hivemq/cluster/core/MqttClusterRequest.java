@@ -14,33 +14,27 @@
  * limitations under the License.
  */
 
-package com.hivemq.cluster;
+package com.hivemq.cluster.core;
+
+import com.hivemq.cluster.clientqueue.ClientQueueOperation;
+import com.hivemq.cluster.clientsession.ClientSessionOperation;
+import com.hivemq.cluster.clientsession.ClientSessionSubscriptionOperation;
+import lombok.Data;
+
+import java.io.Serializable;
 
 /**
- * Raft群组ID常量
+ * MQTT集群操作请求
  *
  * @author ankang
- * @since 2021/8/14
+ * @since 2021/11/3
  */
-public final class GroupIds {
+@Data
+public class MqttClusterRequest implements Serializable {
 
-    /**
-     * MQTT集群操作
-     */
-    public static final String MQTT_CLUSTER = "mqtt-cluster";
+    private ClientSessionOperation clientSessionOperation;
 
-    /**
-     * 客户端会话
-     */
-    public static final String CLIENT_SESSION = "client-session";
+    private ClientSessionSubscriptionOperation clientSessionSubscriptionOperation;
 
-    /**
-     * 客户端会话订阅
-     */
-    public static final String CLIENT_SESSION_SUBSCRIPTION = "client-session-subscription";
-
-    /**
-     * 客户端队列
-     */
-    public static final String CLIENT_QUEUE = "client-queue";
+    private ClientQueueOperation clientQueueOperation;
 }

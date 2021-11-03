@@ -14,32 +14,31 @@
  * limitations under the License.
  */
 
-package com.hivemq.cluster.clientsession;
+package com.hivemq.cluster.core;
 
 import com.hivemq.cluster.AbstractRpcClient;
 import com.hivemq.cluster.ClusterServerManager;
 import com.hivemq.cluster.GroupIds;
-import com.hivemq.cluster.clientsession.rpc.ClientSessionSubscriptionResponse;
 
 import javax.inject.Inject;
 import javax.inject.Singleton;
 
 /**
- * 客户端会话订阅操作客户端
+ * MQTT集群操作客户端
  *
  * @author ankang
- * @since 2021/8/18
+ * @since 2021/11/3
  */
 @Singleton
-public class ClientSessionSubscriptionRpcClient extends AbstractRpcClient<ClientSessionSubscriptionResponse> {
+public class MqttClusterClient extends AbstractRpcClient<MqttClusterResponse> {
 
     @Inject
-    public ClientSessionSubscriptionRpcClient(final ClusterServerManager clusterServerManager) {
+    public MqttClusterClient(final ClusterServerManager clusterServerManager) {
         super(clusterServerManager);
     }
 
     @Override
     public String getGroupId() {
-        return GroupIds.CLIENT_SESSION_SUBSCRIPTION;
+        return GroupIds.MQTT_CLUSTER;
     }
 }

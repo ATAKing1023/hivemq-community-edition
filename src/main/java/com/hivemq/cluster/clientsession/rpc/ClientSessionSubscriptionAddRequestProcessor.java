@@ -18,9 +18,11 @@ package com.hivemq.cluster.clientsession.rpc;
 
 import com.alipay.sofa.jraft.Closure;
 import com.hivemq.cluster.AbstractProcessor;
-import com.hivemq.cluster.clientsession.ClientSessionSubscriptionClosure;
 import com.hivemq.cluster.clientsession.ClientSessionSubscriptionOperation;
-import com.hivemq.cluster.clientsession.ClientSessionSubscriptionService;
+import com.hivemq.cluster.core.MqttClusterClosure;
+import com.hivemq.cluster.core.MqttClusterRequest;
+import com.hivemq.cluster.core.MqttClusterResponse;
+import com.hivemq.cluster.core.MqttClusterService;
 
 /**
  * 客户端订阅新增请求处理类
@@ -29,32 +31,32 @@ import com.hivemq.cluster.clientsession.ClientSessionSubscriptionService;
  * @since 2021/8/18
  */
 public class ClientSessionSubscriptionAddRequestProcessor extends
-        AbstractProcessor<ClientSessionSubscriptionOperation, ClientSessionSubscriptionResponse, ClientSessionSubscriptionClosure, ClientSessionSubscriptionService, ClientSessionSubscriptionAddRequest> {
+        AbstractProcessor<MqttClusterRequest, MqttClusterResponse, MqttClusterClosure, MqttClusterService, ClientSessionSubscriptionAddRequest> {
 
-    public ClientSessionSubscriptionAddRequestProcessor(final ClientSessionSubscriptionService raftService) {
+    public ClientSessionSubscriptionAddRequestProcessor(final MqttClusterService raftService) {
         super(raftService);
     }
 
     @Override
-    protected ClientSessionSubscriptionOperation transform(final ClientSessionSubscriptionAddRequest request) {
+    protected MqttClusterRequest transform(final ClientSessionSubscriptionAddRequest request) {
         final ClientSessionSubscriptionOperation operation = new ClientSessionSubscriptionOperation();
         operation.setType(ClientSessionSubscriptionOperation.Type.ADD);
         operation.setClientId(request.getClientId());
         operation.setTopicObjects(request.getTopics());
-        return operation;
+        final MqttClusterRequest clusterRequest = new MqttClusterRequest();
+        clusterRequest.setClientSessionSubscriptionOperation(operation);
+        return clusterRequest;
     }
 
     @Override
-    protected ClientSessionSubscriptionResponse createResponse() {
-        return new ClientSessionSubscriptionResponse();
+    protected MqttClusterResponse createResponse() {
+        return new MqttClusterResponse();
     }
 
     @Override
-    protected ClientSessionSubscriptionClosure createClosure(
-            final ClientSessionSubscriptionOperation request,
-            final ClientSessionSubscriptionResponse response,
-            final Closure done) {
-        return new ClientSessionSubscriptionClosure(request, response, done);
+    protected MqttClusterClosure createClosure(
+            final MqttClusterRequest request, final MqttClusterResponse response, final Closure done) {
+        return new MqttClusterClosure(request, response, done);
     }
 
     @Override

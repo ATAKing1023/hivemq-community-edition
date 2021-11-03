@@ -18,9 +18,11 @@ package com.hivemq.cluster.clientsession.rpc;
 
 import com.alipay.sofa.jraft.Closure;
 import com.hivemq.cluster.AbstractProcessor;
-import com.hivemq.cluster.clientsession.ClientSessionClosure;
 import com.hivemq.cluster.clientsession.ClientSessionOperation;
-import com.hivemq.cluster.clientsession.ClientSessionService;
+import com.hivemq.cluster.core.MqttClusterClosure;
+import com.hivemq.cluster.core.MqttClusterRequest;
+import com.hivemq.cluster.core.MqttClusterResponse;
+import com.hivemq.cluster.core.MqttClusterService;
 
 /**
  * 客户端断开请求处理类
@@ -29,30 +31,32 @@ import com.hivemq.cluster.clientsession.ClientSessionService;
  * @since 2021/8/30
  */
 public class ClientDisconnectRequestProcessor extends
-        AbstractProcessor<ClientSessionOperation, ClientSessionResponse, ClientSessionClosure, ClientSessionService, ClientDisconnectRequest> {
+        AbstractProcessor<MqttClusterRequest, MqttClusterResponse, MqttClusterClosure, MqttClusterService, ClientDisconnectRequest> {
 
-    public ClientDisconnectRequestProcessor(final ClientSessionService raftService) {
+    public ClientDisconnectRequestProcessor(final MqttClusterService raftService) {
         super(raftService);
     }
 
     @Override
-    protected ClientSessionOperation transform(final ClientDisconnectRequest request) {
+    protected MqttClusterRequest transform(final ClientDisconnectRequest request) {
         final ClientSessionOperation operation = new ClientSessionOperation();
         operation.setType(ClientSessionOperation.Type.DISCONNECT);
         operation.setClientId(request.getClientId());
         operation.setHivemqId(request.getHivemqId());
-        return operation;
+        final MqttClusterRequest clusterRequest = new MqttClusterRequest();
+        clusterRequest.setClientSessionOperation(operation);
+        return clusterRequest;
     }
 
     @Override
-    protected ClientSessionResponse createResponse() {
-        return new ClientSessionResponse();
+    protected MqttClusterResponse createResponse() {
+        return new MqttClusterResponse();
     }
 
     @Override
-    protected ClientSessionClosure createClosure(
-            final ClientSessionOperation request, final ClientSessionResponse response, final Closure done) {
-        return new ClientSessionClosure(request, response, done);
+    protected MqttClusterClosure createClosure(
+            final MqttClusterRequest request, final MqttClusterResponse response, final Closure done) {
+        return new MqttClusterClosure(request, response, done);
     }
 
     @Override

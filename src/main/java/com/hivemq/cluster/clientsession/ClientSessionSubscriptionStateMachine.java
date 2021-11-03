@@ -65,7 +65,7 @@ public class ClientSessionSubscriptionStateMachine extends
     }
 
     @Override
-    protected Future<?> doApply(final ClientSessionSubscriptionOperation request) {
+    public Future<?> doApply(final ClientSessionSubscriptionOperation request) {
         Future<?> future = null;
         switch (request.getType()) {
             case ADD:
@@ -81,7 +81,7 @@ public class ClientSessionSubscriptionStateMachine extends
     }
 
     @Override
-    protected void setResponseData(final ClientSessionSubscriptionClosure closure, final Object result) {
+    public void setResponseData(final ClientSessionSubscriptionClosure closure, final Object result) {
         if (closure.getRequest().getType() == ClientSessionSubscriptionOperation.Type.ADD) {
             closure.getResponse().setSubscriptionResults((List<SubscriptionResult>) result);
         }

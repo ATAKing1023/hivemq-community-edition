@@ -70,7 +70,7 @@ public class ClientSessionStateMachine extends
     }
 
     @Override
-    protected Future<?> doApply(final ClientSessionOperation request) {
+    public Future<?> doApply(final ClientSessionOperation request) {
         Future<?> future = null;
         switch (request.getType()) {
             case ADD:
@@ -99,7 +99,7 @@ public class ClientSessionStateMachine extends
     }
 
     @Override
-    protected void setResponseData(final ClientSessionClosure closure, final Object result) {
+    public void setResponseData(final ClientSessionClosure closure, final Object result) {
         // not necessary
     }
 

@@ -19,10 +19,12 @@ package com.hivemq.cluster.ioc;
 import com.google.inject.Injector;
 import com.hivemq.bootstrap.ioc.SingletonModule;
 import com.hivemq.cluster.ClusterServerManager;
-import com.hivemq.cluster.clientqueue.ClientQueueRpcClient;
-import com.hivemq.cluster.clientqueue.ClientQueueService;
 import com.hivemq.cluster.clientqueue.ClientQueueStateMachine;
-import com.hivemq.cluster.clientsession.*;
+import com.hivemq.cluster.clientsession.ClientSessionStateMachine;
+import com.hivemq.cluster.clientsession.ClientSessionSubscriptionStateMachine;
+import com.hivemq.cluster.core.MqttClusterClient;
+import com.hivemq.cluster.core.MqttClusterService;
+import com.hivemq.cluster.core.MqttClusterStateMachine;
 
 import javax.inject.Singleton;
 
@@ -46,14 +48,12 @@ public class ClusterModule extends SingletonModule<Class<ClusterModule>> {
         install(new SnapshotPersistenceModule(persistenceInjector));
 
         bind(ClusterServerManager.class).asEagerSingleton();
+
         bind(ClientSessionStateMachine.class).in(Singleton.class);
-        bind(ClientSessionService.class).in(Singleton.class);
-        bind(ClientSessionRpcClient.class).in(Singleton.class);
         bind(ClientSessionSubscriptionStateMachine.class).in(Singleton.class);
-        bind(ClientSessionSubscriptionService.class).in(Singleton.class);
-        bind(ClientSessionSubscriptionRpcClient.class).in(Singleton.class);
         bind(ClientQueueStateMachine.class).in(Singleton.class);
-        bind(ClientQueueService.class).in(Singleton.class);
-        bind(ClientQueueRpcClient.class).in(Singleton.class);
+        bind(MqttClusterStateMachine.class).in(Singleton.class);
+        bind(MqttClusterService.class).in(Singleton.class);
+        bind(MqttClusterClient.class).in(Singleton.class);
     }
 }

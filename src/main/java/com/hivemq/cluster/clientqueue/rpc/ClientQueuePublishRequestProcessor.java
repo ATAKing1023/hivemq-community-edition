@@ -18,9 +18,11 @@ package com.hivemq.cluster.clientqueue.rpc;
 
 import com.alipay.sofa.jraft.Closure;
 import com.hivemq.cluster.AbstractProcessor;
-import com.hivemq.cluster.clientqueue.ClientQueueClosure;
 import com.hivemq.cluster.clientqueue.ClientQueueOperation;
-import com.hivemq.cluster.clientqueue.ClientQueueService;
+import com.hivemq.cluster.core.MqttClusterClosure;
+import com.hivemq.cluster.core.MqttClusterRequest;
+import com.hivemq.cluster.core.MqttClusterResponse;
+import com.hivemq.cluster.core.MqttClusterService;
 
 /**
  * 客户端队列消息发布请求处理类
@@ -29,14 +31,14 @@ import com.hivemq.cluster.clientqueue.ClientQueueService;
  * @since 2021/9/3
  */
 public class ClientQueuePublishRequestProcessor extends
-        AbstractProcessor<ClientQueueOperation, ClientQueueResponse, ClientQueueClosure, ClientQueueService, ClientQueuePublishRequest> {
+        AbstractProcessor<MqttClusterRequest, MqttClusterResponse, MqttClusterClosure, MqttClusterService, ClientQueuePublishRequest> {
 
-    public ClientQueuePublishRequestProcessor(final ClientQueueService raftService) {
+    public ClientQueuePublishRequestProcessor(final MqttClusterService raftService) {
         super(raftService);
     }
 
     @Override
-    protected ClientQueueOperation transform(final ClientQueuePublishRequest request) {
+    protected MqttClusterRequest transform(final ClientQueuePublishRequest request) {
         final ClientQueueOperation operation = new ClientQueueOperation();
         operation.setType(ClientQueueOperation.Type.PUBLISH);
         operation.setClient(request.getClient());
@@ -45,18 +47,20 @@ public class ClientQueuePublishRequestProcessor extends
         operation.setShared(request.isShared());
         operation.setRetainAsPublished(request.isRetainAsPublished());
         operation.setSubscriptionIdentifier(request.getSubscriptionIdentifier());
-        return operation;
+        final MqttClusterRequest clusterRequest = new MqttClusterRequest();
+        clusterRequest.setClientQueueOperation(operation);
+        return clusterRequest;
     }
 
     @Override
-    protected ClientQueueResponse createResponse() {
-        return new ClientQueueResponse();
+    protected MqttClusterResponse createResponse() {
+        return new MqttClusterResponse();
     }
 
     @Override
-    protected ClientQueueClosure createClosure(
-            final ClientQueueOperation request, final ClientQueueResponse response, final Closure done) {
-        return new ClientQueueClosure(request, response, done);
+    protected MqttClusterClosure createClosure(
+            final MqttClusterRequest request, final MqttClusterResponse response, final Closure done) {
+        return new MqttClusterClosure(request, response, done);
     }
 
     @Override

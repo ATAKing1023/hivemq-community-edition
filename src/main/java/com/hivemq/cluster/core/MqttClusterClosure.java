@@ -14,33 +14,21 @@
  * limitations under the License.
  */
 
-package com.hivemq.cluster;
+package com.hivemq.cluster.core;
+
+import com.alipay.sofa.jraft.Closure;
+import com.hivemq.cluster.AbstractClosure;
 
 /**
- * Raft群组ID常量
+ * MQTT集群操作回调
  *
  * @author ankang
- * @since 2021/8/14
+ * @since 2021/11/3
  */
-public final class GroupIds {
+public class MqttClusterClosure extends AbstractClosure<MqttClusterRequest, MqttClusterResponse> {
 
-    /**
-     * MQTT集群操作
-     */
-    public static final String MQTT_CLUSTER = "mqtt-cluster";
-
-    /**
-     * 客户端会话
-     */
-    public static final String CLIENT_SESSION = "client-session";
-
-    /**
-     * 客户端会话订阅
-     */
-    public static final String CLIENT_SESSION_SUBSCRIPTION = "client-session-subscription";
-
-    /**
-     * 客户端队列
-     */
-    public static final String CLIENT_QUEUE = "client-queue";
+    public MqttClusterClosure(
+            final MqttClusterRequest request, final MqttClusterResponse response, final Closure done) {
+        super(request, response, done);
+    }
 }

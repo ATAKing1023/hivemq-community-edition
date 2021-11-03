@@ -50,7 +50,7 @@ public class ClientQueueStateMachine extends
     }
 
     @Override
-    protected Future<?> doApply(final ClientQueueOperation request) {
+    public Future<?> doApply(final ClientQueueOperation request) {
         Future<?> future = null;
         switch (request.getType()) {
             case PUBLISH:
