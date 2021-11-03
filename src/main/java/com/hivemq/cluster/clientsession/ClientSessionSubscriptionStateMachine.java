@@ -20,16 +20,14 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
-import com.hivemq.cluster.GroupIds;
-import com.hivemq.cluster.LocalPersistenceBasedStateMachine;
-import com.hivemq.cluster.clientsession.rpc.ClientSessionSubscriptionResponse;
+import com.hivemq.cluster.InternalStateMachine;
+import com.hivemq.cluster.LocalPersistenceSnapshotSupport;
 import com.hivemq.cluster.ioc.SnapshotPersistence;
 import com.hivemq.extensions.iteration.BucketChunkResult;
 import com.hivemq.mqtt.message.subscribe.Topic;
 import com.hivemq.persistence.ProducerQueues;
 import com.hivemq.persistence.SingleWriterService;
 import com.hivemq.persistence.clientsession.ClientSessionSubscriptionPersistence;
-import com.hivemq.persistence.clientsession.callback.SubscriptionResult;
 import com.hivemq.persistence.local.ClientSessionSubscriptionLocalPersistence;
 import com.hivemq.persistence.util.FutureUtils;
 
@@ -47,8 +45,9 @@ import java.util.concurrent.Future;
  * @since 2021/8/18
  */
 @Singleton
-public class ClientSessionSubscriptionStateMachine extends
-        LocalPersistenceBasedStateMachine<ClientSessionSubscriptionLocalPersistence, ClientSessionSubscriptionOperation, ClientSessionSubscriptionResponse, ClientSessionSubscriptionClosure> {
+public class ClientSessionSubscriptionStateMachine
+        extends LocalPersistenceSnapshotSupport<ClientSessionSubscriptionLocalPersistence>
+        implements InternalStateMachine<ClientSessionSubscriptionOperation> {
 
     private final ClientSessionSubscriptionPersistence clientSessionSubscriptionPersistence;
     private final ProducerQueues singleWriter;
@@ -78,23 +77,6 @@ public class ClientSessionSubscriptionStateMachine extends
                 break;
         }
         return future;
-    }
-
-    @Override
-    public void setResponseData(final ClientSessionSubscriptionClosure closure, final Object result) {
-        if (closure.getRequest().getType() == ClientSessionSubscriptionOperation.Type.ADD) {
-            closure.getResponse().setSubscriptionResults((List<SubscriptionResult>) result);
-        }
-    }
-
-    @Override
-    protected Class<ClientSessionSubscriptionOperation> getRequestClass() {
-        return ClientSessionSubscriptionOperation.class;
-    }
-
-    @Override
-    public String getGroupId() {
-        return GroupIds.CLIENT_SESSION_SUBSCRIPTION;
     }
 
     @Override

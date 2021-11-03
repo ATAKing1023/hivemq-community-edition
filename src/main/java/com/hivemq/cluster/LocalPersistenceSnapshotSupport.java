@@ -16,32 +16,25 @@
 
 package com.hivemq.cluster;
 
-import com.alipay.sofa.jraft.Closure;
-import com.alipay.sofa.jraft.Status;
-import com.alipay.sofa.jraft.error.RaftError;
 import com.alipay.sofa.jraft.storage.snapshot.SnapshotReader;
 import com.alipay.sofa.jraft.storage.snapshot.SnapshotWriter;
 import com.hivemq.persistence.LocalPersistence;
 import lombok.extern.slf4j.Slf4j;
 
 /**
- * 基于本地存储实现快照的状态机框架实现
+ * 基于本地存储实现的快照支持
  *
  * @param <T> 本地存储类型
- * @param <P> 请求类型
- * @param <R> 响应类型
- * @param <C> 回调类型
  * @author ankang
  * @since 2021/8/18
  */
 @Slf4j
-public abstract class LocalPersistenceBasedStateMachine<T extends LocalPersistence, P, R extends BaseResponse, C extends AbstractClosure<P, R>>
-        extends AbstractStateMachine<P, R, C> {
+public abstract class LocalPersistenceSnapshotSupport<T extends LocalPersistence> implements SnapshotSupport {
 
     private final T localPersistence;
     private final T snapshotPersistence;
 
-    protected LocalPersistenceBasedStateMachine(final T localPersistence, final T snapshotPersistence) {
+    protected LocalPersistenceSnapshotSupport(final T localPersistence, final T snapshotPersistence) {
         this.localPersistence = localPersistence;
         this.snapshotPersistence = snapshotPersistence;
         if (localPersistence == snapshotPersistence) {
@@ -50,30 +43,13 @@ public abstract class LocalPersistenceBasedStateMachine<T extends LocalPersisten
     }
 
     @Override
-    public void onSnapshotSave(final SnapshotWriter writer, final Closure done) {
-        log.info("Saving snapshot for {}", getGroupId());
-        try {
-            transfer(localPersistence, snapshotPersistence);
-            done.run(Status.OK());
-        } catch (final Exception e) {
-            done.run(new Status(RaftError.EIO, "Error saving snapshot %s", e.getMessage()));
-        }
+    public void doSnapshotSave(final SnapshotWriter writer) throws Exception {
+        transfer(localPersistence, snapshotPersistence);
     }
 
     @Override
-    public boolean onSnapshotLoad(final SnapshotReader reader) {
-        if (isLeader()) {
-            log.warn("Leader is not supposed to load snapshot");
-            return false;
-        }
-        log.info("Loading snapshot for {}", getGroupId());
-        try {
-            transfer(snapshotPersistence, localPersistence);
-            return true;
-        } catch (final Exception e) {
-            log.error("Error loading snapshot", e);
-        }
-        return false;
+    public void doSnapshotLoad(final SnapshotReader reader) throws Exception {
+        transfer(snapshotPersistence, localPersistence);
     }
 
     /**

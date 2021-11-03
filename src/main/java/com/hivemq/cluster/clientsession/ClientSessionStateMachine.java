@@ -18,9 +18,8 @@ package com.hivemq.cluster.clientsession;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.util.concurrent.ListenableFuture;
-import com.hivemq.cluster.GroupIds;
-import com.hivemq.cluster.LocalPersistenceBasedStateMachine;
-import com.hivemq.cluster.clientsession.rpc.ClientSessionResponse;
+import com.hivemq.cluster.InternalStateMachine;
+import com.hivemq.cluster.LocalPersistenceSnapshotSupport;
 import com.hivemq.cluster.ioc.SnapshotPersistence;
 import com.hivemq.configuration.HivemqId;
 import com.hivemq.mqtt.message.reason.Mqtt5DisconnectReasonCode;
@@ -49,8 +48,8 @@ import java.util.concurrent.Future;
  */
 @Slf4j
 @Singleton
-public class ClientSessionStateMachine extends
-        LocalPersistenceBasedStateMachine<ClientSessionLocalPersistence, ClientSessionOperation, ClientSessionResponse, ClientSessionClosure> {
+public class ClientSessionStateMachine extends LocalPersistenceSnapshotSupport<ClientSessionLocalPersistence>
+        implements InternalStateMachine<ClientSessionOperation> {
 
     private final HivemqId hivemqId;
     private final ClientSessionPersistence clientSessionPersistence;
@@ -96,21 +95,6 @@ public class ClientSessionStateMachine extends
                 break;
         }
         return future;
-    }
-
-    @Override
-    public void setResponseData(final ClientSessionClosure closure, final Object result) {
-        // not necessary
-    }
-
-    @Override
-    protected Class<ClientSessionOperation> getRequestClass() {
-        return ClientSessionOperation.class;
-    }
-
-    @Override
-    public String getGroupId() {
-        return GroupIds.CLIENT_SESSION;
     }
 
     @Override

@@ -17,6 +17,8 @@
 package com.hivemq.cluster.core;
 
 import com.alipay.sofa.jraft.Closure;
+import com.alipay.sofa.jraft.Status;
+import com.alipay.sofa.jraft.error.RaftError;
 import com.alipay.sofa.jraft.storage.snapshot.SnapshotReader;
 import com.alipay.sofa.jraft.storage.snapshot.SnapshotWriter;
 import com.hivemq.cluster.AbstractStateMachine;
@@ -75,32 +77,49 @@ public class MqttClusterStateMachine
     }
 
     @Override
-    public void onSnapshotSave(
-            final SnapshotWriter writer, final Closure done) {
-        clientSessionStateMachine.onSnapshotSave(writer, done);
-        clientSessionSubscriptionStateMachine.onSnapshotSave(writer, done);
-        clientQueueStateMachine.onSnapshotSave(writer, done);
+    public void onSnapshotSave(final SnapshotWriter writer, final Closure done) {
+        log.info("Saving snapshot");
+        try {
+            clientSessionStateMachine.doSnapshotSave(writer);
+            clientSessionSubscriptionStateMachine.doSnapshotSave(writer);
+            clientQueueStateMachine.doSnapshotSave(writer);
+            done.run(Status.OK());
+        } catch (final Exception e) {
+            done.run(new Status(RaftError.EIO, "Error saving snapshot %s", e.getMessage()));
+        }
     }
 
     @Override
     public boolean onSnapshotLoad(final SnapshotReader reader) {
-        return clientSessionStateMachine.onSnapshotLoad(reader) &&
-                clientSessionSubscriptionStateMachine.onSnapshotLoad(reader) &&
-                clientQueueStateMachine.onSnapshotLoad(reader);
+        if (isLeader()) {
+            log.warn("Leader is not supposed to load snapshot");
+            return false;
+        }
+        log.info("Loading snapshot");
+        try {
+            clientSessionStateMachine.doSnapshotLoad(reader);
+            clientSessionSubscriptionStateMachine.doSnapshotLoad(reader);
+            clientQueueStateMachine.doSnapshotLoad(reader);
+            return true;
+        } catch (final Exception e) {
+            log.error("Error loading snapshot", e);
+        }
+        return false;
     }
 
     @Override
-    protected void setResponseData(final MqttClusterClosure closure, final Object result) {
-        log.info("Closure: {}, result: {}", closure, result);
-        if (closure.getRequest().getClientSessionSubscriptionOperation() != null) {
-            if (closure.getRequest().getClientSessionSubscriptionOperation().getType() ==
+    protected void setResponseData(
+            final MqttClusterRequest request, final MqttClusterResponse response, final Object result) {
+        log.info("request: {}, response: {}, result: {}", request, response, result);
+        if (request.getClientSessionSubscriptionOperation() != null) {
+            if (request.getClientSessionSubscriptionOperation().getType() ==
                     ClientSessionSubscriptionOperation.Type.ADD) {
-                closure.getResponse().setSubscriptionResults((List<SubscriptionResult>) result);
+                response.setSubscriptionResults((List<SubscriptionResult>) result);
             }
         }
-        if (closure.getRequest().getClientQueueOperation() != null) {
-            if (closure.getRequest().getClientQueueOperation().getType() == ClientQueueOperation.Type.PUBLISH) {
-                closure.getResponse().setPublishStatus((PublishStatus) result);
+        if (request.getClientQueueOperation() != null) {
+            if (request.getClientQueueOperation().getType() == ClientQueueOperation.Type.PUBLISH) {
+                response.setPublishStatus((PublishStatus) result);
             }
         }
     }

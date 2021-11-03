@@ -73,7 +73,7 @@ public abstract class AbstractStateMachine<P, R extends BaseResponse, C extends 
                     final Future<?> future = doApply(request);
                     final Object result = future == null ? null : future.get();
                     if (done != null) {
-                        setResponseData(done, result);
+                        setResponseData(request, done.getResponse(), result);
                     }
                 } catch (final Exception e) {
                     log.warn("Error applying {}", request, e);
@@ -115,10 +115,11 @@ public abstract class AbstractStateMachine<P, R extends BaseResponse, C extends 
     /**
      * 设置响应内容
      *
-     * @param closure 回调
-     * @param result  执行结果
+     * @param request  请求
+     * @param response 响应
+     * @param result   执行结果
      */
-    protected abstract void setResponseData(C closure, Object result);
+    protected abstract void setResponseData(P request, R response, Object result);
 
     /**
      * 获取状态机对应的请求类

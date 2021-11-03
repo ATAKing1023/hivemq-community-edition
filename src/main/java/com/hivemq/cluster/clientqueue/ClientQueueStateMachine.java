@@ -16,11 +16,9 @@
 
 package com.hivemq.cluster.clientqueue;
 
-import com.hivemq.cluster.GroupIds;
-import com.hivemq.cluster.LocalPersistenceBasedStateMachine;
-import com.hivemq.cluster.clientqueue.rpc.ClientQueueResponse;
+import com.hivemq.cluster.InternalStateMachine;
+import com.hivemq.cluster.LocalPersistenceSnapshotSupport;
 import com.hivemq.cluster.ioc.SnapshotPersistence;
-import com.hivemq.mqtt.handler.publish.PublishStatus;
 import com.hivemq.mqtt.services.PublishDistributor;
 import com.hivemq.persistence.clientqueue.ClientQueueLocalPersistence;
 
@@ -35,8 +33,8 @@ import java.util.concurrent.Future;
  * @since 2021/9/3
  */
 @Singleton
-public class ClientQueueStateMachine extends
-        LocalPersistenceBasedStateMachine<ClientQueueLocalPersistence, ClientQueueOperation, ClientQueueResponse, ClientQueueClosure> {
+public class ClientQueueStateMachine extends LocalPersistenceSnapshotSupport<ClientQueueLocalPersistence>
+        implements InternalStateMachine<ClientQueueOperation> {
 
     private final PublishDistributor publishDistributor;
 
@@ -64,23 +62,6 @@ public class ClientQueueStateMachine extends
                 break;
         }
         return future;
-    }
-
-    @Override
-    protected void setResponseData(final ClientQueueClosure closure, final Object result) {
-        if (closure.getRequest().getType() == ClientQueueOperation.Type.PUBLISH) {
-            closure.getResponse().setPublishStatus((PublishStatus) result);
-        }
-    }
-
-    @Override
-    protected Class<ClientQueueOperation> getRequestClass() {
-        return ClientQueueOperation.class;
-    }
-
-    @Override
-    public String getGroupId() {
-        return GroupIds.CLIENT_QUEUE;
     }
 
     @Override

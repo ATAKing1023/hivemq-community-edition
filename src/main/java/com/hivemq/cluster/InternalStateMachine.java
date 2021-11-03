@@ -14,22 +14,24 @@
  * limitations under the License.
  */
 
-package com.hivemq.cluster.clientsession;
+package com.hivemq.cluster;
 
-import com.alipay.sofa.jraft.Closure;
-import com.hivemq.cluster.AbstractClosure;
-import com.hivemq.cluster.clientsession.rpc.ClientSessionResponse;
+import java.util.concurrent.Future;
 
 /**
- * 客户端会话操作回调
+ * 内部的精简的状态机实现
  *
+ * @param <T> 操作类型
  * @author ankang
- * @since 2021/8/11
+ * @since 2021/11/3
  */
-public class ClientSessionClosure extends AbstractClosure<ClientSessionOperation, ClientSessionResponse> {
+public interface InternalStateMachine<T> {
 
-    public ClientSessionClosure(
-            final ClientSessionOperation request, final ClientSessionResponse response, final Closure done) {
-        super(request, response, done);
-    }
+    /**
+     * 应用操作
+     *
+     * @param operation 操作
+     * @return 执行的Future对象
+     */
+    Future<?> doApply(final T operation);
 }

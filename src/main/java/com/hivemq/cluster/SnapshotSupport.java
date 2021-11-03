@@ -14,22 +14,20 @@
  * limitations under the License.
  */
 
-package com.hivemq.cluster.clientqueue;
+package com.hivemq.cluster;
 
-import com.alipay.sofa.jraft.Closure;
-import com.hivemq.cluster.AbstractClosure;
-import com.hivemq.cluster.clientqueue.rpc.ClientQueueResponse;
+import com.alipay.sofa.jraft.storage.snapshot.SnapshotReader;
+import com.alipay.sofa.jraft.storage.snapshot.SnapshotWriter;
 
 /**
- * 客户端队列操作回调
+ * 快照支持接口
  *
  * @author ankang
- * @since 2021/9/3
+ * @since 2021/11/3
  */
-public class ClientQueueClosure extends AbstractClosure<ClientQueueOperation, ClientQueueResponse> {
+public interface SnapshotSupport {
 
-    public ClientQueueClosure(
-            final ClientQueueOperation request, final ClientQueueResponse response, final Closure done) {
-        super(request, response, done);
-    }
+    void doSnapshotSave(SnapshotWriter writer) throws Exception;
+
+    void doSnapshotLoad(SnapshotReader reader) throws Exception;
 }

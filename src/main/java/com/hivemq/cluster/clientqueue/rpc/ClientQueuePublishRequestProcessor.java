@@ -16,12 +16,9 @@
 
 package com.hivemq.cluster.clientqueue.rpc;
 
-import com.alipay.sofa.jraft.Closure;
-import com.hivemq.cluster.AbstractProcessor;
 import com.hivemq.cluster.clientqueue.ClientQueueOperation;
-import com.hivemq.cluster.core.MqttClusterClosure;
+import com.hivemq.cluster.core.AbstractMqttClusterRequestProcessor;
 import com.hivemq.cluster.core.MqttClusterRequest;
-import com.hivemq.cluster.core.MqttClusterResponse;
 import com.hivemq.cluster.core.MqttClusterService;
 
 /**
@@ -30,8 +27,7 @@ import com.hivemq.cluster.core.MqttClusterService;
  * @author ankang
  * @since 2021/9/3
  */
-public class ClientQueuePublishRequestProcessor extends
-        AbstractProcessor<MqttClusterRequest, MqttClusterResponse, MqttClusterClosure, MqttClusterService, ClientQueuePublishRequest> {
+public class ClientQueuePublishRequestProcessor extends AbstractMqttClusterRequestProcessor<ClientQueuePublishRequest> {
 
     public ClientQueuePublishRequestProcessor(final MqttClusterService raftService) {
         super(raftService);
@@ -50,17 +46,6 @@ public class ClientQueuePublishRequestProcessor extends
         final MqttClusterRequest clusterRequest = new MqttClusterRequest();
         clusterRequest.setClientQueueOperation(operation);
         return clusterRequest;
-    }
-
-    @Override
-    protected MqttClusterResponse createResponse() {
-        return new MqttClusterResponse();
-    }
-
-    @Override
-    protected MqttClusterClosure createClosure(
-            final MqttClusterRequest request, final MqttClusterResponse response, final Closure done) {
-        return new MqttClusterClosure(request, response, done);
     }
 
     @Override

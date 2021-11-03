@@ -16,12 +16,9 @@
 
 package com.hivemq.cluster.clientsession.rpc;
 
-import com.alipay.sofa.jraft.Closure;
-import com.hivemq.cluster.AbstractProcessor;
 import com.hivemq.cluster.clientsession.ClientSessionOperation;
-import com.hivemq.cluster.core.MqttClusterClosure;
+import com.hivemq.cluster.core.AbstractMqttClusterRequestProcessor;
 import com.hivemq.cluster.core.MqttClusterRequest;
-import com.hivemq.cluster.core.MqttClusterResponse;
 import com.hivemq.cluster.core.MqttClusterService;
 
 /**
@@ -30,8 +27,7 @@ import com.hivemq.cluster.core.MqttClusterService;
  * @author ankang
  * @since 2021/8/30
  */
-public class ClientDisconnectRequestProcessor extends
-        AbstractProcessor<MqttClusterRequest, MqttClusterResponse, MqttClusterClosure, MqttClusterService, ClientDisconnectRequest> {
+public class ClientDisconnectRequestProcessor extends AbstractMqttClusterRequestProcessor<ClientDisconnectRequest> {
 
     public ClientDisconnectRequestProcessor(final MqttClusterService raftService) {
         super(raftService);
@@ -46,17 +42,6 @@ public class ClientDisconnectRequestProcessor extends
         final MqttClusterRequest clusterRequest = new MqttClusterRequest();
         clusterRequest.setClientSessionOperation(operation);
         return clusterRequest;
-    }
-
-    @Override
-    protected MqttClusterResponse createResponse() {
-        return new MqttClusterResponse();
-    }
-
-    @Override
-    protected MqttClusterClosure createClosure(
-            final MqttClusterRequest request, final MqttClusterResponse response, final Closure done) {
-        return new MqttClusterClosure(request, response, done);
     }
 
     @Override

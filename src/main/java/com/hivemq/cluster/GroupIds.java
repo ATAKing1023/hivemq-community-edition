@@ -28,19 +28,4 @@ public final class GroupIds {
      * MQTT集群操作
      */
     public static final String MQTT_CLUSTER = "mqtt-cluster";
-
-    /**
-     * 客户端会话
-     */
-    public static final String CLIENT_SESSION = "client-session";
-
-    /**
-     * 客户端会话订阅
-     */
-    public static final String CLIENT_SESSION_SUBSCRIPTION = "client-session-subscription";
-
-    /**
-     * 客户端队列
-     */
-    public static final String CLIENT_QUEUE = "client-queue";
 }
