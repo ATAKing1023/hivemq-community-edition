@@ -25,9 +25,7 @@ public enum MigrationUnit {
 
     // As the MigrationUnit enum is used in a TreeSet the order of declaration is the order of persistence migration
     FILE_PERSISTENCE_PUBLISH_PAYLOAD("publish payload file persistence"),
-    FILE_PERSISTENCE_RETAINED_MESSAGES("retained message file persistence"),
-    PAYLOAD_ID_RETAINED_MESSAGES("retained message payload id"),
-    PAYLOAD_ID_CLIENT_QUEUE("client queue payload id");
+    FILE_PERSISTENCE_RETAINED_MESSAGES("retained message file persistence");
 
     private final @NotNull String description;
 

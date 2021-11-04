@@ -49,7 +49,6 @@ import org.slf4j.LoggerFactory;
 import javax.inject.Inject;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
 
@@ -133,7 +132,6 @@ public class HiveMQServer {
         //must happen before persistence injector bootstrap as it creates the persistence folder.
         log.trace("Checking for migrations");
         final Map<MigrationUnit, PersistenceTypePair> migrations = Migrations.checkForTypeMigration(systemInformation);
-        final Set<MigrationUnit> valueMigrations = Migrations.checkForValueMigration(systemInformation);
 
         final LifecycleModule lifecycleModule = new LifecycleModule();
 
@@ -150,20 +148,13 @@ public class HiveMQServer {
         }
         if (configService.persistenceConfigurationService().getMode() != PersistenceMode.IN_MEMORY) {
 
-            if (migrations.size() + valueMigrations.size() > 0) {
-                if(migrations.size() > 0) {
-                    log.info("Persistence types has been changed, migrating persistent data.");
-                } else {
-                    log.info("Persistence values has been changed, migrating persistent data.");
-                }
-                for (final MigrationUnit migrationUnit : migrations.keySet()) {
-                    log.debug("{} needs to be migrated.", StringUtils.capitalize(migrationUnit.toString()));
-                }
-                for (final MigrationUnit migrationUnit : valueMigrations) {
-                    log.debug("{} needs to be migrated.", StringUtils.capitalize(migrationUnit.toString()));
-                }
-                Migrations.migrate(persistenceInjector, migrations, valueMigrations);
+            if(migrations.size() > 0) {
+                log.info("Persistence types has been changed, migrating persistent data.");
             }
+            for (final MigrationUnit migrationUnit : migrations.keySet()) {
+                log.debug("{} needs to be migrated.", StringUtils.capitalize(migrationUnit.toString()));
+            }
+            Migrations.migrate(persistenceInjector, migrations);
 
             Migrations.afterMigration(systemInformation);
 

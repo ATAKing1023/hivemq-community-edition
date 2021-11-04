@@ -16,7 +16,6 @@
 package com.hivemq.migration.persistence.payload;
 
 import com.codahale.metrics.MetricRegistry;
-import com.google.common.collect.ImmutableSet;
 import com.google.inject.Injector;
 import com.hivemq.bootstrap.ioc.GuiceBootstrap;
 import com.hivemq.configuration.ConfigurationBootstrap;
@@ -117,7 +116,7 @@ public class PublishPayloadTypeMigrationTest {
             xodus.put(i, ("message" + i).getBytes());
         }
 
-        Migrations.migrate(persistenceInjector, migrations, ImmutableSet.of());
+        Migrations.migrate(persistenceInjector, migrations);
 
         final PublishPayloadRocksDBLocalPersistence rocks = persistenceInjector.getInstance(PublishPayloadRocksDBLocalPersistence.class);
         for (int i = 0; i < 1000; i++) {
@@ -155,7 +154,7 @@ public class PublishPayloadTypeMigrationTest {
             rocks.put(i, ("message" + i).getBytes());
         }
 
-        Migrations.migrate(persistenceInjector, migrations, ImmutableSet.of());
+        Migrations.migrate(persistenceInjector, migrations);
 
         final PublishPayloadXodusLocalPersistence xodus = persistenceInjector.getInstance(PublishPayloadXodusLocalPersistence.class);
         for (int i = 0; i < 1000; i++) {
@@ -193,7 +192,7 @@ public class PublishPayloadTypeMigrationTest {
             persistence_4_2_x.put(i, ("message" + i).getBytes());
         }
 
-        Migrations.migrate(persistenceInjector, migrations, ImmutableSet.of());
+        Migrations.migrate(persistenceInjector, migrations);
         Migrations.afterMigration(systemInformation);
 
         //closing persistences
