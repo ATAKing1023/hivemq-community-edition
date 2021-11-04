@@ -28,7 +28,6 @@ import org.mockito.MockitoAnnotations;
 import java.io.File;
 
 import static org.junit.Assert.*;
-import static org.junit.Assert.assertNull;
 import static org.mockito.Mockito.when;
 
 /**
@@ -96,7 +95,7 @@ public class MetaFileServiceTest {
         metaInformation.setQueuedMessagesPersistenceVersion("20.1.3");
         metaInformation.setClientSessionPersistenceVersion("4.3.20");
         metaInformation.setPublishPayloadPersistenceVersion("6.3.33");
-        metaInformation.setPublishPayloadPersistenceType(PersistenceType.FILE);
+        metaInformation.setPublishPayloadPersistenceType(PersistenceType.FILE_NATIVE);
         metaInformation.setRetainedMessagesPersistenceType(PersistenceType.FILE_NATIVE);
 
         MetaFileService.writeMetaFile(systemInformation, metaInformation);
@@ -112,7 +111,7 @@ public class MetaFileServiceTest {
         assertEquals("20.1.3", metaFile.getQueuedMessagesPersistenceVersion());
         assertEquals("4.3.20", metaFile.getClientSessionPersistenceVersion());
         assertEquals("6.3.33", metaFile.getPublishPayloadPersistenceVersion());
-        assertEquals(PersistenceType.FILE, metaFile.getPublishPayloadPersistenceType());
+        assertEquals(PersistenceType.FILE_NATIVE, metaFile.getPublishPayloadPersistenceType());
         assertEquals(PersistenceType.FILE_NATIVE, metaFile.getRetainedMessagesPersistenceType());
     }
 

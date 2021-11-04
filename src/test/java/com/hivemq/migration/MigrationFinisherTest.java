@@ -16,17 +16,14 @@
 package com.hivemq.migration;
 
 import com.hivemq.configuration.info.SystemInformationImpl;
-import com.hivemq.configuration.service.InternalConfigurations;
 import com.hivemq.migration.meta.MetaFileService;
 import com.hivemq.migration.meta.MetaInformation;
 import com.hivemq.migration.meta.PersistenceType;
 import com.hivemq.persistence.clientqueue.ClientQueueXodusLocalPersistence;
 import com.hivemq.persistence.local.xodus.RetainedMessageRocksDBLocalPersistence;
-import com.hivemq.persistence.local.xodus.RetainedMessageXodusLocalPersistence;
 import com.hivemq.persistence.local.xodus.clientsession.ClientSessionSubscriptionXodusLocalPersistence;
 import com.hivemq.persistence.local.xodus.clientsession.ClientSessionXodusLocalPersistence;
 import com.hivemq.persistence.payload.PublishPayloadRocksDBLocalPersistence;
-import com.hivemq.persistence.payload.PublishPayloadXodusLocalPersistence;
 import com.hivemq.util.LocalPersistenceFileUtil;
 import org.junit.Test;
 
@@ -61,36 +58,6 @@ public class MigrationFinisherTest {
         assertEquals(ClientSessionSubscriptionXodusLocalPersistence.PERSISTENCE_VERSION, metaInformation.getSubscriptionPersistenceVersion());
         assertEquals(PersistenceType.FILE_NATIVE, metaInformation.getPublishPayloadPersistenceType());
         assertEquals(PersistenceType.FILE_NATIVE, metaInformation.getRetainedMessagesPersistenceType());
-
-    }
-
-    @Test
-    public void test_finish_xodus() {
-
-        final SystemInformationImpl systemInformation = new SystemInformationImpl();
-        systemInformation.setHivemqVersion("2019.1");
-        new File(systemInformation.getDataFolder(), LocalPersistenceFileUtil.PERSISTENCE_SUBFOLDER_NAME).mkdir();
-
-        InternalConfigurations.PAYLOAD_PERSISTENCE_TYPE.set(PersistenceType.FILE);
-        InternalConfigurations.RETAINED_MESSAGE_PERSISTENCE_TYPE.set(PersistenceType.FILE);
-
-        migrationFinisher = new MigrationFinisher(systemInformation);
-
-        migrationFinisher.finishMigration();
-
-        final MetaInformation metaInformation = MetaFileService.readMetaFile(systemInformation);
-
-        assertEquals("2019.1", metaInformation.getHivemqVersion());
-        assertEquals(PublishPayloadXodusLocalPersistence.PERSISTENCE_VERSION, metaInformation.getPublishPayloadPersistenceVersion());
-        assertEquals(RetainedMessageXodusLocalPersistence.PERSISTENCE_VERSION, metaInformation.getRetainedMessagesPersistenceVersion());
-        assertEquals(ClientSessionXodusLocalPersistence.PERSISTENCE_VERSION, metaInformation.getClientSessionPersistenceVersion());
-        assertEquals(ClientQueueXodusLocalPersistence.PERSISTENCE_VERSION, metaInformation.getQueuedMessagesPersistenceVersion());
-        assertEquals(ClientSessionSubscriptionXodusLocalPersistence.PERSISTENCE_VERSION, metaInformation.getSubscriptionPersistenceVersion());
-        assertEquals(PersistenceType.FILE, metaInformation.getPublishPayloadPersistenceType());
-        assertEquals(PersistenceType.FILE, metaInformation.getRetainedMessagesPersistenceType());
-
-        InternalConfigurations.PAYLOAD_PERSISTENCE_TYPE.set(PersistenceType.FILE_NATIVE);
-        InternalConfigurations.RETAINED_MESSAGE_PERSISTENCE_TYPE.set(PersistenceType.FILE_NATIVE);
 
     }
 }

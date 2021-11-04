@@ -23,11 +23,9 @@ import com.hivemq.migration.meta.MetaInformation;
 import com.hivemq.migration.meta.PersistenceType;
 import com.hivemq.persistence.clientqueue.ClientQueueXodusLocalPersistence;
 import com.hivemq.persistence.local.xodus.RetainedMessageRocksDBLocalPersistence;
-import com.hivemq.persistence.local.xodus.RetainedMessageXodusLocalPersistence;
 import com.hivemq.persistence.local.xodus.clientsession.ClientSessionSubscriptionXodusLocalPersistence;
 import com.hivemq.persistence.local.xodus.clientsession.ClientSessionXodusLocalPersistence;
 import com.hivemq.persistence.payload.PublishPayloadRocksDBLocalPersistence;
-import com.hivemq.persistence.payload.PublishPayloadXodusLocalPersistence;
 
 /**
  * @author Christoph Schäbel
@@ -57,8 +55,8 @@ class MigrationFinisher {
         metaFile.setClientSessionPersistenceVersion(ClientSessionXodusLocalPersistence.PERSISTENCE_VERSION);
         metaFile.setQueuedMessagesPersistenceVersion(ClientQueueXodusLocalPersistence.PERSISTENCE_VERSION);
         metaFile.setSubscriptionPersistenceVersion(ClientSessionSubscriptionXodusLocalPersistence.PERSISTENCE_VERSION);
-        metaFile.setRetainedMessagesPersistenceVersion(retainedType == PersistenceType.FILE ? RetainedMessageXodusLocalPersistence.PERSISTENCE_VERSION : RetainedMessageRocksDBLocalPersistence.PERSISTENCE_VERSION);
-        metaFile.setPublishPayloadPersistenceVersion(payloadType == PersistenceType.FILE ? PublishPayloadXodusLocalPersistence.PERSISTENCE_VERSION : PublishPayloadRocksDBLocalPersistence.PERSISTENCE_VERSION);
+        metaFile.setRetainedMessagesPersistenceVersion(RetainedMessageRocksDBLocalPersistence.PERSISTENCE_VERSION);
+        metaFile.setPublishPayloadPersistenceVersion(PublishPayloadRocksDBLocalPersistence.PERSISTENCE_VERSION);
         metaFile.setRetainedMessagesPersistenceType(retainedType);
         metaFile.setPublishPayloadPersistenceType(payloadType);
 

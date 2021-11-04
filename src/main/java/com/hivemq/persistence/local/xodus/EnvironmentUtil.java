@@ -15,9 +15,8 @@
  */
 package com.hivemq.persistence.local.xodus;
 
-import com.hivemq.extension.sdk.api.annotations.NotNull;
 import com.hivemq.configuration.service.InternalConfigurations;
-import com.hivemq.migration.meta.PersistenceType;
+import com.hivemq.extension.sdk.api.annotations.NotNull;
 import jetbrains.exodus.env.EnvironmentConfig;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -124,14 +123,10 @@ public class EnvironmentUtil {
 
         environmentConfig.setLogCacheUseNio(XODUS_LOG_CACHE_USE_NIO);
 
-        final PersistenceType payloadPersistenceType = InternalConfigurations.PAYLOAD_PERSISTENCE_TYPE.get();
-        final PersistenceType retainedMessagePersistenceType = InternalConfigurations.RETAINED_MESSAGE_PERSISTENCE_TYPE.get();
         // Use the default cache size if only xodus persistences are used.
-        if (payloadPersistenceType != PersistenceType.FILE && retainedMessagePersistenceType != PersistenceType.FILE) {
-            final int logCacheMemory = InternalConfigurations.XODUS_PERSISTENCE_LOG_MEMORY_PERCENTAGE;
-            log.trace("Setting log cache memory percentage for persistence {} to {}", name, logCacheMemory);
-            environmentConfig.setMemoryUsagePercentage(logCacheMemory);
-        }
+        final int logCacheMemory = InternalConfigurations.XODUS_PERSISTENCE_LOG_MEMORY_PERCENTAGE;
+        log.trace("Setting log cache memory percentage for persistence {} to {}", name, logCacheMemory);
+        environmentConfig.setMemoryUsagePercentage(logCacheMemory);
 
         return environmentConfig;
     }

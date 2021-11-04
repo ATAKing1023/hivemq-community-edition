@@ -25,7 +25,6 @@ import com.hivemq.migration.meta.PersistenceType;
 import com.hivemq.persistence.local.rheakv.PublishPayloadRheaKVLocalPersistence;
 import com.hivemq.persistence.payload.PublishPayloadLocalPersistence;
 import com.hivemq.persistence.payload.PublishPayloadRocksDBLocalPersistence;
-import com.hivemq.persistence.payload.PublishPayloadXodusLocalPersistence;
 import com.hivemq.util.LocalPersistenceFileUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -34,7 +33,8 @@ import javax.inject.Inject;
 import javax.inject.Provider;
 import java.io.File;
 
-import static com.hivemq.migration.meta.PersistenceType.*;
+import static com.hivemq.migration.meta.PersistenceType.FILE_DISTRIBUTED;
+import static com.hivemq.migration.meta.PersistenceType.FILE_NATIVE;
 
 /**
  * @author Florian Limpöck
@@ -48,19 +48,16 @@ public class PublishPayloadTypeMigration implements TypeMigration {
     private final @NotNull LocalPersistenceFileUtil localPersistenceFileUtil;
     private final @NotNull Provider<PublishPayloadRheaKVLocalPersistence> persistenceRheaKVProvider;
     private final @NotNull Provider<PublishPayloadRocksDBLocalPersistence> persistenceRocksDBProvider;
-    private final @NotNull Provider<PublishPayloadXodusLocalPersistence> persistenceXodusProvider;
 
     @Inject
     public PublishPayloadTypeMigration(final @NotNull SystemInformation systemInformation,
             final @NotNull LocalPersistenceFileUtil localPersistenceFileUtil,
             final @NotNull Provider<PublishPayloadRheaKVLocalPersistence> persistenceRheaKVProvider,
-            final @NotNull Provider<PublishPayloadRocksDBLocalPersistence> persistenceRocksDBProvider,
-            final @NotNull Provider<PublishPayloadXodusLocalPersistence> persistenceXodusProvider) {
+            final @NotNull Provider<PublishPayloadRocksDBLocalPersistence> persistenceRocksDBProvider) {
         this.systemInformation = systemInformation;
         this.localPersistenceFileUtil = localPersistenceFileUtil;
         this.persistenceRheaKVProvider = persistenceRheaKVProvider;
         this.persistenceRocksDBProvider = persistenceRocksDBProvider;
-        this.persistenceXodusProvider = persistenceXodusProvider;
     }
 
     @Override
@@ -72,7 +69,7 @@ public class PublishPayloadTypeMigration implements TypeMigration {
     }
 
     private boolean oldFolderMissing(final PersistenceType persistenceType) {
-        final String version = persistenceType == FILE ? PublishPayloadXodusLocalPersistence.PERSISTENCE_VERSION : PublishPayloadRocksDBLocalPersistence.PERSISTENCE_VERSION;
+        final String version = PublishPayloadRocksDBLocalPersistence.PERSISTENCE_VERSION;
         final File persistenceFolder = localPersistenceFileUtil.getVersionedLocalPersistenceFolder(PublishPayloadLocalPersistence.PERSISTENCE_NAME, version);
 
         final File publish_payload_store_0 = new File(persistenceFolder, "publish_payload_store_0");
@@ -105,8 +102,6 @@ public class PublishPayloadTypeMigration implements TypeMigration {
             return persistenceRheaKVProvider.get();
         } else if (type == FILE_NATIVE) {
             return persistenceRocksDBProvider.get();
-        } else if (type == FILE) {
-            return persistenceXodusProvider.get();
         } else {
             throw new IllegalArgumentException("Unknown persistence type " + type + " for publish payload migration");
         }
@@ -115,7 +110,7 @@ public class PublishPayloadTypeMigration implements TypeMigration {
     private void savePersistenceType(final @NotNull PersistenceType persistenceType) {
         final MetaInformation metaFile = MetaFileService.readMetaFile(systemInformation);
         metaFile.setPublishPayloadPersistenceType(persistenceType);
-        metaFile.setPublishPayloadPersistenceVersion(persistenceType == FILE ? PublishPayloadXodusLocalPersistence.PERSISTENCE_VERSION : PublishPayloadRocksDBLocalPersistence.PERSISTENCE_VERSION);
+        metaFile.setPublishPayloadPersistenceVersion(PublishPayloadRocksDBLocalPersistence.PERSISTENCE_VERSION);
         MetaFileService.writeMetaFile(systemInformation, metaFile);
     }
 

@@ -72,23 +72,16 @@ public class Migrations {
             return Collections.emptyMap();
         }
 
-        final PersistenceType previousRetainedType;
-        final PersistenceType previousPayloadType;
         if (!metaInformation.isMetaFilePresent()) {
-            log.trace("No meta file present, assuming HiveMQ version 2019.1 => Migration needed.");
-            MIGRATION_LOGGER.info("No meta file present, assuming HiveMQ version 2019.1 => Migration needed.");
-            previousPayloadType = PersistenceType.FILE;
-            previousRetainedType = PersistenceType.FILE;
-            final MetaInformation newMetaInformation = new MetaInformation();
-            newMetaInformation.setPublishPayloadPersistenceType(previousPayloadType);
-            newMetaInformation.setRetainedMessagesPersistenceType(previousRetainedType);
-            MetaFileService.writeMetaFile(systemInformation, newMetaInformation);
-        } else {
-            Preconditions.checkNotNull(metaInformation.getRetainedMessagesPersistenceType());
-            Preconditions.checkNotNull(metaInformation.getPublishPayloadPersistenceType());
-            previousRetainedType = metaInformation.getRetainedMessagesPersistenceType();
-            previousPayloadType = metaInformation.getPublishPayloadPersistenceType();
+            log.trace("No meta file present, skip migrations.");
+            MIGRATION_LOGGER.info("Skipping migration because no meta file present.");
+            return Collections.emptyMap();
         }
+
+        Preconditions.checkNotNull(metaInformation.getRetainedMessagesPersistenceType());
+        Preconditions.checkNotNull(metaInformation.getPublishPayloadPersistenceType());
+        final PersistenceType previousRetainedType = metaInformation.getRetainedMessagesPersistenceType();
+        final PersistenceType previousPayloadType = metaInformation.getPublishPayloadPersistenceType();
 
         final PersistenceType currentRetainedType = InternalConfigurations.RETAINED_MESSAGE_PERSISTENCE_TYPE.get();
         final PersistenceType currentPayloadType = InternalConfigurations.PAYLOAD_PERSISTENCE_TYPE.get();
