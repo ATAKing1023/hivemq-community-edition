@@ -130,7 +130,7 @@ public class RetainedMessageRheaKVLocalPersistence extends RheaKVLocalPersistenc
                 while (iterator.hasNext()) {
                     final KVEntry entry = iterator.next();
                     final RetainedMessage message = serializer.deserializeValue(entry.getValue());
-                    payloadPersistence.incrementReferenceCounterOnBootstrap(message.getPublishId());
+                    payloadPersistence.incrementReferenceCounterOnBootstrap(message.getUniqueId());
                     final String topic = serializer.deserializeKey(entry.getKey());
                     topicTrees[i].add(topic);
                     retainMessageCounter.incrementAndGet();
@@ -150,7 +150,7 @@ public class RetainedMessageRheaKVLocalPersistence extends RheaKVLocalPersistenc
                 while (iterator.hasNext()) {
                     final KVEntry entry = iterator.next();
                     final RetainedMessage message = serializer.deserializeValue(entry.getValue());
-                    payloadPersistence.incrementReferenceCounterOnBootstrap(message.getPublishId());
+                    payloadPersistence.incrementReferenceCounterOnBootstrap(message.getUniqueId());
                 }
             }
         } catch (final Exception e) {
@@ -172,7 +172,7 @@ public class RetainedMessageRheaKVLocalPersistence extends RheaKVLocalPersistenc
                 final KVEntry entry = iterator.next();
                 keys.add(entry.getKey());
                 final RetainedMessage message = serializer.deserializeValue(entry.getValue());
-                payloadPersistence.decrementReferenceCounter(message.getPublishId());
+                payloadPersistence.decrementReferenceCounter(message.getUniqueId());
                 retainMessageCounter.decrementAndGet();
             }
             if (!keys.isEmpty()) {
@@ -207,7 +207,7 @@ public class RetainedMessageRheaKVLocalPersistence extends RheaKVLocalPersistenc
             log.trace("Removing retained message for topic {}", topic);
             bucket.bDelete(key);
             topicTrees[bucketIndex].remove(topic);
-            payloadPersistence.decrementReferenceCounter(message.getPublishId());
+            payloadPersistence.decrementReferenceCounter(message.getUniqueId());
             retainMessageCounter.decrementAndGet();
         } catch (final Exception e) {
             log.error("An error occurred while removing a retained message.", e);
@@ -234,7 +234,7 @@ public class RetainedMessageRheaKVLocalPersistence extends RheaKVLocalPersistenc
         final byte[] messageAsBytes = bucket.bGet(serializer.serializeKey(topic));
         if (messageAsBytes != null) {
             final RetainedMessage message = serializer.deserializeValue(messageAsBytes);
-            final byte[] payload = payloadPersistence.getPayloadOrNull(message.getPublishId());
+            final byte[] payload = payloadPersistence.getPayloadOrNull(message.getUniqueId());
             if (payload == null) {
                 // In case the payload was just deleted, we return the new retained message for this topic (or null if it was removed).
                 if (retry < 100) {
@@ -270,7 +270,7 @@ public class RetainedMessageRheaKVLocalPersistence extends RheaKVLocalPersistenc
                 log.trace("Replacing retained message for topic {}", topic);
                 bucket.bPut(serializedTopic, serializer.serializeValue(retainedMessage));
                 // The previous retained message is replaced, so we have to decrement the reference count.
-                payloadPersistence.decrementReferenceCounter(retainedMessageFromStore.getPublishId());
+                payloadPersistence.decrementReferenceCounter(retainedMessageFromStore.getUniqueId());
             } else {
                 log.trace("Creating new retained message for topic {}", topic);
                 bucket.bPut(serializedTopic, serializer.serializeValue(retainedMessage));
@@ -312,7 +312,7 @@ public class RetainedMessageRheaKVLocalPersistence extends RheaKVLocalPersistenc
                 final RetainedMessage message = serializer.deserializeValue(entry.getValue());
                 if (PublishUtil.checkExpiry(message.getTimestamp(), message.getMessageExpiryInterval())) {
                     keys.add(entry.getKey());
-                    payloadPersistence.decrementReferenceCounter(message.getPublishId());
+                    payloadPersistence.decrementReferenceCounter(message.getUniqueId());
                     retainMessageCounter.decrementAndGet();
                     topicTree.remove(topic);
                 }
@@ -363,14 +363,14 @@ public class RetainedMessageRheaKVLocalPersistence extends RheaKVLocalPersistenc
                 continue;
             }
 
-            final byte[] payload = payloadPersistence.getPayloadOrNull(deserializedMessage.getPublishId());
+            final byte[] payload = payloadPersistence.getPayloadOrNull(deserializedMessage.getUniqueId());
 
             // ignore messages with no payload and log a warning for the fact
             if (payload == null) {
                 log.warn(
                         "Could not dereference payload for retained message on topic \"{}\" with payload id \"{}\".",
                         deserializedTopic,
-                        deserializedMessage.getPublishId());
+                        deserializedMessage.getUniqueId());
                 continue;
             }
             deserializedMessage.setMessage(payload);

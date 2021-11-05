@@ -167,7 +167,7 @@ public class PUBLISH extends MqttMessageWithUserProperties implements Mqtt3PUBLI
         } else {
             this.publishId = PUBLISH_COUNTER.getAndIncrement();
         }
-        this.uniqueId = getUniqueId(hivemqId, publishId);
+        this.uniqueId = getUniqueId(hivemqId, this.publishId);
 
         if (timestamp > -1) {
             this.timestamp = timestamp;
@@ -266,7 +266,7 @@ public class PUBLISH extends MqttMessageWithUserProperties implements Mqtt3PUBLI
         if (payload != null) {
             return payload;
         }
-        return persistence.get(publishId);
+        return persistence.get(uniqueId);
     }
 
     @NotNull

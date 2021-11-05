@@ -177,7 +177,7 @@ public class PublishDistributorImpl implements PublishDistributor {
 
     @NotNull
     private PUBLISH createPublish(@NotNull final PUBLISH publish, final int subscriptionQos, final boolean retainAsPublished, @Nullable final ImmutableIntArray subscriptionIdentifier) {
-        final boolean removePayload = payloadPersistence.add(publish.getPayload(), 1, publish.getPublishId());
+        final boolean removePayload = payloadPersistence.add(publish.getPayload(), 1, publish.getUniqueId());
         final ImmutableIntArray identifiers;
         if (subscriptionIdentifier == null) {
             identifiers = ImmutableIntArray.of();

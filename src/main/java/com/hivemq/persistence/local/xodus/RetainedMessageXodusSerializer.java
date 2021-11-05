@@ -81,7 +81,7 @@ public class RetainedMessageXodusSerializer {
         final int payloadFormatIndicator = retainedMessage.getPayloadFormatIndicator() != null ? retainedMessage.getPayloadFormatIndicator().getCode() : -1;
 
         int cursor = 0;
-        final byte[] bytes = new byte[25 + PropertiesSerializationUtil.encodedSize(retainedMessage.getUserProperties()) + responseTopicLength + 4 + contentTypeLength + 4 + correlationDataLength + 4 + 1];
+        final byte[] bytes = new byte[25 + PropertiesSerializationUtil.encodedSize(retainedMessage.getUserProperties()) + hivemqIdLength + 4 + responseTopicLength + 4 + contentTypeLength + 4 + correlationDataLength + 4 + 1];
 
         bytes[cursor] = ((byte) retainedMessage.getQos().getQosNumber());
         cursor += 1;

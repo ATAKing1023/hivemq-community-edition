@@ -26,7 +26,6 @@ import com.hivemq.mqtt.message.publish.PUBLISH;
 import com.hivemq.mqtt.message.publish.PUBLISHFactory;
 import com.hivemq.mqtt.message.pubrel.PUBREL;
 import com.hivemq.persistence.PersistenceStartup;
-import com.hivemq.persistence.clientsession.SharedSubscriptionService;
 import com.hivemq.persistence.local.xodus.EnvironmentUtil;
 import com.hivemq.persistence.local.xodus.bucket.BucketUtils;
 import com.hivemq.persistence.payload.PublishPayloadPersistence;
@@ -440,7 +439,7 @@ public class ClientQueueXodusLocalPersistenceTest {
 
         assertEquals(2, persistence.size("client", false, 0));
 
-        verify(payloadPersistence, times(1)).decrementReferenceCounter(anyLong());
+        verify(payloadPersistence, times(1)).decrementReferenceCounter(anyString());
     }
 
     @Test
@@ -475,7 +474,7 @@ public class ClientQueueXodusLocalPersistenceTest {
                 "client", false, createBigPublish(1, QoS.AT_MOST_ONCE, "topic5", 2, queueLimit), 100L, DISCARD, false,
                 0);
 
-        verify(payloadPersistence).decrementReferenceCounter(2);
+        verify(payloadPersistence).decrementReferenceCounter(PUBLISH.getUniqueId("hivemqId", 2));
         verify(messageDroppedService).qos0MemoryExceeded(eq("client"), eq("topic5"), eq(0), anyLong(), anyLong());
     }
 
@@ -490,7 +489,7 @@ public class ClientQueueXodusLocalPersistenceTest {
         persistence.add(
                 "group", true, createBigPublish(1, QoS.AT_MOST_ONCE, "topic5", 2, queueLimit), 100L, DISCARD, false, 0);
 
-        verify(payloadPersistence).decrementReferenceCounter(2);
+        verify(payloadPersistence).decrementReferenceCounter(PUBLISH.getUniqueId("hivemqId", 2));
         verify(messageDroppedService).qos0MemoryExceededShared(eq("group"), eq("topic5"), eq(0), anyLong(), anyLong());
     }
 
@@ -672,8 +671,7 @@ public class ClientQueueXodusLocalPersistenceTest {
         final ImmutableSet<String> sharedQueues = persistence.cleanUp(0);
 
         assertTrue(sharedQueues.isEmpty());
-        verify(payloadPersistence, times(5)).decrementReferenceCounter(
-                anyLong()); // 3 expired + 1 clear + 1 poll(readNew)
+        verify(payloadPersistence, times(5)).decrementReferenceCounter(anyString()); // 3 expired + 1 clear + 1 poll(readNew)
         assertEquals(1, persistence.size("client1", false, 0));
     }
 
@@ -733,7 +731,7 @@ public class ClientQueueXodusLocalPersistenceTest {
 
         assertEquals(2, persistence.size("group/topic", true, 0));
 
-        verify(payloadPersistence, times(1)).decrementReferenceCounter(anyLong());
+        verify(payloadPersistence, times(1)).decrementReferenceCounter(anyString());
     }
 
     @Test
@@ -755,7 +753,7 @@ public class ClientQueueXodusLocalPersistenceTest {
 
         assertEquals(3, persistence.size("group/topic", true, 0));
 
-        verify(payloadPersistence, never()).decrementReferenceCounter(anyLong());
+        verify(payloadPersistence, never()).decrementReferenceCounter(anyString());
     }
 
     @Test
@@ -770,7 +768,7 @@ public class ClientQueueXodusLocalPersistenceTest {
                 persistence.readNew("client1", false, ImmutableIntArray.of(1, 2, 3), 10000L, 0);
         assertEquals(1, messages.size());
 
-        verify(payloadPersistence, times(2)).decrementReferenceCounter(anyLong());
+        verify(payloadPersistence, times(2)).decrementReferenceCounter(anyString());
     }
 
     @Test
@@ -859,7 +857,7 @@ public class ClientQueueXodusLocalPersistenceTest {
         publishes.add(createBigPublish(1, QoS.AT_MOST_ONCE, "topic2", 2, queueLimit));
         persistence.add("client", false, publishes.build(), 100L, DISCARD, false, 0);
 
-        verify(payloadPersistence).decrementReferenceCounter(2);
+        verify(payloadPersistence).decrementReferenceCounter(PUBLISH.getUniqueId("hivemqId", 2));
         verify(messageDroppedService).qos0MemoryExceeded(eq("client"), eq("topic2"), eq(0), anyLong(), anyLong());
 
         assertEquals(1, persistence.size("client", false, 0));

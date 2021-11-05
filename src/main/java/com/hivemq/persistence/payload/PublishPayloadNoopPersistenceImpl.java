@@ -42,7 +42,7 @@ public class PublishPayloadNoopPersistenceImpl implements PublishPayloadPersiste
      * {@inheritDoc}
      */
     @Override
-    public boolean add(@NotNull final byte[] payload, final long referenceCount, final long payloadId) {
+    public boolean add(@NotNull final byte[] payload, final long referenceCount, final String payloadId) {
         return false;
     }
 
@@ -50,7 +50,7 @@ public class PublishPayloadNoopPersistenceImpl implements PublishPayloadPersiste
      * {@inheritDoc}
      */
     @Override
-    public byte @NotNull [] get(final long id) {
+    public byte @NotNull [] get(final String id) {
         throw new UnsupportedOperationException("With in-memory payloads must not be gotten.");
     }
 
@@ -59,7 +59,7 @@ public class PublishPayloadNoopPersistenceImpl implements PublishPayloadPersiste
      */
     //this method is allowed to return null
     @Override
-    public byte @Nullable [] getPayloadOrNull(final long id) {
+    public byte @Nullable [] getPayloadOrNull(final String id) {
         throw new UnsupportedOperationException("With in-memory payloads must not be gotten.");
     }
 
@@ -67,7 +67,7 @@ public class PublishPayloadNoopPersistenceImpl implements PublishPayloadPersiste
      * {@inheritDoc}
      */
     @Override
-    public void incrementReferenceCounterOnBootstrap(final long payloadId) {
+    public void incrementReferenceCounterOnBootstrap(final String payloadId) {
         //NOOP
     }
 
@@ -75,7 +75,7 @@ public class PublishPayloadNoopPersistenceImpl implements PublishPayloadPersiste
      * {@inheritDoc}
      */
     @Override
-    public void decrementReferenceCounter(final long id) {
+    public void decrementReferenceCounter(final String id) {
         //NOOP
     }
 
@@ -88,7 +88,7 @@ public class PublishPayloadNoopPersistenceImpl implements PublishPayloadPersiste
     @NotNull
     @Override
     @VisibleForTesting
-    public ImmutableMap<Long, AtomicLong> getReferenceCountersAsMap() {
+    public ImmutableMap<String, AtomicLong> getReferenceCountersAsMap() {
         throw new UnsupportedOperationException("getAllIds iys not supported for in-memory persistence");
     }
 

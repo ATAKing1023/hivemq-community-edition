@@ -25,7 +25,6 @@ import com.google.inject.Inject;
 import com.hivemq.bootstrap.ioc.lazysingleton.LazySingleton;
 import com.hivemq.configuration.service.FullConfigurationService;
 import com.hivemq.configuration.service.InternalConfigurations;
-import com.hivemq.exceptions.UnrecoverableException;
 import com.hivemq.extension.sdk.api.annotations.NotNull;
 import com.hivemq.extension.sdk.api.annotations.Nullable;
 import com.hivemq.migration.meta.PersistenceType;
@@ -53,8 +52,6 @@ public class PublishPayloadRheaKVLocalPersistence extends RheaKVLocalPersistence
     static final Logger log = LoggerFactory.getLogger(PublishPayloadRheaKVLocalPersistence.class);
 
     public static final String PERSISTENCE_VERSION = PublishPayloadRocksDBLocalPersistence.PERSISTENCE_VERSION;
-
-    private long maxId = 0;
 
     @Inject
     public PublishPayloadRheaKVLocalPersistence(
@@ -101,30 +98,13 @@ public class PublishPayloadRheaKVLocalPersistence extends RheaKVLocalPersistence
 
     @Override
     public void init() {
-        try {
-            long max = 0;
-            for (final RheaKVStore bucket : buckets) {
-                final RheaIterator<KVEntry> iterator = bucket.iterator((byte[]) null, null, DEFAULT_BUFFER_SIZE);
-                while (iterator.hasNext()) {
-                    final KVEntry entry = iterator.next();
-                    final long key = deserializeKey(entry.getKey());
-                    if (key > max) {
-                        max = key;
-                    }
-                }
-            }
-            maxId = max;
-        } catch (final Exception e) {
-            log.error("An error occurred while preparing the Publish Payload persistence.", e);
-            throw new UnrecoverableException(false);
-        }
     }
 
     @Override
-    public void put(final long id, @NotNull final byte[] payload) {
+    public void put(final String id, @NotNull final byte[] payload) {
         checkNotNull(payload, "payload must not be null");
 
-        final int index = getBucketIndex(Long.toString(id));
+        final int index = getBucketIndex(id);
         final RheaKVStore bucket = buckets[index];
         try {
             bucket.bPut(serializeKey(id), payload);
@@ -135,8 +115,8 @@ public class PublishPayloadRheaKVLocalPersistence extends RheaKVLocalPersistence
 
     @Nullable
     @Override
-    public byte[] get(final long id) {
-        final RheaKVStore bucket = getRheaKVStore(Long.toString(id));
+    public byte[] get(final String id) {
+        final RheaKVStore bucket = getRheaKVStore(id);
         try {
             return bucket.bGet(serializeKey(id));
         } catch (final Exception e) {
@@ -147,8 +127,8 @@ public class PublishPayloadRheaKVLocalPersistence extends RheaKVLocalPersistence
 
     @NotNull
     @Override
-    public ImmutableList<Long> getAllIds() {
-        final ImmutableList.Builder<Long> builder = ImmutableList.builder();
+    public ImmutableList<String> getAllIds() {
+        final ImmutableList.Builder<String> builder = ImmutableList.builder();
         for (final RheaKVStore bucket : buckets) {
             final RheaIterator<KVEntry> iterator = bucket.iterator((byte[]) null, null, DEFAULT_BUFFER_SIZE);
             while (iterator.hasNext()) {
@@ -160,11 +140,11 @@ public class PublishPayloadRheaKVLocalPersistence extends RheaKVLocalPersistence
     }
 
     @Override
-    public void remove(final long id) {
+    public void remove(final String id) {
         if (stopped.get()) {
             return;
         }
-        final RheaKVStore bucket = getRheaKVStore(Long.toString(id));
+        final RheaKVStore bucket = getRheaKVStore(id);
         try {
             bucket.bDelete(serializeKey(id));
         } catch (final Exception e) {
@@ -178,14 +158,9 @@ public class PublishPayloadRheaKVLocalPersistence extends RheaKVLocalPersistence
             final RheaIterator<KVEntry> iterator = bucket.iterator((byte[]) null, null, DEFAULT_BUFFER_SIZE);
             while (iterator.hasNext()) {
                 final KVEntry entry = iterator.next();
-                final long payloadId = deserializeKey(entry.getKey());
+                final String payloadId = deserializeKey(entry.getKey());
                 callback.call(payloadId, entry.getValue());
             }
         }
-    }
-
-    @Override
-    public long getMaxId() {
-        return maxId;
     }
 }

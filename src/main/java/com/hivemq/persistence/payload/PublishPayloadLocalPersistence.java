@@ -39,7 +39,7 @@ public interface PublishPayloadLocalPersistence extends LocalPersistence {
      * @param id      The payload id.
      * @param payload The payload to put.
      */
-    void put(long id, @NotNull byte[] payload);
+    void put(String id, @NotNull byte[] payload);
 
     /**
      * Get a payload for a specific id.
@@ -48,26 +48,21 @@ public interface PublishPayloadLocalPersistence extends LocalPersistence {
      * @return the payload for the id.
      */
     @Nullable
-    byte[] get(long id);
+    byte[] get(String id);
 
     /**
      * Remove a payload for a specific id.
      *
      * @param id The payload id.
      */
-    void remove(long id);
-
-    /**
-     * @return the highest identifier for which payloads are currently stored in the persistence.
-     */
-    long getMaxId();
+    void remove(String id);
 
     /**
      * @return all payload ids as a readonly list.
      */
     @ReadOnly
     @NotNull
-    ImmutableList<Long> getAllIds();
+    ImmutableList<String> getAllIds();
 
     /**
      * close the persistence with all buckets.
@@ -82,6 +77,6 @@ public interface PublishPayloadLocalPersistence extends LocalPersistence {
 
     @FunctionalInterface
     interface Callback {
-        void call(long id, @Nullable byte[] payload);
+        void call(String id, @Nullable byte[] payload);
     }
 }

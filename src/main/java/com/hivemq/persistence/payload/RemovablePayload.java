@@ -17,21 +17,23 @@ package com.hivemq.persistence.payload;
 
 import com.hivemq.extension.sdk.api.annotations.Immutable;
 
+import java.util.Objects;
+
 /**
  * @author Lukas Brandl
  */
 @Immutable
 public class RemovablePayload {
 
-    private final long id;
+    private final String id;
     private final long timestamp;
 
-    public RemovablePayload(final long id, final long timestamp) {
+    public RemovablePayload(final String id, final long timestamp) {
         this.id = id;
         this.timestamp = timestamp;
     }
 
-    public long getId() {
+    public String getId() {
         return id;
     }
 
@@ -46,15 +48,13 @@ public class RemovablePayload {
 
         final RemovablePayload that = (RemovablePayload) o;
 
-        if (id != that.id) return false;
+        if (!Objects.equals(id, that.id)) return false;
         return timestamp == that.timestamp;
 
     }
 
     @Override
     public int hashCode() {
-        int result = (int) (id ^ (id >>> 32));
-        result = 31 * result + (int) (timestamp ^ (timestamp >>> 32));
-        return result;
+        return Objects.hash(id, timestamp);
     }
 }

@@ -20,7 +20,6 @@ import com.google.common.collect.ImmutableList;
 import com.google.inject.Inject;
 import com.hivemq.bootstrap.ioc.lazysingleton.LazySingleton;
 import com.hivemq.configuration.service.InternalConfigurations;
-import com.hivemq.exceptions.UnrecoverableException;
 import com.hivemq.extension.sdk.api.annotations.NotNull;
 import com.hivemq.extension.sdk.api.annotations.Nullable;
 import com.hivemq.migration.meta.PersistenceType;
@@ -53,8 +52,6 @@ public class PublishPayloadRocksDBLocalPersistence extends RocksDBLocalPersisten
     private final boolean forceFlush;
 
 
-    private long maxId = 0;
-
     @NotNull
     private long[] rocksdbToMemTableSize;
 
@@ -74,16 +71,19 @@ public class PublishPayloadRocksDBLocalPersistence extends RocksDBLocalPersisten
         this.forceFlush = InternalConfigurations.PUBLISH_PAYLOAD_FORCE_FLUSH.get();
     }
 
+    @Override
     @NotNull
     protected String getName() {
         return PERSISTENCE_NAME;
     }
 
+    @Override
     @NotNull
     protected String getVersion() {
         return PERSISTENCE_VERSION;
     }
 
+    @Override
     @NotNull
     protected Logger getLogger() {
         return log;
@@ -96,6 +96,7 @@ public class PublishPayloadRocksDBLocalPersistence extends RocksDBLocalPersisten
                 .setStatistics(new Statistics());
     }
 
+    @Override
     @PostConstruct
     protected void postConstruct() {
         super.postConstruct();
@@ -103,33 +104,12 @@ public class PublishPayloadRocksDBLocalPersistence extends RocksDBLocalPersisten
 
     @Override
     public void init() {
-        try {
-            long max = 0;
-            for (final RocksDB bucket : buckets) {
-                try(final RocksIterator rocksIterator = bucket.newIterator()) {
-                    rocksIterator.seekToFirst();
-                    while (rocksIterator.isValid()) {
-                        final long key = deserializeKey(rocksIterator.key());
-                        if (key > max) {
-                            max = key;
-                        }
-                        rocksIterator.next();
-                    }
-                }
-            }
-            maxId = max;
-
-        } catch (final Exception e) {
-            log.error("An error occurred while preparing the Publish Payload persistence.");
-            log.debug("Original Exception:", e);
-            throw new UnrecoverableException(false);
-        }
     }
 
     @Override
-    public void put(final long id, @NotNull final byte[] payload) {
+    public void put(final String id, @NotNull final byte[] payload) {
         checkNotNull(payload, "payload must not be null");
-        final int index = getBucketIndex(Long.toString(id));
+        final int index = getBucketIndex(id);
         final RocksDB bucket = buckets[index];
         ;
         try {
@@ -157,8 +137,8 @@ public class PublishPayloadRocksDBLocalPersistence extends RocksDBLocalPersisten
 
     @Nullable
     @Override
-    public byte[] get(final long id) {
-        final RocksDB bucket = getRocksDb(Long.toString(id));
+    public byte[] get(final String id) {
+        final RocksDB bucket = getRocksDb(id);
         try {
             return bucket.get(serializeKey(id));
         } catch (final RocksDBException e) {
@@ -169,9 +149,9 @@ public class PublishPayloadRocksDBLocalPersistence extends RocksDBLocalPersisten
 
     @NotNull
     @Override
-    public ImmutableList<Long> getAllIds() {
+    public ImmutableList<String> getAllIds() {
 
-        final ImmutableList.Builder<Long> builder = ImmutableList.builder();
+        final ImmutableList.Builder<String> builder = ImmutableList.builder();
         for (final RocksDB bucket : buckets) {
             try(final RocksIterator rocksIterator = bucket.newIterator()) {
                 rocksIterator.seekToFirst();
@@ -187,11 +167,11 @@ public class PublishPayloadRocksDBLocalPersistence extends RocksDBLocalPersisten
     }
 
     @Override
-    public void remove(final long id) {
+    public void remove(final String id) {
         if (stopped.get()) {
             return;
         }
-        final RocksDB bucket = getRocksDb(Long.toString(id));
+        final RocksDB bucket = getRocksDb(id);
         try {
             bucket.delete(serializeKey(id));
         } catch (final RocksDBException e) {
@@ -206,7 +186,7 @@ public class PublishPayloadRocksDBLocalPersistence extends RocksDBLocalPersisten
             try(final RocksIterator rocksIterator = bucket.newIterator()) {
                 rocksIterator.seekToFirst();
                 while (rocksIterator.isValid()) {
-                    final long payloadId = deserializeKey(rocksIterator.key());
+                    final String payloadId = deserializeKey(rocksIterator.key());
                     callback.call(payloadId, rocksIterator.value());
                     rocksIterator.next();
                 }
@@ -218,11 +198,6 @@ public class PublishPayloadRocksDBLocalPersistence extends RocksDBLocalPersisten
     @VisibleForTesting
     long[] getRocksdbToMemTableSize() {
         return rocksdbToMemTableSize;
-    }
-
-    @Override
-    public long getMaxId() {
-        return maxId;
     }
 
     public long getMemtableSize() {

@@ -23,6 +23,7 @@ import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
 import com.google.common.util.concurrent.SettableFuture;
 import com.hivemq.bootstrap.ioc.lazysingleton.LazySingleton;
+import com.hivemq.configuration.HivemqId;
 import com.hivemq.configuration.service.InternalConfigurations;
 import com.hivemq.extension.sdk.api.annotations.NotNull;
 import com.hivemq.extension.sdk.api.annotations.Nullable;
@@ -32,6 +33,7 @@ import com.hivemq.extensions.iteration.MultipleChunkResult;
 import com.hivemq.logging.EventLog;
 import com.hivemq.mqtt.handler.disconnect.MqttServerDisconnector;
 import com.hivemq.mqtt.message.connect.MqttWillPublish;
+import com.hivemq.mqtt.message.publish.PUBLISH;
 import com.hivemq.mqtt.message.reason.Mqtt5DisconnectReasonCode;
 import com.hivemq.persistence.AbstractPersistence;
 import com.hivemq.persistence.ChannelPersistence;
@@ -166,7 +168,8 @@ public class ClientSessionPersistenceImpl extends AbstractPersistence implements
         ClientSessionWill sessionWill = null;
         if (willPublish != null) {
             final long publishId = PublishPayloadPersistenceImpl.createId();
-            final boolean removePayload = publishPayloadPersistence.add(willPublish.getPayload(), 1, publishId);
+            final boolean removePayload = publishPayloadPersistence.add(willPublish.getPayload(), 1,
+                    PUBLISH.getUniqueId(HivemqId.get(), publishId));
             if (removePayload) {
                 willPublish.setPayload(null);
             }

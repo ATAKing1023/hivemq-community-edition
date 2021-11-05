@@ -16,7 +16,9 @@
 package com.hivemq.persistence.payload;
 
 import com.google.common.util.concurrent.ListeningScheduledExecutorService;
+import com.hivemq.configuration.HivemqId;
 import com.hivemq.configuration.service.InternalConfigurations;
+import com.hivemq.mqtt.message.publish.PUBLISH;
 import net.openhft.hashing.LongHashFunction;
 import org.junit.After;
 import org.junit.Before;
@@ -30,7 +32,6 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
 
 import static org.junit.Assert.*;
-import static org.mockito.Matchers.anyLong;
 import static org.mockito.Mockito.*;
 
 /**
@@ -73,114 +74,114 @@ public class PublishPayloadPersistenceImplTest {
     public void add_new_entries() throws Exception {
         final byte[] payload1 = "payload1".getBytes();
         final byte[] payload2 = "payload2".getBytes();
-        persistence.add(payload1, 1, 123);
-        persistence.add(payload2, 2, 234);
+        persistence.add(payload1, 1, PUBLISH.getUniqueId(HivemqId.get(), 123));
+        persistence.add(payload2, 2, PUBLISH.getUniqueId(HivemqId.get(), 234));
 
-        assertEquals(1, persistence.referenceCounter.get(123L).get());
-        assertEquals(2, persistence.referenceCounter.get(234L).get());
-        assertNotNull(persistence.payloadCache.getIfPresent(123L));
-        assertNotNull(persistence.payloadCache.getIfPresent(234L));
+        assertEquals(1, persistence.referenceCounter.get(PUBLISH.getUniqueId(HivemqId.get(), 123)).get());
+        assertEquals(2, persistence.referenceCounter.get(PUBLISH.getUniqueId(HivemqId.get(), 234)).get());
+        assertNotNull(persistence.payloadCache.getIfPresent(PUBLISH.getUniqueId(HivemqId.get(), 123)));
+        assertNotNull(persistence.payloadCache.getIfPresent(PUBLISH.getUniqueId(HivemqId.get(), 234)));
     }
 
     @Test
     public void add_existent_entry() throws Exception {
         final byte[] payload = "payload".getBytes();
-        persistence.add(payload, 1, 123);
-        persistence.add(payload, 2, 123);
+        persistence.add(payload, 1, PUBLISH.getUniqueId(HivemqId.get(), 123));
+        persistence.add(payload, 2, PUBLISH.getUniqueId(HivemqId.get(), 123));
 
 
-        assertEquals(3, persistence.referenceCounter.get(123L).get());
-        assertNotNull(persistence.payloadCache.getIfPresent(123L));
+        assertEquals(3, persistence.referenceCounter.get(PUBLISH.getUniqueId(HivemqId.get(), 123)).get());
+        assertNotNull(persistence.payloadCache.getIfPresent(PUBLISH.getUniqueId(HivemqId.get(), 123)));
         assertEquals(1, persistence.payloadCache.size());
     }
 
     @Test
     public void get_from_cache() throws Exception {
         final byte[] payload = "payload".getBytes();
-        persistence.add(payload, 1, 123);
+        persistence.add(payload, 1, PUBLISH.getUniqueId(HivemqId.get(), 123));
 
         final long hash = hashFunction.hashBytes(payload);
 
-        assertEquals(1, persistence.referenceCounter.get(123L).get());
-        assertNotNull(persistence.payloadCache.getIfPresent(123L));
+        assertEquals(1, persistence.referenceCounter.get(PUBLISH.getUniqueId(HivemqId.get(), 123)).get());
+        assertNotNull(persistence.payloadCache.getIfPresent(PUBLISH.getUniqueId(HivemqId.get(), 123)));
         assertEquals(1, persistence.payloadCache.size());
 
-        final byte[] result = persistence.get(123);
+        final byte[] result = persistence.get(PUBLISH.getUniqueId(HivemqId.get(), 123));
 
-        verify(localPersistence, never()).get(anyLong());
-        assertEquals(true, Arrays.equals(payload, result));
+        verify(localPersistence, never()).get(anyString());
+        assertTrue(Arrays.equals(payload, result));
     }
 
     @Test
     public void get_from_local_persistence() throws Exception {
         final byte[] payload = "payload".getBytes();
-        persistence.add(payload, 1, 123);
+        persistence.add(payload, 1, PUBLISH.getUniqueId(HivemqId.get(), 123));
 
-        when(localPersistence.get(123)).thenReturn(payload);
-        persistence.payloadCache.invalidate(123L);
+        when(localPersistence.get(PUBLISH.getUniqueId(HivemqId.get(), 123))).thenReturn(payload);
+        persistence.payloadCache.invalidate(PUBLISH.getUniqueId(HivemqId.get(), 123));
 
-        assertEquals(1, persistence.referenceCounter.get(123L).get());
-        assertNull(persistence.payloadCache.getIfPresent(123L));
+        assertEquals(1, persistence.referenceCounter.get(PUBLISH.getUniqueId(HivemqId.get(), 123)).get());
+        assertNull(persistence.payloadCache.getIfPresent(PUBLISH.getUniqueId(HivemqId.get(), 123)));
         assertEquals(0, persistence.payloadCache.size());
 
-        final byte[] result = persistence.get(123);
+        final byte[] result = persistence.get(PUBLISH.getUniqueId(HivemqId.get(), 123));
 
-        verify(localPersistence, times(1)).get(anyLong());
-        assertEquals(true, Arrays.equals(payload, result));
+        verify(localPersistence, times(1)).get(anyString());
+        assertTrue(Arrays.equals(payload, result));
     }
 
     @Test(expected = PayloadPersistenceException.class)
     public void get_from_local_persistence_null_payload() throws Exception {
-        persistence.get(1);
+        persistence.get(PUBLISH.getUniqueId(HivemqId.get(), 1));
     }
 
     @Test
     public void get_from_local_persistence_retained_message_null_payload() throws Exception {
-        final byte[] bytes = persistence.getPayloadOrNull(1);
+        final byte[] bytes = persistence.getPayloadOrNull(PUBLISH.getUniqueId(HivemqId.get(), 1));
         assertNull(bytes);
     }
 
     @Test
     public void increment_new_reference_count() throws Exception {
-        persistence.incrementReferenceCounterOnBootstrap(0L);
-        assertEquals(1L, persistence.referenceCounter.get(0L).get());
+        persistence.incrementReferenceCounterOnBootstrap(PUBLISH.getUniqueId(HivemqId.get(), 0));
+        assertEquals(1L, persistence.referenceCounter.get(PUBLISH.getUniqueId(HivemqId.get(), 0)).get());
     }
 
     @Test
     public void increment_existing_reference_count() throws Exception {
-        persistence.referenceCounter.put(0L, new AtomicLong(1L));
-        persistence.incrementReferenceCounterOnBootstrap(0L);
-        assertEquals(2L, persistence.referenceCounter.get(0L).get());
+        persistence.referenceCounter.put(PUBLISH.getUniqueId(HivemqId.get(), 0), new AtomicLong(1L));
+        persistence.incrementReferenceCounterOnBootstrap(PUBLISH.getUniqueId(HivemqId.get(), 0));
+        assertEquals(2L, persistence.referenceCounter.get(PUBLISH.getUniqueId(HivemqId.get(), 0)).get());
     }
 
     @Test
     public void decrement_reference_count() throws Exception {
-        persistence.referenceCounter.put(0L, new AtomicLong(2L));
-        persistence.decrementReferenceCounter(0L);
-        assertEquals(1L, persistence.referenceCounter.get(0L).get());
+        persistence.referenceCounter.put(PUBLISH.getUniqueId(HivemqId.get(), 0), new AtomicLong(2L));
+        persistence.decrementReferenceCounter(PUBLISH.getUniqueId(HivemqId.get(), 0));
+        assertEquals(1L, persistence.referenceCounter.get(PUBLISH.getUniqueId(HivemqId.get(), 0)).get());
         assertEquals(0, persistence.removablePayloads.size());
     }
 
     @Test
     public void decrement_reference_count_to_zero() throws Exception {
-        persistence.referenceCounter.put(0L, new AtomicLong(1L));
-        persistence.decrementReferenceCounter(0L);
-        assertEquals(0L, persistence.referenceCounter.get(0L).get());
+        persistence.referenceCounter.put(PUBLISH.getUniqueId(HivemqId.get(), 0), new AtomicLong(1L));
+        persistence.decrementReferenceCounter(PUBLISH.getUniqueId(HivemqId.get(), 0));
+        assertEquals(0L, persistence.referenceCounter.get(PUBLISH.getUniqueId(HivemqId.get(), 0)).get());
         assertEquals(1, persistence.removablePayloads.size());
     }
 
     @Test
     public void decrement_reference_count_already_zero() throws Exception {
-        persistence.referenceCounter.put(0L, new AtomicLong(0L));
-        persistence.decrementReferenceCounter(0L);
-        assertEquals(0L, persistence.referenceCounter.get(0L).get());
+        persistence.referenceCounter.put(PUBLISH.getUniqueId(HivemqId.get(), 0), new AtomicLong(0L));
+        persistence.decrementReferenceCounter(PUBLISH.getUniqueId(HivemqId.get(), 0));
+        assertEquals(0L, persistence.referenceCounter.get(PUBLISH.getUniqueId(HivemqId.get(), 0)).get());
         assertEquals(0, persistence.removablePayloads.size());
     }
 
     @Test
     public void decrement_reference_count_null() throws Exception {
-        persistence.decrementReferenceCounter(0L);
-        assertNull(persistence.referenceCounter.get(0L));
+        persistence.decrementReferenceCounter(PUBLISH.getUniqueId(HivemqId.get(), 0));
+        assertNull(persistence.referenceCounter.get(PUBLISH.getUniqueId(HivemqId.get(), 0)));
         assertEquals(0, persistence.removablePayloads.size());
     }
 

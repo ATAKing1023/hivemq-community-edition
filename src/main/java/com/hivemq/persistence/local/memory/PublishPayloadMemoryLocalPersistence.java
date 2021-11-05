@@ -36,7 +36,7 @@ import java.util.Map;
 @Singleton
 public class PublishPayloadMemoryLocalPersistence implements PublishPayloadLocalPersistence {
 
-    private final Map<Long, byte[]>[] buckets;
+    private final Map<String, byte[]>[] buckets;
     private final int bucketCount;
 
     public PublishPayloadMemoryLocalPersistence() {
@@ -54,30 +54,24 @@ public class PublishPayloadMemoryLocalPersistence implements PublishPayloadLocal
     }
 
     @Override
-    public void put(final long id, @NotNull final byte[] payload) {
+    public void put(final String id, @NotNull final byte[] payload) {
         getBucket(id).put(id, payload);
     }
 
     @Override
-    public @Nullable byte[] get(final long id) {
+    public @Nullable byte[] get(final String id) {
         return getBucket(id).getOrDefault(id, new byte[0]);
     }
 
     @Override
-    public void remove(final long id) {
+    public void remove(final String id) {
         getBucket(id).remove(id);
     }
 
     @Override
-    public long getMaxId() {
-        // always 0
-        return 0;
-    }
-
-    @Override
-    public ImmutableList<Long> getAllIds() {
-        final ImmutableList.Builder<Long> builder = ImmutableList.builder();
-        for (final Map<Long, byte[]> bucket : buckets) {
+    public ImmutableList<String> getAllIds() {
+        final ImmutableList.Builder<String> builder = ImmutableList.builder();
+        for (final Map<String, byte[]> bucket : buckets) {
             builder.addAll(bucket.keySet());
         }
         return builder.build();
@@ -94,8 +88,8 @@ public class PublishPayloadMemoryLocalPersistence implements PublishPayloadLocal
                 "Iterate is only used for migrations which are not needed for memory persistences");
     }
 
-    private Map<Long, byte[]> getBucket(final long id) {
-        return buckets[BucketUtils.getBucket(String.valueOf(id), bucketCount)];
+    private Map<String, byte[]> getBucket(final String id) {
+        return buckets[BucketUtils.getBucket(id, bucketCount)];
     }
 
     @Override

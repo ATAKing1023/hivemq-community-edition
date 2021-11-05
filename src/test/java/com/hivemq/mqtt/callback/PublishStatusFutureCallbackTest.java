@@ -38,7 +38,6 @@ import java.util.concurrent.CancellationException;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import static org.mockito.Matchers.anyInt;
-import static org.mockito.Matchers.anyLong;
 import static org.mockito.Matchers.anyString;
 import static org.mockito.Mockito.*;
 
@@ -94,7 +93,7 @@ public class PublishStatusFutureCallbackTest {
     public void test_on_success_in_progress() {
 
         publishStatusFutureCallback.onSuccess(PublishStatus.IN_PROGRESS);
-        verify(payloadPersistence, never()).decrementReferenceCounter(anyLong());
+        verify(payloadPersistence, never()).decrementReferenceCounter(anyString());
 
     }
 
@@ -168,7 +167,7 @@ public class PublishStatusFutureCallbackTest {
     public void test_on_failure_cancelation() {
 
         publishStatusFutureCallback.onFailure(new CancellationException());
-        verify(payloadPersistence, never()).decrementReferenceCounter(anyLong());
+        verify(payloadPersistence, never()).decrementReferenceCounter(anyString());
 
     }
 
@@ -178,7 +177,7 @@ public class PublishStatusFutureCallbackTest {
         publish = TestMessageUtil.getDefaultPublishBuilder(payloadPersistence).withQoS(QoS.AT_MOST_ONCE).build();
         publishStatusFutureCallback = new PublishStatusFutureCallback(payloadPersistence, publishPollService, sharedSubscription, queueId, publish, messageIDPool, channel, client);
         publishStatusFutureCallback.onFailure(TestException.INSTANCE);
-        verify(payloadPersistence).decrementReferenceCounter(anyLong());
+        verify(payloadPersistence).decrementReferenceCounter(anyString());
 
     }
 }

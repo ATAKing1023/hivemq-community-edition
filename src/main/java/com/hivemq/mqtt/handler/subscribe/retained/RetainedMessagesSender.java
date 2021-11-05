@@ -200,7 +200,7 @@ public class RetainedMessagesSender {
         private void sendOutMessages(final @NotNull List<PUBLISH> retainedPublishes) {
             if (!channel.isActive()) {
                 for (final PUBLISH publish : retainedPublishes) {
-                    payloadPersistence.decrementReferenceCounter(publish.getPublishId());
+                    payloadPersistence.decrementReferenceCounter(publish.getUniqueId());
                 }
                 resultFuture.setException(CLOSED_CHANNEL_EXCEPTION);
                 return;
@@ -244,7 +244,7 @@ public class RetainedMessagesSender {
                         resultFuture.setException(new ClosedChannelException());
                     }
 
-                    payloadPersistence.decrementReferenceCounter(qos0Publish.getPublishId());
+                    payloadPersistence.decrementReferenceCounter(qos0Publish.getUniqueId());
                     if (qos0Publish.getPacketIdentifier() != 0) {
                         final MessageIDPool messageIDPool = messageIDPools.forClientOrNull(clientId);
                         if (messageIDPool != null) {
@@ -260,7 +260,7 @@ public class RetainedMessagesSender {
                         //response has already been sent by callback from ChannelInactiveHandler
                         return;
                     }
-                    payloadPersistence.decrementReferenceCounter(qos0Publish.getPublishId());
+                    payloadPersistence.decrementReferenceCounter(qos0Publish.getUniqueId());
                 }
             }, MoreExecutors.directExecutor());
 

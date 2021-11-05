@@ -128,6 +128,6 @@ public class PublishStatusFutureCallback implements FutureCallback<PublishStatus
             return;
         }
 
-        payloadPersistence.decrementReferenceCounter(publish.getPublishId());
+        payloadPersistence.decrementReferenceCounter(publish.getUniqueId());
     }
 }

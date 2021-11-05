@@ -24,6 +24,7 @@ import com.hivemq.extensions.iteration.BucketChunkResult;
 import com.hivemq.mqtt.message.QoS;
 import com.hivemq.mqtt.message.mqtt5.Mqtt5UserProperties;
 import com.hivemq.mqtt.message.mqtt5.MqttUserProperty;
+import com.hivemq.mqtt.message.publish.PUBLISH;
 import com.hivemq.persistence.PersistenceStartup;
 import com.hivemq.persistence.RetainedMessage;
 import com.hivemq.persistence.local.xodus.bucket.BucketUtils;
@@ -75,16 +76,16 @@ public class RetainedMessageRocksDBLocalPersistenceTest {
         when(localPersistenceFileUtil.getVersionedLocalPersistenceFolder(anyString(), anyString())).thenReturn(
                 temporaryFolder.newFolder());
 
-        when(payloadPersistence.getPayloadOrNull(0)).thenReturn("message0".getBytes());
-        when(payloadPersistence.get(0)).thenReturn("message0".getBytes());
-        when(payloadPersistence.getPayloadOrNull(1)).thenReturn("message1".getBytes());
-        when(payloadPersistence.get(1)).thenReturn("message1".getBytes());
-        when(payloadPersistence.getPayloadOrNull(2)).thenReturn("message2".getBytes());
-        when(payloadPersistence.get(2)).thenReturn("message2".getBytes());
-        when(payloadPersistence.getPayloadOrNull(3)).thenReturn("message3".getBytes());
-        when(payloadPersistence.get(3)).thenReturn("message3".getBytes());
-        when(payloadPersistence.getPayloadOrNull(4)).thenReturn("message4".getBytes());
-        when(payloadPersistence.get(4)).thenReturn("message4".getBytes());
+        when(payloadPersistence.getPayloadOrNull(PUBLISH.getUniqueId(HivemqId.get(), 0))).thenReturn("message0".getBytes());
+        when(payloadPersistence.get(PUBLISH.getUniqueId(HivemqId.get(), 0))).thenReturn("message0".getBytes());
+        when(payloadPersistence.getPayloadOrNull(PUBLISH.getUniqueId(HivemqId.get(), 1))).thenReturn("message1".getBytes());
+        when(payloadPersistence.get(PUBLISH.getUniqueId(HivemqId.get(), 1))).thenReturn("message1".getBytes());
+        when(payloadPersistence.getPayloadOrNull(PUBLISH.getUniqueId(HivemqId.get(), 2))).thenReturn("message2".getBytes());
+        when(payloadPersistence.get(PUBLISH.getUniqueId(HivemqId.get(), 2))).thenReturn("message2".getBytes());
+        when(payloadPersistence.getPayloadOrNull(PUBLISH.getUniqueId(HivemqId.get(), 3))).thenReturn("message3".getBytes());
+        when(payloadPersistence.get(PUBLISH.getUniqueId(HivemqId.get(), 3))).thenReturn("message3".getBytes());
+        when(payloadPersistence.getPayloadOrNull(PUBLISH.getUniqueId(HivemqId.get(), 4))).thenReturn("message4".getBytes());
+        when(payloadPersistence.get(PUBLISH.getUniqueId(HivemqId.get(), 4))).thenReturn("message4".getBytes());
 
         persistenceStartup = new PersistenceStartup();
 
@@ -176,8 +177,8 @@ public class RetainedMessageRocksDBLocalPersistenceTest {
         persistence.remove("topic/0", 0);
         persistence.remove("topic/1", 0);
 
-        verify(payloadPersistence).decrementReferenceCounter(0);
-        verify(payloadPersistence).decrementReferenceCounter(1);
+        verify(payloadPersistence).decrementReferenceCounter(PUBLISH.getUniqueId(HivemqId.get(), 0));
+        verify(payloadPersistence).decrementReferenceCounter(PUBLISH.getUniqueId(HivemqId.get(), 1));
 
         final Set<String> topics = persistence.topicTrees[0].get("#");
         assertTrue(topics.isEmpty());
@@ -199,8 +200,8 @@ public class RetainedMessageRocksDBLocalPersistenceTest {
                 new RetainedMessage(new byte[0], QoS.AT_MOST_ONCE, 1L, MqttConfigurationDefaults.TTL_DISABLED),
                 "topic/1", 0);
 
-        verify(payloadPersistence).decrementReferenceCounter(0);
-        verify(payloadPersistence).decrementReferenceCounter(1);
+        verify(payloadPersistence).decrementReferenceCounter(PUBLISH.getUniqueId(HivemqId.get(), 0));
+        verify(payloadPersistence).decrementReferenceCounter(PUBLISH.getUniqueId(HivemqId.get(), 1));
 
         final Set<String> topics = persistence.topicTrees[0].get("#");
         assertEquals(2, topics.size());
@@ -224,8 +225,8 @@ public class RetainedMessageRocksDBLocalPersistenceTest {
         assertNull(persistence.get("topic", 0));
         assertNotNull(persistence.get("topic2", 0));
 
-        verify(payloadPersistence).decrementReferenceCounter(1L);
-        verify(payloadPersistence, never()).decrementReferenceCounter(2L);
+        verify(payloadPersistence).decrementReferenceCounter(PUBLISH.getUniqueId(HivemqId.get(), 1L));
+        verify(payloadPersistence, never()).decrementReferenceCounter(PUBLISH.getUniqueId(HivemqId.get(), 2L));
     }
 
     @Test
@@ -287,7 +288,7 @@ public class RetainedMessageRocksDBLocalPersistenceTest {
         final BucketChunkResult<Map<String, @NotNull RetainedMessage>> chunk = persistence.getAllRetainedMessagesChunk(1, null, 100);
 
         assertEquals(1, chunk.getBucketIndex());
-        assertEquals(null, chunk.getLastKey());
+        assertNull(chunk.getLastKey());
         assertTrue(chunk.isFinished());
         assertTrue(chunk.getValue().isEmpty());
     }
@@ -300,14 +301,14 @@ public class RetainedMessageRocksDBLocalPersistenceTest {
         final BucketChunkResult<Map<String, @NotNull RetainedMessage>> chunk1 = persistence.getAllRetainedMessagesChunk(1, null, 1);
 
         assertEquals(1, chunk1.getBucketIndex());
-        assertTrue(chunk1.getLastKey() != null);
+        assertNotNull(chunk1.getLastKey());
         assertFalse(chunk1.isFinished());
         assertEquals(1, chunk1.getValue().size());
 
         final BucketChunkResult<Map<String, @NotNull RetainedMessage>> chunk2 = persistence.getAllRetainedMessagesChunk(1, chunk1.getLastKey(), 1);
 
         assertEquals(1, chunk2.getBucketIndex());
-        assertTrue(chunk2.getLastKey() != null);
+        assertNotNull(chunk2.getLastKey());
         assertTrue(chunk2.isFinished());
         assertEquals(1, chunk2.getValue().size());
     }
@@ -320,7 +321,7 @@ public class RetainedMessageRocksDBLocalPersistenceTest {
         final BucketChunkResult<Map<String, @NotNull RetainedMessage>> chunk = persistence.getAllRetainedMessagesChunk(1, null, Integer.MAX_VALUE);
 
         assertEquals(1, chunk.getBucketIndex());
-        assertTrue(chunk.getLastKey() != null);
+        assertNotNull(chunk.getLastKey());
         assertTrue(chunk.isFinished());
         assertEquals(2, chunk.getValue().size());
     }
@@ -333,7 +334,7 @@ public class RetainedMessageRocksDBLocalPersistenceTest {
         final BucketChunkResult<Map<String, @NotNull RetainedMessage>> chunk = persistence.getAllRetainedMessagesChunk(1, null, Integer.MAX_VALUE);
 
         assertEquals(1, chunk.getBucketIndex());
-        assertTrue(chunk.getLastKey() != null);
+        assertNotNull(chunk.getLastKey());
         assertTrue(chunk.isFinished());
         assertEquals(1, chunk.getValue().size());
     }
@@ -342,12 +343,12 @@ public class RetainedMessageRocksDBLocalPersistenceTest {
     public void getAllRetainedMessagesChunk_onlyMessagesWithPayload() {
         persistence.put(new RetainedMessage(new byte[0], QoS.AT_MOST_ONCE, 1L, 1000), "topic/1", 1);
         persistence.put(new RetainedMessage(new byte[0], QoS.AT_MOST_ONCE, 2L, 1000), "topic/2", 1);
-        when(payloadPersistence.getPayloadOrNull(2)).thenReturn(null);
+        when(payloadPersistence.getPayloadOrNull(PUBLISH.getUniqueId(HivemqId.get(), 2))).thenReturn(null);
 
         final BucketChunkResult<Map<String, @NotNull RetainedMessage>> chunk = persistence.getAllRetainedMessagesChunk(1, null, Integer.MAX_VALUE);
 
         assertEquals(1, chunk.getBucketIndex());
-        assertTrue(chunk.getLastKey() != null);
+        assertNotNull(chunk.getLastKey());
         assertTrue(chunk.isFinished());
         assertEquals(1, chunk.getValue().size());
     }

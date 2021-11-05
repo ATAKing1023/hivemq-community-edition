@@ -20,7 +20,6 @@ import com.google.common.collect.ImmutableMap;
 import com.hivemq.extension.sdk.api.annotations.NotNull;
 import com.hivemq.extension.sdk.api.annotations.Nullable;
 
-import java.util.List;
 import java.util.concurrent.atomic.AtomicLong;
 
 /**
@@ -42,7 +41,7 @@ public interface PublishPayloadPersistence {
      * @param payloadId      The publish ID is used a the payload ID
      * @return true: payload may be removed from the publish, false: dont remove the payload
      */
-    boolean add(@NotNull byte[] payload, long referenceCount, long payloadId);
+    boolean add(@NotNull byte[] payload, long referenceCount, String payloadId);
 
     /**
      * Get the persisted payload for an id.
@@ -52,7 +51,7 @@ public interface PublishPayloadPersistence {
      * @throws PayloadPersistenceException if {@link PublishPayloadLocalPersistence} returns null reference for id.
      */
     @NotNull
-    byte[] get(long id);
+    byte[] get(String id);
 
     /**
      * Get the persisted payload for an id or null.
@@ -62,7 +61,7 @@ public interface PublishPayloadPersistence {
      */
     @Nullable("There is a race condition case with retained messages where retained messages are overwritten. " +
             "In this case this method may return null")
-    byte[] getPayloadOrNull(long id);
+    byte[] getPayloadOrNull(String id);
 
     /**
      * Increments the current reference count for an id.
@@ -72,14 +71,14 @@ public interface PublishPayloadPersistence {
      *
      * @param id The id associated with the payload.
      */
-    void incrementReferenceCounterOnBootstrap(long id);
+    void incrementReferenceCounterOnBootstrap(String id);
 
     /**
      * Decrements the current reference count for an id.
      *
      * @param id The id associated with the payload.
      */
-    void decrementReferenceCounter(long id);
+    void decrementReferenceCounter(String id);
 
     /**
      * close the persistence with all buckets.
@@ -91,5 +90,5 @@ public interface PublishPayloadPersistence {
      */
     @NotNull
     @VisibleForTesting
-    ImmutableMap<Long, AtomicLong> getReferenceCountersAsMap();
+    ImmutableMap<String, AtomicLong> getReferenceCountersAsMap();
 }

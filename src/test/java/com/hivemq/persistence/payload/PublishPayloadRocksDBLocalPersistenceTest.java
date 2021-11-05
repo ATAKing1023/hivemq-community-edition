@@ -15,7 +15,9 @@
  */
 package com.hivemq.persistence.payload;
 
+import com.hivemq.configuration.HivemqId;
 import com.hivemq.configuration.service.InternalConfigurations;
+import com.hivemq.mqtt.message.publish.PUBLISH;
 import com.hivemq.persistence.PersistenceStartup;
 import com.hivemq.util.LocalPersistenceFileUtil;
 import org.apache.commons.lang3.RandomStringUtils;
@@ -28,7 +30,6 @@ import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
 import util.LogbackCapturingAppender;
 
-import java.util.Arrays;
 import java.util.List;
 
 import static org.junit.Assert.*;
@@ -81,14 +82,14 @@ public class PublishPayloadRocksDBLocalPersistenceTest {
         final byte[] payload1 = "payload".getBytes();
         final byte[] payload2 = "payload".getBytes();
 
-        persistence.put(0L, payload1);
-        persistence.put(1L, payload2);
+        persistence.put(PUBLISH.getUniqueId(HivemqId.get(), 0), payload1);
+        persistence.put(PUBLISH.getUniqueId(HivemqId.get(), 1), payload2);
 
-        final byte[] result1 = persistence.get(0L);
-        final byte[] result2 = persistence.get(1L);
+        final byte[] result1 = persistence.get(PUBLISH.getUniqueId(HivemqId.get(), 0));
+        final byte[] result2 = persistence.get(PUBLISH.getUniqueId(HivemqId.get(), 1));
 
-        assertEquals(true, Arrays.equals(result1, payload1));
-        assertEquals(true, Arrays.equals(result2, payload2));
+        assertArrayEquals(result1, payload1);
+        assertArrayEquals(result2, payload2);
     }
 
 
@@ -98,15 +99,15 @@ public class PublishPayloadRocksDBLocalPersistenceTest {
         final byte[] payload1 = "payload".getBytes();
         final byte[] payload2 = "payload".getBytes();
 
-        persistence.put(0L, payload1);
-        persistence.put(1L, payload2);
+        persistence.put(PUBLISH.getUniqueId(HivemqId.get(), 0), payload1);
+        persistence.put(PUBLISH.getUniqueId(HivemqId.get(), 1), payload2);
 
-        persistence.remove(1L);
+        persistence.remove(PUBLISH.getUniqueId(HivemqId.get(), 1));
 
-        final byte[] result1 = persistence.get(0L);
-        final byte[] result2 = persistence.get(1L);
+        final byte[] result1 = persistence.get(PUBLISH.getUniqueId(HivemqId.get(), 0));
+        final byte[] result2 = persistence.get(PUBLISH.getUniqueId(HivemqId.get(), 1));
 
-        assertEquals(true, Arrays.equals(result1, payload1));
+        assertArrayEquals(result1, payload1);
         assertNull(result2);
     }
 
@@ -116,14 +117,14 @@ public class PublishPayloadRocksDBLocalPersistenceTest {
         final byte[] payload1 = "payload".getBytes();
         final byte[] payload2 = RandomStringUtils.random(10 * 1024 * 1024 + 100, true, true).getBytes();
 
-        persistence.put(0L, payload1);
-        persistence.put(1L, payload2);
+        persistence.put(PUBLISH.getUniqueId(HivemqId.get(), 0), payload1);
+        persistence.put(PUBLISH.getUniqueId(HivemqId.get(), 1), payload2);
 
-        final byte[] result1 = persistence.get(0L);
-        final byte[] result2 = persistence.get(1L);
+        final byte[] result1 = persistence.get(PUBLISH.getUniqueId(HivemqId.get(), 0));
+        final byte[] result2 = persistence.get(PUBLISH.getUniqueId(HivemqId.get(), 1));
 
-        assertEquals(true, Arrays.equals(result1, payload1));
-        assertEquals(true, Arrays.equals(result2, payload2));
+        assertArrayEquals(result1, payload1);
+        assertArrayEquals(result2, payload2);
     }
 
     @Test
@@ -132,15 +133,15 @@ public class PublishPayloadRocksDBLocalPersistenceTest {
         final byte[] payload1 = "payload".getBytes();
         final byte[] payload2 = RandomStringUtils.random(10 * 1024 * 1024 + 100, true, true).getBytes();
 
-        persistence.put(0L, payload1);
-        persistence.put(1L, payload2);
+        persistence.put(PUBLISH.getUniqueId(HivemqId.get(), 0), payload1);
+        persistence.put(PUBLISH.getUniqueId(HivemqId.get(), 1), payload2);
 
-        persistence.remove(1L);
+        persistence.remove(PUBLISH.getUniqueId(HivemqId.get(), 1));
 
-        final byte[] result1 = persistence.get(0L);
-        final byte[] result2 = persistence.get(1L);
+        final byte[] result1 = persistence.get(PUBLISH.getUniqueId(HivemqId.get(), 0));
+        final byte[] result2 = persistence.get(PUBLISH.getUniqueId(HivemqId.get(), 1));
 
-        assertEquals(true, Arrays.equals(result1, payload1));
+        assertArrayEquals(result1, payload1);
         assertNull(result2);
     }
 
@@ -149,15 +150,15 @@ public class PublishPayloadRocksDBLocalPersistenceTest {
 
         final byte[] payload1 = "payload".getBytes();
 
-        persistence.put(0L, payload1);
-        persistence.put(1L, payload1);
-        persistence.put(2L, payload1);
+        persistence.put(PUBLISH.getUniqueId(HivemqId.get(), 0), payload1);
+        persistence.put(PUBLISH.getUniqueId(HivemqId.get(), 1), payload1);
+        persistence.put(PUBLISH.getUniqueId(HivemqId.get(), 2), payload1);
 
-        persistence.remove(1L);
+        persistence.remove(PUBLISH.getUniqueId(HivemqId.get(), 1));
 
-        final List<Long> allIds = persistence.getAllIds();
+        final List<String> allIds = persistence.getAllIds();
         assertEquals(2, allIds.size());
-        assertEquals(false, allIds.contains(1L));
+        assertFalse(allIds.contains(PUBLISH.getUniqueId(HivemqId.get(), 1)));
     }
 
 
@@ -174,7 +175,7 @@ public class PublishPayloadRocksDBLocalPersistenceTest {
                 }
                 assertEquals(bytesPuttedIn, memTableSize);
             }
-            persistence.put(0L, payload1);
+            persistence.put(PUBLISH.getUniqueId(HivemqId.get(), 0), payload1);
             bytesPuttedIn += payload1.length;
         }
         //after flush memTable must be empty (all -  because the others were empty already)
@@ -205,7 +206,7 @@ public class PublishPayloadRocksDBLocalPersistenceTest {
                 }
                 assertEquals(bytesPuttedIn, memTableSize);
             }
-            persistence.put(counter++, payload1);
+            persistence.put(PUBLISH.getUniqueId(HivemqId.get(), counter++), payload1);
             bytesPuttedIn += payload1.length;
         }
         //after flush memTable must be empty (all -  because the others were empty already)

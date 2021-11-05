@@ -638,7 +638,7 @@ public class ClientSessionXodusLocalPersistence extends XodusLocalPersistence im
         if (willPublish == null) {
             return;
         }
-        payloadPersistence.decrementReferenceCounter(willPublish.getPublishId());
+        payloadPersistence.decrementReferenceCounter(willPublish.getUniqueId());
     }
 
     private void dereferenceWillPayload(final ClientSession clientSession) {
@@ -649,10 +649,10 @@ public class ClientSessionXodusLocalPersistence extends XodusLocalPersistence im
         if (willPublish.getPayload() != null) {
             return;
         }
-        final byte[] payload = payloadPersistence.getPayloadOrNull(willPublish.getPublishId());
+        final byte[] payload = payloadPersistence.getPayloadOrNull(willPublish.getUniqueId());
         if (payload == null) {
             clientSession.setWillPublish(null);
-            log.warn("Will Payload for payloadid {} not found", willPublish.getPublishId());
+            log.warn("Will Payload for payloadid {} not found", willPublish.getUniqueId());
             return;
         }
         willPublish.getMqttWillPublish().setPayload(payload);

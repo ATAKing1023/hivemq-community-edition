@@ -166,7 +166,7 @@ public class RetainedMessageTypeMigration implements TypeMigration {
         public void onItem(final @NotNull String topic, final @NotNull RetainedMessage message) {
             try {
                 final int bucketIndex = BucketUtils.getBucket(topic, bucketCount);
-                final byte[] bytes = payloadLocalPersistence.get(message.getPublishId());
+                final byte[] bytes = payloadLocalPersistence.get(message.getUniqueId());
                 if (bytes == null) {
                     payloadExceptionLogging.addLogging(message.getPublishId(), true, topic);
                     return;

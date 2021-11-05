@@ -30,20 +30,20 @@ import java.util.concurrent.locks.Lock;
  */
 public class RemoveEntryTask implements Runnable {
 
-    private final Cache<Long, byte[]> payloadCache;
+    private final Cache<String, byte[]> payloadCache;
     private final PublishPayloadLocalPersistence localPersistence;
     private final BucketLock bucketLock;
     private final Queue<RemovablePayload> removablePayloads;
     private final long removeDelay;
-    private final ConcurrentHashMap<Long, AtomicLong> referenceCounter;
+    private final ConcurrentHashMap<String, AtomicLong> referenceCounter;
     private final long taskMaxDuration;
 
-    public RemoveEntryTask(final Cache<Long, byte[]> payloadCache,
+    public RemoveEntryTask(final Cache<String, byte[]> payloadCache,
                            final PublishPayloadLocalPersistence localPersistence,
                            final BucketLock bucketLock,
                            final Queue<RemovablePayload> removablePayloads,
                            final long removeDelay,
-                           final ConcurrentHashMap<Long, AtomicLong> referenceCounter,
+                           final ConcurrentHashMap<String, AtomicLong> referenceCounter,
                            final long taskMaxDuration) {
 
         this.payloadCache = payloadCache;
@@ -63,9 +63,9 @@ public class RemoveEntryTask implements Runnable {
             final long startTime = System.currentTimeMillis();
             while (removablePayload != null) {
                 if (System.currentTimeMillis() - removablePayload.getTimestamp() > removeDelay) {
-                    final Lock lock = bucketLock.get(Long.toString(removablePayload.getId()));
+                    final Lock lock = bucketLock.get(removablePayload.getId());
                     lock.lock();
-                    final long payloadId = removablePayload.getId();
+                    final String payloadId = removablePayload.getId();
                     try {
                         final AtomicLong referenceCount = referenceCounter.get(payloadId);
                         if (referenceCount == null) {

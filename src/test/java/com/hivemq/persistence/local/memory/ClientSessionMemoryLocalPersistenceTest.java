@@ -26,6 +26,7 @@ import com.hivemq.metrics.HiveMQMetrics;
 import com.hivemq.mqtt.message.QoS;
 import com.hivemq.mqtt.message.connect.MqttWillPublish;
 import com.hivemq.mqtt.message.mqtt5.Mqtt5UserProperties;
+import com.hivemq.mqtt.message.publish.PUBLISH;
 import com.hivemq.persistence.NoSessionException;
 import com.hivemq.persistence.PersistenceEntry;
 import com.hivemq.persistence.clientsession.ClientSession;
@@ -100,7 +101,7 @@ public class ClientSessionMemoryLocalPersistenceTest {
         final ClientSession clientSession =
                 persistence.getSession("clientid", BucketUtils.getBucket("clientid", BUCKET_COUNT));
 
-        assertEquals(true, clientSession.isConnected());
+        assertTrue(clientSession.isConnected());
 
         final ClientSession session = persistence.getSession("clientid");
         assertNotNull(session);
@@ -127,7 +128,7 @@ public class ClientSessionMemoryLocalPersistenceTest {
         final ClientSession clientSession =
                 persistence.getSession("clientid", bucket);
 
-        assertEquals(true, clientSession.isConnected());
+        assertTrue(clientSession.isConnected());
 
         final ClientSession session = persistence.getSession("clientid");
         assertNotNull(session);
@@ -156,7 +157,7 @@ public class ClientSessionMemoryLocalPersistenceTest {
         final ClientSession clientSession =
                 persistence.getSession("clientid", bucket);
 
-        assertEquals(true, clientSession.isConnected());
+        assertTrue(clientSession.isConnected());
 
         final ClientSession session = persistence.getSession("clientid");
         assertNotNull(session);
@@ -479,13 +480,13 @@ public class ClientSessionMemoryLocalPersistenceTest {
 
         assertNull(clientSession.getWillPublish());
 
-        verify(payloadPersistence).decrementReferenceCounter(1L);
+        verify(payloadPersistence).decrementReferenceCounter(PUBLISH.getUniqueId("HiveMQId", 1L));
     }
 
     @Test
     public void test_disconnected_send_will() {
 
-        when(payloadPersistence.getPayloadOrNull(anyLong())).thenReturn(new byte[]{});
+        when(payloadPersistence.getPayloadOrNull(anyString())).thenReturn(new byte[]{});
 
         final String client1 = TestBucketUtil.getId(1, BUCKET_COUNT);
 
@@ -502,13 +503,13 @@ public class ClientSessionMemoryLocalPersistenceTest {
         final ClientSession clientSession = persistence.disconnect(client1, 124L, true, 1, 0L);
 
         assertNotNull(clientSession.getWillPublish());
-        verify(payloadPersistence, never()).decrementReferenceCounter(1L);
+        verify(payloadPersistence, never()).decrementReferenceCounter(PUBLISH.getUniqueId("HiveMQId", 1L));
     }
 
     @Test
     public void test_remove_will() {
 
-        when(payloadPersistence.getPayloadOrNull(anyLong())).thenReturn(new byte[]{});
+        when(payloadPersistence.getPayloadOrNull(anyString())).thenReturn(new byte[]{});
         final String client1 = TestBucketUtil.getId(1, BUCKET_COUNT);
 
         persistence.put(client1, new ClientSession(true,
@@ -526,7 +527,7 @@ public class ClientSessionMemoryLocalPersistenceTest {
 
         assertEquals(124L, entry.getTimestamp());
         assertNotNull(entry.getObject());
-        verify(payloadPersistence).decrementReferenceCounter(1L);
+        verify(payloadPersistence).decrementReferenceCounter(PUBLISH.getUniqueId("HiveMQId", 1L));
     }
 
     @Test
@@ -547,7 +548,7 @@ public class ClientSessionMemoryLocalPersistenceTest {
         final PersistenceEntry<ClientSession> entry = persistence.removeWill(client1, 1);
 
         assertNull(entry);
-        verify(payloadPersistence, never()).decrementReferenceCounter(1L);
+        verify(payloadPersistence, never()).decrementReferenceCounter(PUBLISH.getUniqueId("HiveMQId", 1L));
     }
 
     @Test
@@ -723,7 +724,7 @@ public class ClientSessionMemoryLocalPersistenceTest {
         assertEquals(peak, memoryGauge.getValue().longValue());
 
         persistence.removeWill("client", 1);
-        final long reduced = memoryGauge.getValue().longValue();
+        final long reduced = memoryGauge.getValue();
         assertTrue(reduced > 0);
         assertTrue(peak > reduced);
 

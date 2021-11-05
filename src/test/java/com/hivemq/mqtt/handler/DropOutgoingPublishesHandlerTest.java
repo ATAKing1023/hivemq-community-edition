@@ -115,10 +115,10 @@ public class DropOutgoingPublishesHandlerTest {
         final PublishWithFuture publishWithFuture = new PublishWithFuture(publish, future, false, publishPayloadPersistence);
         final boolean messageDropped = handler.checkChannelNotWritable(ctx, publishWithFuture, promise);
         assertFalse(messageDropped);
-        assertEquals(false, future.isDone()); // will be set in the Ordered topic handler
+        assertFalse(future.isDone()); // will be set in the Ordered topic handler
         verify(promise, never()).setSuccess();
         verify(counter, never()).inc();
-        verify(publishPayloadPersistence, never()).decrementReferenceCounter(1);
+        verify(publishPayloadPersistence, never()).decrementReferenceCounter(PUBLISH.getUniqueId("hivemqId", 1));
     }
 
     @Test
@@ -137,9 +137,9 @@ public class DropOutgoingPublishesHandlerTest {
         final PublishWithFuture publishWithFuture = new PublishWithFuture(publish, future, false, publishPayloadPersistence);
         final boolean messageDropped = handler.checkChannelNotWritable(ctx, publishWithFuture, promise);
         assertFalse(messageDropped);
-        assertEquals(false, future.isDone()); // will be set in the Ordered topic handler
+        assertFalse(future.isDone()); // will be set in the Ordered topic handler
         verify(promise, never()).setSuccess();
         verify(counter, never()).inc();
-        verify(publishPayloadPersistence, never()).decrementReferenceCounter(1);
+        verify(publishPayloadPersistence, never()).decrementReferenceCounter(PUBLISH.getUniqueId("hivemqId", 1));
     }
 }

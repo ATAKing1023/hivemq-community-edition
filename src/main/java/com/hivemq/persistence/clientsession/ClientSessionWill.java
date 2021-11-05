@@ -21,6 +21,7 @@ import com.hivemq.extension.sdk.api.annotations.Nullable;
 import com.hivemq.mqtt.message.QoS;
 import com.hivemq.mqtt.message.connect.MqttWillPublish;
 import com.hivemq.mqtt.message.mqtt5.Mqtt5UserProperties;
+import com.hivemq.mqtt.message.publish.PUBLISH;
 import com.hivemq.persistence.Sizable;
 import com.hivemq.util.ObjectMemoryEstimation;
 
@@ -31,12 +32,14 @@ public class ClientSessionWill implements Sizable {
 
     private final @NotNull MqttWillPublish mqttWillPublish;
     private final long publishId;
+    private final @NotNull String uniqueId;
 
     private int inMemorySize = SIZE_NOT_CALCULATED;
 
-    public ClientSessionWill(final @NotNull MqttWillPublish mqttWillPublish, final long publishId) {
+    public ClientSessionWill(final @NotNull MqttWillPublish mqttWillPublish, final @NotNull long publishId) {
         this.mqttWillPublish = mqttWillPublish;
         this.publishId = publishId;
+        this.uniqueId = PUBLISH.getUniqueId(mqttWillPublish.getHivemqId(), publishId);
     }
 
     @NotNull
@@ -44,9 +47,13 @@ public class ClientSessionWill implements Sizable {
         return mqttWillPublish;
     }
 
-    @NotNull
     public long getPublishId() {
         return publishId;
+    }
+
+    @NotNull
+    public String getUniqueId() {
+        return uniqueId;
     }
 
     public long getDelayInterval() {
@@ -118,7 +125,8 @@ public class ClientSessionWill implements Sizable {
         int size = ObjectMemoryEstimation.objectShellSize(); // will himself
         size += ObjectMemoryEstimation.intSize(); // inMemorySize
 
-        size += ObjectMemoryEstimation.longWrapperSize(); //payload id
+        size += ObjectMemoryEstimation.longSize(); //payload id
+        size += ObjectMemoryEstimation.stringSize(uniqueId);
         size += ObjectMemoryEstimation.objectRefSize(); // will publish reference
         size += mqttWillPublish.getEstimatedSize();
 

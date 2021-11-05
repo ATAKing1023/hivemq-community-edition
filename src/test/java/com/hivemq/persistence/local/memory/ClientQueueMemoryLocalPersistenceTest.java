@@ -402,7 +402,7 @@ public class ClientQueueMemoryLocalPersistenceTest {
 
         assertEquals(2, persistence.size("client", false, 0));
 
-        verify(payloadPersistence, times(1)).decrementReferenceCounter(anyLong());
+        verify(payloadPersistence, times(1)).decrementReferenceCounter(anyString());
     }
 
     @Test
@@ -437,7 +437,7 @@ public class ClientQueueMemoryLocalPersistenceTest {
                 "client", false, createBigPublish(1, QoS.AT_MOST_ONCE, "topic5", 2, queueLimit), 100L, DISCARD, false,
                 0);
 
-        verify(payloadPersistence).decrementReferenceCounter(2);
+        verify(payloadPersistence).decrementReferenceCounter(PUBLISH.getUniqueId("hivemqId", 2));
         verify(messageDroppedService).qos0MemoryExceeded(eq("client"), eq("topic5"), eq(0), anyLong(), anyLong());
     }
 
@@ -452,7 +452,7 @@ public class ClientQueueMemoryLocalPersistenceTest {
         persistence.add(
                 "group", true, createBigPublish(1, QoS.AT_MOST_ONCE, "topic5", 2, queueLimit), 100L, DISCARD, false, 0);
 
-        verify(payloadPersistence).decrementReferenceCounter(2);
+        verify(payloadPersistence).decrementReferenceCounter(PUBLISH.getUniqueId("hivemqId", 2));
         verify(messageDroppedService).qos0MemoryExceededShared(eq("group"), eq("topic5"), eq(0), anyLong(), anyLong());
     }
 
@@ -634,8 +634,7 @@ public class ClientQueueMemoryLocalPersistenceTest {
         final ImmutableSet<String> sharedQueues = persistence.cleanUp(0);
 
         assertTrue(sharedQueues.isEmpty());
-        verify(payloadPersistence, times(5)).decrementReferenceCounter(
-                anyLong()); // 3 expired + 1 clear + 1 poll(readNew)
+        verify(payloadPersistence, times(5)).decrementReferenceCounter(anyString()); // 3 expired + 1 clear + 1 poll(readNew)
         assertEquals(1, persistence.size("client1", false, 0));
     }
 
@@ -652,8 +651,7 @@ public class ClientQueueMemoryLocalPersistenceTest {
         final ImmutableSet<String> sharedQueues = persistence.cleanUp(0);
 
         assertTrue(sharedQueues.isEmpty());
-        verify(payloadPersistence, times(2)).decrementReferenceCounter(
-                anyLong()); // 2 expired
+        verify(payloadPersistence, times(2)).decrementReferenceCounter(anyString()); // 2 expired
         assertEquals(0, persistence.size("client1", false, 0));
     }
 
@@ -670,8 +668,7 @@ public class ClientQueueMemoryLocalPersistenceTest {
         final ImmutableSet<String> sharedQueues = persistence.cleanUp(0);
 
         assertTrue(sharedQueues.isEmpty());
-        verify(payloadPersistence, times(2)).decrementReferenceCounter(
-                anyLong()); // 2 expired
+        verify(payloadPersistence, times(2)).decrementReferenceCounter(anyString()); // 2 expired
         assertEquals(0, persistence.size("client1", false, 0));
     }
 
@@ -696,8 +693,7 @@ public class ClientQueueMemoryLocalPersistenceTest {
         final ImmutableSet<String> sharedQueues = persistence.cleanUp(0);
 
         assertTrue(sharedQueues.isEmpty());
-        verify(payloadPersistence, times(2)).decrementReferenceCounter(
-                anyLong()); // 2 replaces
+        verify(payloadPersistence, times(2)).decrementReferenceCounter(anyString()); // 2 replaces
         assertEquals(2, persistence.size("client1", false, 0));
     }
 
@@ -729,8 +725,7 @@ public class ClientQueueMemoryLocalPersistenceTest {
         final ImmutableSet<String> sharedQueues = persistence.cleanUp(0);
 
         assertTrue(sharedQueues.isEmpty());
-        verify(payloadPersistence, times(2)).decrementReferenceCounter(
-                anyLong()); // 2 replaces
+        verify(payloadPersistence, times(2)).decrementReferenceCounter(anyString()); // 2 replaces
         assertEquals(0, persistence.size("client1", false, 0));
     }
 
@@ -790,7 +785,7 @@ public class ClientQueueMemoryLocalPersistenceTest {
 
         assertEquals(2, persistence.size("group/topic", true, 0));
 
-        verify(payloadPersistence, times(1)).decrementReferenceCounter(anyLong());
+        verify(payloadPersistence, times(1)).decrementReferenceCounter(anyString());
     }
 
     @Test
@@ -812,7 +807,7 @@ public class ClientQueueMemoryLocalPersistenceTest {
 
         assertEquals(3, persistence.size("group/topic", true, 0));
 
-        verify(payloadPersistence, never()).decrementReferenceCounter(anyLong());
+        verify(payloadPersistence, never()).decrementReferenceCounter(anyString());
     }
 
     @Test
@@ -840,7 +835,7 @@ public class ClientQueueMemoryLocalPersistenceTest {
                 persistence.readNew("client1", false, ImmutableIntArray.of(1, 2, 3), 10000L, 0);
         assertEquals(1, messages.size());
 
-        verify(payloadPersistence, times(2)).decrementReferenceCounter(anyLong());
+        verify(payloadPersistence, times(2)).decrementReferenceCounter(anyString());
 
         assertTrue(gauge.getValue() > 0);
         assertEquals(new PublishWithRetained(messages.get(0), false).getEstimatedSize() + ObjectMemoryEstimation.linkedListNodeOverhead(), gauge.getValue().longValue());
@@ -932,7 +927,7 @@ public class ClientQueueMemoryLocalPersistenceTest {
         publishes.add(createBigPublish(1, QoS.AT_MOST_ONCE, "topic2", 2, queueLimit));
         persistence.add("client", false, publishes.build(), 100L, DISCARD, false, 0);
 
-        verify(payloadPersistence).decrementReferenceCounter(2);
+        verify(payloadPersistence).decrementReferenceCounter(PUBLISH.getUniqueId("hivemqId", 2));
         verify(messageDroppedService).qos0MemoryExceeded(eq("client"), eq("topic2"), eq(0), anyLong(), anyLong());
 
         assertEquals(1, persistence.size("client", false, 0));

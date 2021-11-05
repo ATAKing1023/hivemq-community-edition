@@ -28,7 +28,6 @@ import com.hivemq.extensions.iteration.*;
 import com.hivemq.extensions.services.PluginServiceRateLimitService;
 import com.hivemq.extensions.services.executor.GlobalManagedExtensionExecutorService;
 import com.hivemq.mqtt.message.ProtocolVersion;
-import com.hivemq.mqtt.message.connect.MqttWillPublish;
 import com.hivemq.mqtt.message.reason.Mqtt5DisconnectReasonCode;
 import com.hivemq.persistence.clientsession.ClientSession;
 import com.hivemq.persistence.clientsession.ClientSessionPersistence;
@@ -207,7 +206,7 @@ public class ClientServiceImplTest {
         final Optional<SessionInformation> sessionInformation = clientService.getSession(clientId).get();
 
         assertTrue(sessionInformation.isPresent());
-        assertEquals(true, sessionInformation.get().isConnected());
+        assertTrue(sessionInformation.get().isConnected());
         assertEquals(clientId, sessionInformation.get().getClientIdentifier());
         assertEquals(sessionExpiry, sessionInformation.get().getSessionExpiryInterval());
     }
@@ -216,7 +215,7 @@ public class ClientServiceImplTest {
     public void test_disconnect_client_do_not_prevent_lwt_null_success() throws Throwable {
         when(clientSessionPersistence.forceDisconnectClient(clientId, false, EXTENSION, null, null)).thenReturn(
                 Futures.immediateFuture(null));
-        assertEquals(null, clientService.disconnectClient(clientId).get());
+        assertNull(clientService.disconnectClient(clientId).get());
     }
 
     @Test(timeout = 20000)
@@ -237,7 +236,7 @@ public class ClientServiceImplTest {
     public void test_disconnect_client_prevent_lwt_null_success() throws Throwable {
         when(clientSessionPersistence.forceDisconnectClient(clientId, true, EXTENSION, null, null)).thenReturn(
                 Futures.immediateFuture(null));
-        assertEquals(null, clientService.disconnectClient(clientId, true).get());
+        assertNull(clientService.disconnectClient(clientId, true).get());
     }
 
     @Test(timeout = 20000)
@@ -285,7 +284,7 @@ public class ClientServiceImplTest {
     @Test(timeout = 20000, expected = ExecutionException.class)
     public void test_invalidate_session_null_failed() throws Throwable {
         when(clientSessionPersistence.invalidateSession(clientId, EXTENSION)).thenReturn(Futures.immediateFuture(null));
-        assertEquals(null, clientService.invalidateSession(clientId).get());
+        assertNull(clientService.invalidateSession(clientId).get());
     }
 
     @Test(timeout = 20000)
@@ -319,7 +318,7 @@ public class ClientServiceImplTest {
 
     @NotNull
     private ClientSession getSession(final boolean connected) {
-        return new ClientSession(connected, sessionExpiry, new ClientSessionWill(mock(MqttWillPublish.class), 12345L), 23456L);
+        return new ClientSession(connected, sessionExpiry, mock(ClientSessionWill.class), 23456L);
     }
 
     @Test(timeout = 10000, expected = RateLimitExceededException.class)

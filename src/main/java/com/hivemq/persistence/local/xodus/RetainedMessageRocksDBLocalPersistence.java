@@ -126,10 +126,7 @@ public class RetainedMessageRocksDBLocalPersistence extends RocksDBLocalPersiste
                     iterator.seekToFirst();
                     while (iterator.isValid()) {
                         final RetainedMessage message = serializer.deserializeValue(iterator.value());
-                        final Long payloadId = message.getPublishId();
-                        if (payloadId != null) {
-                            payloadPersistence.incrementReferenceCounterOnBootstrap(payloadId);
-                        }
+                        payloadPersistence.incrementReferenceCounterOnBootstrap(message.getUniqueId());
                         final String topic = serializer.deserializeKey(iterator.key());
                         topicTrees[i].add(topic);
                         retainMessageCounter.incrementAndGet();
@@ -153,8 +150,7 @@ public class RetainedMessageRocksDBLocalPersistence extends RocksDBLocalPersiste
                     iterator.seekToFirst();
                     while (iterator.isValid()) {
                         final RetainedMessage message = serializer.deserializeValue(iterator.value());
-                        final long payloadId = message.getPublishId();
-                        payloadPersistence.incrementReferenceCounterOnBootstrap(payloadId);
+                        payloadPersistence.incrementReferenceCounterOnBootstrap(message.getUniqueId());
                         iterator.next();
                     }
                 }
@@ -180,7 +176,7 @@ public class RetainedMessageRocksDBLocalPersistence extends RocksDBLocalPersiste
             iterator.seekToFirst();
             while (iterator.isValid()) {
                 final RetainedMessage message = serializer.deserializeValue(iterator.value());
-                payloadPersistence.decrementReferenceCounter(message.getPublishId());
+                payloadPersistence.decrementReferenceCounter(message.getUniqueId());
                 retainMessageCounter.decrementAndGet();
                 writeBatch.delete(iterator.key());
                 iterator.next();
@@ -216,7 +212,7 @@ public class RetainedMessageRocksDBLocalPersistence extends RocksDBLocalPersiste
             log.trace("Removing retained message for topic {}", topic);
             bucket.delete(key);
             topicTrees[bucketIndex].remove(topic);
-            payloadPersistence.decrementReferenceCounter(message.getPublishId());
+            payloadPersistence.decrementReferenceCounter(message.getUniqueId());
             retainMessageCounter.decrementAndGet();
 
         } catch (final Exception e) {
@@ -248,7 +244,7 @@ public class RetainedMessageRocksDBLocalPersistence extends RocksDBLocalPersiste
         final byte[] messageAsBytes = bucket.get(serializer.serializeKey(topic));
         if (messageAsBytes != null) {
             final RetainedMessage message = serializer.deserializeValue(messageAsBytes);
-            final byte[] payload = payloadPersistence.getPayloadOrNull(message.getPublishId());
+            final byte[] payload = payloadPersistence.getPayloadOrNull(message.getUniqueId());
             if (payload == null) {
                 // In case the payload was just deleted, we return the new retained message for this topic (or null if it was removed).
                 if (retry < 100) {
@@ -285,7 +281,7 @@ public class RetainedMessageRocksDBLocalPersistence extends RocksDBLocalPersiste
                 log.trace("Replacing retained message for topic {}", topic);
                 bucket.put(serializedTopic, serializer.serializeValue(retainedMessage));
                 // The previous retained message is replaced, so we have to decrement the reference count.
-                payloadPersistence.decrementReferenceCounter(retainedMessageFromStore.getPublishId());
+                payloadPersistence.decrementReferenceCounter(retainedMessageFromStore.getUniqueId());
             } else {
                 log.trace("Creating new retained message for topic {}", topic);
                 bucket.put(serializedTopic, serializer.serializeValue(retainedMessage));
@@ -331,7 +327,7 @@ public class RetainedMessageRocksDBLocalPersistence extends RocksDBLocalPersiste
                 final RetainedMessage message = serializer.deserializeValue(iterator.value());
                 if (PublishUtil.checkExpiry(message.getTimestamp(), message.getMessageExpiryInterval())) {
                     writeBatch.delete(iterator.key());
-                    payloadPersistence.decrementReferenceCounter(message.getPublishId());
+                    payloadPersistence.decrementReferenceCounter(message.getUniqueId());
                     retainMessageCounter.decrementAndGet();
                     topicTree.remove(topic);
                 }
@@ -381,12 +377,12 @@ public class RetainedMessageRocksDBLocalPersistence extends RocksDBLocalPersiste
                     continue;
                 }
 
-                final byte[] payload = payloadPersistence.getPayloadOrNull(deserializedMessage.getPublishId());
+                final byte[] payload = payloadPersistence.getPayloadOrNull(deserializedMessage.getUniqueId());
 
                 // ignore messages with no payload and log a warning for the fact
                 if (payload == null) {
                     log.warn("Could not dereference payload for retained message on topic \"{}\" with payload id \"{}\".",
-                            deserializedTopic, deserializedMessage.getPublishId());
+                            deserializedTopic, deserializedMessage.getUniqueId());
                     iterator.next();
                     continue;
                 }

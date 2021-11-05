@@ -24,6 +24,7 @@ import com.hivemq.logging.EventLog;
 import com.hivemq.mqtt.message.QoS;
 import com.hivemq.mqtt.message.connect.MqttWillPublish;
 import com.hivemq.mqtt.message.mqtt5.Mqtt5UserProperties;
+import com.hivemq.mqtt.message.publish.PUBLISH;
 import com.hivemq.persistence.NoSessionException;
 import com.hivemq.persistence.PersistenceEntry;
 import com.hivemq.persistence.PersistenceStartup;
@@ -109,7 +110,7 @@ public class ClientSessionXodusLocalPersistenceTest {
 
         final ClientSession clientSession = persistence.getSession("clientid", BucketUtils.getBucket("clientid", BUCKET_COUNT));
 
-        assertEquals(false, clientSession.isConnected());
+        assertFalse(clientSession.isConnected());
 
         final ClientSession session = persistence.getSession("clientid");
         assertNotNull(session);
@@ -187,10 +188,10 @@ public class ClientSessionXodusLocalPersistenceTest {
         persistence.disconnect("clientid", 321L, false, BucketUtils.getBucket("clientid", BUCKET_COUNT), SESSION_EXPIRY_MAX);
         persistence.disconnect("clientid2", 4321L, false, BucketUtils.getBucket("clientid2", BUCKET_COUNT), SESSION_EXPIRY_MAX);
 
-        assertEquals(false, persistence.getSession("clientid").isConnected());
+        assertFalse(persistence.getSession("clientid").isConnected());
         assertEquals(321L, persistence.getTimestamp("clientid").longValue());
 
-        assertEquals(false, persistence.getSession("clientid2", false).isConnected());
+        assertFalse(persistence.getSession("clientid2", false).isConnected());
         assertEquals(4321L, persistence.getTimestamp("clientid2").longValue());
     }
 
@@ -353,13 +354,13 @@ public class ClientSessionXodusLocalPersistenceTest {
 
         assertNull(clientSession.getWillPublish());
 
-        verify(payloadPersistence).decrementReferenceCounter(1L);
+        verify(payloadPersistence).decrementReferenceCounter(PUBLISH.getUniqueId("HiveMQId", 1L));
     }
 
     @Test
     public void test_disconnected_send_will() {
 
-        when(payloadPersistence.getPayloadOrNull(anyLong())).thenReturn(new byte[]{});
+        when(payloadPersistence.getPayloadOrNull(anyString())).thenReturn(new byte[]{});
 
         final String client1 = TestBucketUtil.getId(1, BUCKET_COUNT);
 
@@ -372,13 +373,13 @@ public class ClientSessionXodusLocalPersistenceTest {
         final ClientSession clientSession = persistence.disconnect(client1, 124L, true, 1, 0L);
 
         assertNotNull(clientSession.getWillPublish());
-        verify(payloadPersistence, never()).decrementReferenceCounter(1L);
+        verify(payloadPersistence, never()).decrementReferenceCounter(PUBLISH.getUniqueId("HiveMQId", 1L));
     }
 
     @Test
     public void test_remove_will() {
 
-        when(payloadPersistence.getPayloadOrNull(anyLong())).thenReturn(new byte[]{});
+        when(payloadPersistence.getPayloadOrNull(anyString())).thenReturn(new byte[]{});
         final String client1 = TestBucketUtil.getId(1, BUCKET_COUNT);
 
         persistence.put(client1, new ClientSession(true, SESSION_EXPIRY_MAX,
@@ -392,7 +393,7 @@ public class ClientSessionXodusLocalPersistenceTest {
 
         assertEquals(124L, entry.getTimestamp());
         assertNotNull(entry.getObject());
-        verify(payloadPersistence).decrementReferenceCounter(1L);
+        verify(payloadPersistence).decrementReferenceCounter(PUBLISH.getUniqueId("HiveMQId", 1L));
     }
 
     @Test
@@ -409,7 +410,7 @@ public class ClientSessionXodusLocalPersistenceTest {
         final PersistenceEntry<ClientSession> entry = persistence.removeWill(client1, 1);
 
         assertNull(entry);
-        verify(payloadPersistence, never()).decrementReferenceCounter(1L);
+        verify(payloadPersistence, never()).decrementReferenceCounter(PUBLISH.getUniqueId("HiveMQId", 1L));
     }
 
     @Test
@@ -439,7 +440,7 @@ public class ClientSessionXodusLocalPersistenceTest {
                 System.currentTimeMillis(), bucketIndex);
 
         final ClientSession session = persistence.getSession("clientId", bucketIndex);
-        assertEquals(null, session.getWillPublish());
+        assertNull(session.getWillPublish());
     }
 
 

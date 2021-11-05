@@ -15,9 +15,9 @@
  */
 package com.hivemq.persistence.payload;
 
-import com.google.common.primitives.Longs;
 import com.hivemq.extension.sdk.api.annotations.NotNull;
-import com.hivemq.util.Bytes;
+
+import java.nio.charset.StandardCharsets;
 
 /**
  * @author Florian Limpöck
@@ -25,11 +25,11 @@ import com.hivemq.util.Bytes;
 public class PublishPayloadRocksDBSerializer {
 
     @NotNull
-    public static byte[] serializeKey(final long id) {
-        return Longs.toByteArray(id);
+    public static byte[] serializeKey(final String id) {
+        return id.getBytes(StandardCharsets.UTF_8);
     }
 
-    public static long deserializeKey(final @NotNull byte[] bytes) {
-        return Longs.fromByteArray(bytes);
+    public static String deserializeKey(final @NotNull byte[] bytes) {
+        return new String(bytes, StandardCharsets.UTF_8);
     }
 }

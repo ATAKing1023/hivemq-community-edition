@@ -23,6 +23,7 @@ import com.google.common.util.concurrent.ListenableScheduledFuture;
 import com.google.common.util.concurrent.ListeningScheduledExecutorService;
 import com.google.inject.Inject;
 import com.hivemq.bootstrap.ioc.lazysingleton.LazySingleton;
+import com.hivemq.configuration.HivemqId;
 import com.hivemq.configuration.service.InternalConfigurations;
 import com.hivemq.extension.sdk.api.annotations.NotNull;
 import com.hivemq.extension.sdk.api.annotations.Nullable;
@@ -31,7 +32,6 @@ import com.hivemq.persistence.ioc.annotation.PayloadPersistence;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.List;
 import java.util.Queue;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.LinkedTransferQueue;
@@ -58,8 +58,8 @@ public class PublishPayloadPersistenceImpl implements PublishPayloadPersistence 
 
     private final @NotNull BucketLock bucketLock;
 
-    @NotNull Cache<Long, byte[]> payloadCache;
-    final ConcurrentHashMap<Long, AtomicLong> referenceCounter = new ConcurrentHashMap<>();
+    @NotNull Cache<String, byte[]> payloadCache;
+    final ConcurrentHashMap<String, AtomicLong> referenceCounter = new ConcurrentHashMap<>();
     final Queue<RemovablePayload> removablePayloads = new LinkedTransferQueue<>();
 
     private @Nullable ListenableScheduledFuture<?> removeTaskFuture;
@@ -103,7 +103,7 @@ public class PublishPayloadPersistenceImpl implements PublishPayloadPersistence 
      * {@inheritDoc}
      */
     @Override
-    public boolean add(@NotNull final byte[] payload, final long referenceCount, final long payloadId) {
+    public boolean add(@NotNull final byte[] payload, final long referenceCount, final String payloadId) {
         checkNotNull(payload, "Payload must not be null");
         accessBucket(payloadId, () -> {
             final AtomicLong counter = referenceCounter.get(payloadId);
@@ -127,7 +127,7 @@ public class PublishPayloadPersistenceImpl implements PublishPayloadPersistence 
      */
     //this method is not allowed to return null
     @Override
-    public byte @NotNull [] get(final long id) {
+    public byte @NotNull [] get(final String id) {
 
         final byte[] payload = getPayloadOrNull(id);
 
@@ -142,7 +142,7 @@ public class PublishPayloadPersistenceImpl implements PublishPayloadPersistence 
      */
     //this method is allowed to return null
     @Override
-    public byte @Nullable [] getPayloadOrNull(final long id) {
+    public byte @Nullable [] getPayloadOrNull(final String id) {
         final byte[] cachedPayload = payloadCache.getIfPresent(id);
         // We don't need to lock here.
         // In case of a lost update issue, we would just overwrite the cache entry with the same payload.
@@ -170,7 +170,7 @@ public class PublishPayloadPersistenceImpl implements PublishPayloadPersistence 
      * {@inheritDoc}
      */
     @Override
-    public void incrementReferenceCounterOnBootstrap(final long payloadId) {
+    public void incrementReferenceCounterOnBootstrap(final String payloadId) {
         // Since this method is only called during bootstrap, it is not performance critical.
         // Therefore locking is not an issue here.
         accessBucket(payloadId, () -> {
@@ -187,7 +187,7 @@ public class PublishPayloadPersistenceImpl implements PublishPayloadPersistence 
      * {@inheritDoc}
      */
     @Override
-    public void decrementReferenceCounter(final long id) {
+    public void decrementReferenceCounter(final String id) {
         final AtomicLong counter = referenceCounter.get(id);
         if (counter == null || counter.get() <= 0) {
             log.warn("Tried to decrement a payload reference counter ({}) that was already zero.", id);
@@ -228,13 +228,13 @@ public class PublishPayloadPersistenceImpl implements PublishPayloadPersistence 
     @NotNull
     @Override
     @VisibleForTesting
-    public ImmutableMap<Long, AtomicLong> getReferenceCountersAsMap() {
+    public ImmutableMap<String, AtomicLong> getReferenceCountersAsMap() {
         return ImmutableMap.copyOf(referenceCounter);
     }
 
-    private void accessBucket(final long payloadId, final @NotNull BucketAccessCallback callback) {
+    private void accessBucket(final String payloadId, final @NotNull BucketAccessCallback callback) {
         checkNotNull(payloadId);
-        final Lock lock = bucketLock.get(Long.toString(payloadId));
+        final Lock lock = bucketLock.get(payloadId);
         lock.lock();
         try {
             callback.call();
@@ -245,6 +245,10 @@ public class PublishPayloadPersistenceImpl implements PublishPayloadPersistence 
 
     public static long createId() {
         return PUBLISH.PUBLISH_COUNTER.getAndIncrement();
+    }
+
+    public static String createUniqueId() {
+        return PUBLISH.getUniqueId(HivemqId.get(), createId());
     }
 
     @FunctionalInterface
