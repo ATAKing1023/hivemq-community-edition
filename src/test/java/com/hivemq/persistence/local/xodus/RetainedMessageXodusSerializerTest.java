@@ -16,6 +16,7 @@
 package com.hivemq.persistence.local.xodus;
 
 import com.hivemq.codec.encoder.mqtt5.Mqtt5PayloadFormatIndicator;
+import com.hivemq.configuration.HivemqId;
 import com.hivemq.mqtt.message.QoS;
 import com.hivemq.mqtt.message.mqtt5.Mqtt5UserProperties;
 import com.hivemq.mqtt.message.mqtt5.MqttUserProperty;
@@ -64,7 +65,7 @@ public class RetainedMessageXodusSerializerTest {
     public void test_serializeValue_qos0() throws Exception {
 
 
-        final byte[] value = serializer.serializeValue(new RetainedMessage(new byte[]{5, 5, 5}, QoS.AT_MOST_ONCE, 10L, 10, Mqtt5UserProperties.NO_USER_PROPERTIES, null, null, null, null, 1231321231320L));
+        final byte[] value = serializer.serializeValue(new RetainedMessage(new byte[]{5, 5, 5}, QoS.AT_MOST_ONCE, 10L, HivemqId.get(), 10, Mqtt5UserProperties.NO_USER_PROPERTIES, null, null, null, null, 1231321231320L));
 
         final byte[] expected = new byte[38 + PropertiesSerializationUtil.encodedSize(Mqtt5UserProperties.NO_USER_PROPERTIES)];
         expected[0] = 0b0000_0000;
@@ -103,7 +104,7 @@ public class RetainedMessageXodusSerializerTest {
     @Test
     public void test_serializeValue_qos1() throws Exception {
 
-        final byte[] value = serializer.serializeValue(new RetainedMessage(new byte[]{5, 5, 5}, QoS.AT_LEAST_ONCE, 10L, 10, Mqtt5UserProperties.NO_USER_PROPERTIES, null, null, null, null, 1231321231321L));
+        final byte[] value = serializer.serializeValue(new RetainedMessage(new byte[]{5, 5, 5}, QoS.AT_LEAST_ONCE, 10L, HivemqId.get(), 10, Mqtt5UserProperties.NO_USER_PROPERTIES, null, null, null, null, 1231321231321L));
 
         final byte[] expected = new byte[38 + PropertiesSerializationUtil.encodedSize(Mqtt5UserProperties.NO_USER_PROPERTIES)];
         expected[0] = 0b0000_0001;
@@ -144,7 +145,7 @@ public class RetainedMessageXodusSerializerTest {
     public void test_serializeValue_qos2() throws Exception {
 
 
-        final byte[] value = serializer.serializeValue(new RetainedMessage(new byte[]{5, 5, 5}, QoS.EXACTLY_ONCE, 10L, 10, Mqtt5UserProperties.NO_USER_PROPERTIES, null, null, null, null, 1231321231302L));
+        final byte[] value = serializer.serializeValue(new RetainedMessage(new byte[]{5, 5, 5}, QoS.EXACTLY_ONCE, 10L, HivemqId.get(), 10, Mqtt5UserProperties.NO_USER_PROPERTIES, null, null, null, null, 1231321231302L));
 
         final byte[] expected = new byte[38 + PropertiesSerializationUtil.encodedSize(Mqtt5UserProperties.NO_USER_PROPERTIES)];
         expected[0] = 0b0000_0010;
@@ -186,7 +187,7 @@ public class RetainedMessageXodusSerializerTest {
 
         final long now = System.currentTimeMillis();
 
-        final RetainedMessage retainedMessage = new RetainedMessage(new byte[]{5, 5, 5}, QoS.AT_MOST_ONCE, 1L, 10, Mqtt5UserProperties.of(MqttUserProperty.of("name", "value")),
+        final RetainedMessage retainedMessage = new RetainedMessage(new byte[]{5, 5, 5}, QoS.AT_MOST_ONCE, 1L, HivemqId.get(), 10, Mqtt5UserProperties.of(MqttUserProperty.of("name", "value")),
                 "responseTopic", "contentType", new byte[]{1, 2, 3}, Mqtt5PayloadFormatIndicator.UTF_8, now);
         final byte[] bytes = serializer.serializeValue(retainedMessage);
         final RetainedMessage messageFromStore = serializer.deserializeValue(bytes);

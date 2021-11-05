@@ -16,6 +16,7 @@
 package com.hivemq.persistence.local.xodus;
 
 import com.hivemq.codec.encoder.mqtt5.Mqtt5PayloadFormatIndicator;
+import com.hivemq.configuration.HivemqId;
 import com.hivemq.configuration.entity.mqtt.MqttConfigurationDefaults;
 import com.hivemq.configuration.service.InternalConfigurations;
 import com.hivemq.extension.sdk.api.annotations.NotNull;
@@ -211,10 +212,10 @@ public class RetainedMessageRocksDBLocalPersistenceTest {
     public void test_clean_up_expiry() {
 
         persistence.put(
-                new RetainedMessage(new byte[0], QoS.AT_MOST_ONCE, 1L, 1, Mqtt5UserProperties.NO_USER_PROPERTIES, null,
+                new RetainedMessage(new byte[0], QoS.AT_MOST_ONCE, 1L, HivemqId.get(), 1, Mqtt5UserProperties.NO_USER_PROPERTIES, null,
                         null, null, null, System.currentTimeMillis() - 2000), "topic", 0);
         persistence.put(
-                new RetainedMessage(new byte[0], QoS.AT_MOST_ONCE, 2L, 1, Mqtt5UserProperties.NO_USER_PROPERTIES, null,
+                new RetainedMessage(new byte[0], QoS.AT_MOST_ONCE, 2L, HivemqId.get(), 1, Mqtt5UserProperties.NO_USER_PROPERTIES, null,
                         null, null, null, System.currentTimeMillis()), "topic2", 0);
 
         persistence.cleanUp(BucketUtils.getBucket("topic", BUCKETSIZE));
@@ -230,7 +231,7 @@ public class RetainedMessageRocksDBLocalPersistenceTest {
     @Test
     public void test_expiry() {
         persistence.put(
-                new RetainedMessage(new byte[0], QoS.AT_MOST_ONCE, 1L, 1, Mqtt5UserProperties.NO_USER_PROPERTIES, null,
+                new RetainedMessage(new byte[0], QoS.AT_MOST_ONCE, 1L, HivemqId.get(), 1, Mqtt5UserProperties.NO_USER_PROPERTIES, null,
                         null, null, null, System.currentTimeMillis() - 2000), "topic",
                 BucketUtils.getBucket("topic", BUCKETSIZE));
 
@@ -241,7 +242,7 @@ public class RetainedMessageRocksDBLocalPersistenceTest {
     @Test
     public void test_read_user_properties_stored() {
 
-        persistence.put(new RetainedMessage(new byte[0], QoS.AT_MOST_ONCE, 0L, MqttConfigurationDefaults.TTL_DISABLED,
+        persistence.put(new RetainedMessage(new byte[0], QoS.AT_MOST_ONCE, 0L, HivemqId.get(), MqttConfigurationDefaults.TTL_DISABLED,
                         Mqtt5UserProperties.of(MqttUserProperty.of("name", "value")), "responseTopic", "contentType",
                         new byte[]{1, 2, 3}, Mqtt5PayloadFormatIndicator.UTF_8, System.currentTimeMillis()),
                 "topic/0", BucketUtils.getBucket("topic", BUCKETSIZE));

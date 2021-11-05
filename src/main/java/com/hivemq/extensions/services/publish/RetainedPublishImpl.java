@@ -16,6 +16,7 @@
 package com.hivemq.extensions.services.publish;
 
 import com.hivemq.codec.encoder.mqtt5.Mqtt5PayloadFormatIndicator;
+import com.hivemq.configuration.HivemqId;
 import com.hivemq.extension.sdk.api.annotations.NotNull;
 import com.hivemq.extension.sdk.api.annotations.Nullable;
 import com.hivemq.extension.sdk.api.packets.general.Qos;
@@ -80,6 +81,7 @@ public class RetainedPublishImpl extends PublishImpl implements RetainedPublish 
                 payloadAsArray,
                 Objects.requireNonNull(QoS.valueOf(retainedPublish.getQos().getQosNumber())),
                 PublishPayloadPersistenceImpl.createId(),
+                HivemqId.get(),
                 retainedPublish.getMessageExpiryInterval().orElse(PUBLISH.MESSAGE_EXPIRY_INTERVAL_NOT_SET),
                 Mqtt5UserProperties.of(retainedPublish.getUserProperties().asInternalList()),
                 retainedPublish.getResponseTopic().orElse(null),

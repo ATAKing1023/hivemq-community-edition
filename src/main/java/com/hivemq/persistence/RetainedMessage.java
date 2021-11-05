@@ -17,6 +17,7 @@ package com.hivemq.persistence;
 
 import com.google.common.base.Preconditions;
 import com.hivemq.codec.encoder.mqtt5.Mqtt5PayloadFormatIndicator;
+import com.hivemq.configuration.HivemqId;
 import com.hivemq.extension.sdk.api.annotations.NotNull;
 import com.hivemq.extension.sdk.api.annotations.Nullable;
 import com.hivemq.mqtt.message.QoS;
@@ -40,6 +41,9 @@ public class RetainedMessage {
     private final @NotNull QoS qos;
 
     private long publishId;
+
+    private final @NotNull String hivemqId;
+    private final @NotNull String uniqueId;
 
     private final long messageExpiryInterval;
 
@@ -66,6 +70,7 @@ public class RetainedMessage {
                 message,
                 qos,
                 publishId,
+                HivemqId.get(),
                 messageExpiryInterval,
                 Mqtt5UserProperties.NO_USER_PROPERTIES,
                 null,
@@ -79,6 +84,7 @@ public class RetainedMessage {
             @Nullable final byte[] message,
             @NotNull final QoS qos,
             final long publishId,
+            @NotNull final String hivemqId,
             final long messageExpiryInterval,
             @NotNull final Mqtt5UserProperties userProperties,
             @Nullable final String responseTopic,
@@ -90,6 +96,8 @@ public class RetainedMessage {
         this.message = message;
         this.qos = qos;
         this.publishId = publishId;
+        this.hivemqId = hivemqId;
+        this.uniqueId = PUBLISH.getUniqueId(hivemqId, publishId);
         this.messageExpiryInterval = messageExpiryInterval;
         this.userProperties = userProperties;
         this.responseTopic = responseTopic;
@@ -105,6 +113,8 @@ public class RetainedMessage {
         this.message = publish.getPayload();
         this.qos = publish.getQoS();
         this.publishId = publish.getPublishId();
+        this.hivemqId = publish.getHivemqId();
+        this.uniqueId = publish.getUniqueId();
         this.messageExpiryInterval = messageExpiryInterval;
         this.userProperties = publish.getUserProperties();
         this.responseTopic = publish.getResponseTopic();
@@ -119,6 +129,7 @@ public class RetainedMessage {
                 null,
                 qos,
                 publishId,
+                hivemqId,
                 messageExpiryInterval,
                 userProperties,
                 responseTopic,
@@ -137,6 +148,8 @@ public class RetainedMessage {
         // The payload size is not calculated because the payload is removed before the message is stored
         size += ObjectMemoryEstimation.enumSize(); // QoS
         size += ObjectMemoryEstimation.longWrapperSize(); // Payload ID
+        size += ObjectMemoryEstimation.stringSize(hivemqId);
+        size += ObjectMemoryEstimation.stringSize(uniqueId);
         size += ObjectMemoryEstimation.longSize(); // expiry interval
 
         size += 24; //User Properties Overhead
@@ -176,6 +189,14 @@ public class RetainedMessage {
 
     public long getPublishId() {
         return publishId;
+    }
+
+    public @NotNull String getHivemqId() {
+        return hivemqId;
+    }
+
+    public @NotNull String getUniqueId() {
+        return uniqueId;
     }
 
     public @Nullable String getResponseTopic() {
@@ -229,7 +250,7 @@ public class RetainedMessage {
     @Override
     public int hashCode() {
 
-        int result = Objects.hash(qos, publishId, messageExpiryInterval, userProperties);
+        int result = Objects.hash(qos, publishId, hivemqId, messageExpiryInterval, userProperties);
         result = 31 * result + Arrays.hashCode(message);
         return result;
     }

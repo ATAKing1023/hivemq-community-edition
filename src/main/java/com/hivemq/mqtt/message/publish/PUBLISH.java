@@ -120,7 +120,7 @@ public class PUBLISH extends MqttMessageWithUserProperties implements Mqtt3PUBLI
             this.publishId = PUBLISH_COUNTER.getAndIncrement();
         }
         this.hivemqId = hivemqId;
-        this.uniqueId = hivemqId + "_pub_" + this.publishId;
+        this.uniqueId = getUniqueId(hivemqId, publishId);
 
         if (timestamp > -1) {
             this.timestamp = timestamp;
@@ -167,7 +167,7 @@ public class PUBLISH extends MqttMessageWithUserProperties implements Mqtt3PUBLI
         } else {
             this.publishId = PUBLISH_COUNTER.getAndIncrement();
         }
-        this.uniqueId = hivemqId + "_pub_" + this.publishId;
+        this.uniqueId = getUniqueId(hivemqId, publishId);
 
         if (timestamp > -1) {
             this.timestamp = timestamp;
@@ -428,5 +428,9 @@ public class PUBLISH extends MqttMessageWithUserProperties implements Mqtt3PUBLI
 
         sizeInMemory = size;
         return sizeInMemory;
+    }
+
+    public static String getUniqueId(final String hivemqId, final long publishId) {
+        return hivemqId + "_pub_" + publishId;
     }
 }

@@ -15,8 +15,8 @@
  */
 package com.hivemq.persistence.local.xodus;
 
-import com.hivemq.extension.sdk.api.annotations.NotNull;
 import com.hivemq.codec.encoder.mqtt5.Mqtt5PayloadFormatIndicator;
+import com.hivemq.extension.sdk.api.annotations.NotNull;
 import com.hivemq.mqtt.message.QoS;
 import com.hivemq.mqtt.message.mqtt5.Mqtt5UserProperties;
 import com.hivemq.mqtt.message.mqtt5.PropertiesSerializationUtil;
@@ -70,10 +70,11 @@ public class RetainedMessageXodusSerializer {
     @NotNull
     public byte[] serializeValue(@NotNull final RetainedMessage retainedMessage) {
 
-
+        final byte[] hivemqId = retainedMessage.getHivemqId() == null ? null : retainedMessage.getHivemqId().getBytes(UTF_8);
         final byte[] responseTopic = retainedMessage.getResponseTopic() == null ? null : retainedMessage.getResponseTopic().getBytes(UTF_8);
         final byte[] contentType = retainedMessage.getContentType() == null ? null : retainedMessage.getContentType().getBytes(UTF_8);
         final byte[] correlationData = retainedMessage.getCorrelationData();
+        final int hivemqIdLength = hivemqId != null ? hivemqId.length : 0;
         final int responseTopicLength = responseTopic != null ? responseTopic.length : 0;
         final int contentTypeLength = contentType != null ? contentType.length : 0;
         final int correlationDataLength = correlationData != null ? correlationData.length : 0;
@@ -90,6 +91,14 @@ public class RetainedMessageXodusSerializer {
 
         Bytes.copyLongToByteArray(retainedMessage.getPublishId(), bytes, cursor);
         cursor += 8;
+
+        Bytes.copyIntToByteArray(hivemqIdLength, bytes, cursor);
+        cursor += 4;
+
+        if (hivemqIdLength != 0) {
+            System.arraycopy(hivemqId, 0, bytes, cursor, hivemqId.length);
+            cursor += hivemqIdLength;
+        }
 
         Bytes.copyLongToByteArray(retainedMessage.getMessageExpiryInterval(), bytes, cursor);
         cursor += 8;
@@ -139,6 +148,16 @@ public class RetainedMessageXodusSerializer {
         final long publishId = Bytes.readLong(serialized, cursor);
         cursor += 8;
 
+        final int hivemqIdLength = Bytes.readInt(serialized, cursor);
+        cursor += 4;
+        final String hivemqId;
+        if (hivemqIdLength == 0) {
+            hivemqId = null;
+        } else {
+            hivemqId = new String(serialized, cursor, hivemqIdLength, UTF_8);
+            cursor += hivemqIdLength;
+        }
+
         final long ttl = Bytes.readLong(serialized, cursor);
         cursor += 8;
 
@@ -178,6 +197,6 @@ public class RetainedMessageXodusSerializer {
 
         final Mqtt5UserProperties properties = PropertiesSerializationUtil.read(serialized, cursor);
 
-        return new RetainedMessage(null, qoS, publishId, ttl, properties, responseTopic, contentType, correlationData, payloadFormatIndicator, timestamp);
+        return new RetainedMessage(null, qoS, publishId, hivemqId, ttl, properties, responseTopic, contentType, correlationData, payloadFormatIndicator, timestamp);
     }
 }

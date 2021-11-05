@@ -17,6 +17,7 @@ package com.hivemq.persistence.local.memory;
 
 import com.codahale.metrics.MetricRegistry;
 import com.hivemq.codec.encoder.mqtt5.Mqtt5PayloadFormatIndicator;
+import com.hivemq.configuration.HivemqId;
 import com.hivemq.configuration.entity.mqtt.MqttConfigurationDefaults;
 import com.hivemq.configuration.service.InternalConfigurations;
 import com.hivemq.extension.sdk.api.annotations.NotNull;
@@ -162,7 +163,7 @@ public class RetainedMessageMemoryLocalPersistenceTest {
 
         persistence.put(new RetainedMessage(new byte[]{1, 2, 3},
                 QoS.AT_MOST_ONCE,
-                1L,
+                1L, HivemqId.get(),
                 1,
                 Mqtt5UserProperties.NO_USER_PROPERTIES,
                 null,
@@ -172,7 +173,7 @@ public class RetainedMessageMemoryLocalPersistenceTest {
                 System.currentTimeMillis() - 2000), "topic", 0);
         persistence.put(new RetainedMessage(new byte[0],
                 QoS.AT_MOST_ONCE,
-                2L,
+                2L, HivemqId.get(),
                 1,
                 Mqtt5UserProperties.NO_USER_PROPERTIES,
                 null,
@@ -197,7 +198,7 @@ public class RetainedMessageMemoryLocalPersistenceTest {
     public void test_expiry() {
         persistence.put(new RetainedMessage(new byte[]{1, 2, 3},
                 QoS.AT_MOST_ONCE,
-                1L,
+                1L, HivemqId.get(),
                 1,
                 Mqtt5UserProperties.NO_USER_PROPERTIES,
                 null,
@@ -215,7 +216,7 @@ public class RetainedMessageMemoryLocalPersistenceTest {
 
         persistence.put(new RetainedMessage(new byte[]{1, 2, 3},
                 QoS.AT_MOST_ONCE,
-                0L,
+                0L, HivemqId.get(),
                 MqttConfigurationDefaults.TTL_DISABLED,
                 Mqtt5UserProperties.of(MqttUserProperty.of("name", "value")),
                 "responseTopic",
