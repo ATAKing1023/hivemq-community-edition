@@ -16,7 +16,6 @@
 package com.hivemq.codec.decoder.mqtt311;
 
 import com.hivemq.codec.decoder.mqtt3.Mqtt311ConnectDecoder;
-import com.hivemq.configuration.HivemqId;
 import com.hivemq.mqtt.handler.connack.MqttConnacker;
 import com.hivemq.mqtt.message.reason.Mqtt5ConnAckReasonCode;
 import com.hivemq.util.ClientIds;
@@ -70,9 +69,8 @@ public class Mqtt311ConnectDecoderInvalidFixedHeadersTest {
         when(channel.attr(any(AttributeKey.class))).thenReturn(mock(Attribute.class));
 
         decoder = new Mqtt311ConnectDecoder(connacker,
-                new ClientIds(new HivemqId()),
-                new TestConfigurationBootstrap().getFullConfigurationService(),
-                new HivemqId());
+                new ClientIds(),
+                new TestConfigurationBootstrap().getFullConfigurationService());
     }
 
     @Test

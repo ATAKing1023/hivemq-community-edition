@@ -20,7 +20,6 @@ import com.hivemq.bootstrap.ioc.lazysingleton.LazySingleton;
 import com.hivemq.codec.decoder.mqtt3.Mqtt311ConnectDecoder;
 import com.hivemq.codec.decoder.mqtt3.Mqtt31ConnectDecoder;
 import com.hivemq.codec.decoder.mqtt5.Mqtt5ConnectDecoder;
-import com.hivemq.configuration.HivemqId;
 import com.hivemq.configuration.service.FullConfigurationService;
 import com.hivemq.extension.sdk.api.annotations.NotNull;
 import com.hivemq.extension.sdk.api.annotations.Nullable;
@@ -51,12 +50,11 @@ public class MqttConnectDecoder {
     @Inject
     public MqttConnectDecoder(final @NotNull MqttConnacker mqttConnacker,
                               final @NotNull FullConfigurationService fullConfigurationService,
-                              final @NotNull HivemqId hiveMQId,
                               final @NotNull ClientIds clientIds) {
         this.mqttConnacker = mqttConnacker;
-        this.mqtt5ConnectDecoder = new Mqtt5ConnectDecoder(mqttConnacker, hiveMQId, clientIds, fullConfigurationService);
-        this.mqtt311ConnectDecoder = new Mqtt311ConnectDecoder(mqttConnacker, clientIds, fullConfigurationService, hiveMQId);
-        this.mqtt31ConnectDecoder = new Mqtt31ConnectDecoder(mqttConnacker, clientIds, fullConfigurationService, hiveMQId);
+        this.mqtt5ConnectDecoder = new Mqtt5ConnectDecoder(mqttConnacker, clientIds, fullConfigurationService);
+        this.mqtt311ConnectDecoder = new Mqtt311ConnectDecoder(mqttConnacker, clientIds, fullConfigurationService);
+        this.mqtt31ConnectDecoder = new Mqtt31ConnectDecoder(mqttConnacker, clientIds, fullConfigurationService);
     }
 
     public @Nullable CONNECT decode(final @NotNull Channel channel, final @NotNull ByteBuf buf, final byte fixedHeader) {

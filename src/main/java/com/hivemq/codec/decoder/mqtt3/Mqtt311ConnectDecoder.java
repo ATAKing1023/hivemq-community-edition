@@ -17,7 +17,6 @@ package com.hivemq.codec.decoder.mqtt3;
 
 import com.hivemq.bootstrap.ioc.lazysingleton.LazySingleton;
 import com.hivemq.codec.decoder.AbstractMqttConnectDecoder;
-import com.hivemq.configuration.HivemqId;
 import com.hivemq.configuration.service.FullConfigurationService;
 import com.hivemq.extension.sdk.api.annotations.NotNull;
 import com.hivemq.extension.sdk.api.annotations.Nullable;
@@ -43,14 +42,11 @@ import static com.hivemq.util.Bytes.isBitSet;
 public class Mqtt311ConnectDecoder extends AbstractMqttConnectDecoder {
 
     public static final String PROTOCOL_NAME = "MQTT";
-    private final @NotNull HivemqId hiveMQId;
 
     public Mqtt311ConnectDecoder(final @NotNull MqttConnacker connacker,
                                  final @NotNull ClientIds clientIds,
-                                 final @NotNull FullConfigurationService fullConfigurationService,
-                                 final @NotNull HivemqId hiveMQId) {
+                                 final @NotNull FullConfigurationService fullConfigurationService) {
         super(connacker, fullConfigurationService, clientIds);
-        this.hiveMQId = hiveMQId;
     }
 
     @Nullable
@@ -159,7 +155,7 @@ public class Mqtt311ConnectDecoder extends AbstractMqttConnectDecoder {
         final MqttWillPublish willPublish;
 
         if (isWillFlag) {
-            willPublish = readMqtt3WillPublish(channel, buf, willQoS, isWillRetain, hiveMQId);
+            willPublish = readMqtt3WillPublish(channel, buf, willQoS, isWillRetain);
             //channel already closed.
             if (willPublish == null) {
                 return null;

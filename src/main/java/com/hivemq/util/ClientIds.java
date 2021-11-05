@@ -31,19 +31,17 @@ import java.util.concurrent.atomic.AtomicLong;
 public class ClientIds {
 
     private final AtomicLong clientIDCounter = new AtomicLong(0);
-    private final String hivemqId;
     private final HashFunction hashFunction = Hashing.murmur3_128();
 
     @Inject
-    public ClientIds(final HivemqId hiveMQId) {
-        this.hivemqId = hiveMQId.get();
+    public ClientIds() {
     }
 
     public String generateNext() {
 
         final long currentCounter = clientIDCounter.getAndIncrement();
-        final String rawID = "hmq_" + hivemqId + "_" + currentCounter + "_" + System.currentTimeMillis();
-        return "hmq_" + hivemqId + "_" + currentCounter + "_" + hashFunction.hashString(rawID, StandardCharsets.UTF_8).toString();
+        final String rawID = "hmq_" + HivemqId.get() + "_" + currentCounter + "_" + System.currentTimeMillis();
+        return "hmq_" + HivemqId.get() + "_" + currentCounter + "_" + hashFunction.hashString(rawID, StandardCharsets.UTF_8).toString();
 
     }
 }

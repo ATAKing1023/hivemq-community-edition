@@ -25,7 +25,6 @@ import com.hivemq.bootstrap.ioc.GuiceBootstrap;
 import com.hivemq.common.shutdown.HiveMQShutdownHook;
 import com.hivemq.common.shutdown.ShutdownHooks;
 import com.hivemq.configuration.ConfigurationBootstrap;
-import com.hivemq.configuration.HivemqId;
 import com.hivemq.configuration.info.SystemInformationImpl;
 import com.hivemq.configuration.service.FullConfigurationService;
 import com.hivemq.configuration.service.InternalConfigurations;
@@ -257,11 +256,9 @@ class EmbeddedHiveMQImpl implements EmbeddedHiveMQ {
 
     private void bootstrapInjector() {
         if (injector == null) {
-            final HivemqId hiveMQId = new HivemqId();
             final LifecycleModule lifecycleModule = new LifecycleModule();
             final Injector persistenceInjector = GuiceBootstrap.persistenceInjector(systemInformation,
                     metricRegistry,
-                    hiveMQId,
                     configurationService,
                     lifecycleModule);
 
@@ -273,7 +270,6 @@ class EmbeddedHiveMQImpl implements EmbeddedHiveMQ {
 
             injector = GuiceBootstrap.bootstrapInjector(systemInformation,
                     metricRegistry,
-                    hiveMQId,
                     configurationService,
                     persistenceInjector,
                     lifecycleModule);

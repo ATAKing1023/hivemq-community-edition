@@ -15,7 +15,6 @@
  */
 package com.hivemq.mqtt.handler.connect;
 
-import com.hivemq.configuration.HivemqId;
 import com.hivemq.logging.EventLog;
 import com.hivemq.mqtt.handler.disconnect.MqttServerDisconnectorImpl;
 import io.netty.channel.ChannelHandlerContext;
@@ -31,7 +30,7 @@ public class KeepAliveIdleHandlerTest {
 
     @Test
     public void test_disconnect_when_idle() throws Exception {
-        final KeepAliveIdleHandler keepAliveIdleHandler = new KeepAliveIdleHandler(new MqttServerDisconnectorImpl(new EventLog(), new HivemqId()));
+        final KeepAliveIdleHandler keepAliveIdleHandler = new KeepAliveIdleHandler(new MqttServerDisconnectorImpl(new EventLog()));
         final EmbeddedChannel channel = new EmbeddedChannel(keepAliveIdleHandler, new AnotherIdleHandler(false));
 
         channel.pipeline().fireUserEventTriggered(IdleStateEvent.FIRST_READER_IDLE_STATE_EVENT);
@@ -44,7 +43,7 @@ public class KeepAliveIdleHandlerTest {
 
     @Test
     public void test_dont_disconnect_on_wrong_idles() throws Exception {
-        final KeepAliveIdleHandler keepAliveIdleHandler = new KeepAliveIdleHandler(new MqttServerDisconnectorImpl(new EventLog(), new HivemqId()));
+        final KeepAliveIdleHandler keepAliveIdleHandler = new KeepAliveIdleHandler(new MqttServerDisconnectorImpl(new EventLog()));
         final EmbeddedChannel channel = new EmbeddedChannel(keepAliveIdleHandler, new AnotherIdleHandler(true));
         channel.pipeline().fireUserEventTriggered(IdleStateEvent.FIRST_WRITER_IDLE_STATE_EVENT);
         channel.pipeline().fireUserEventTriggered(IdleStateEvent.FIRST_ALL_IDLE_STATE_EVENT);

@@ -13,34 +13,21 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.hivemq.configuration;
 
 import org.apache.commons.lang3.RandomStringUtils;
 
-import javax.inject.Singleton;
-
 /**
  * @author Christoph Schäbel
+ * @author ankang
  */
-@Singleton
 public class HivemqId {
 
-    private String hivemqId;
+    // needs to be at least 5 characters long to provide acceptable uniqueness
+    private static final String hivemqId = RandomStringUtils.randomAlphanumeric(5);
 
-    public HivemqId() {
-        hivemqId = generateId();
-    }
-
-    public String get() {
+    public static String get() {
         return hivemqId;
-    }
-
-    //needs to be at least 5 characters long to provide acceptable uniqueness
-    public String generateId() {
-        return RandomStringUtils.randomAlphanumeric(5);
-    }
-
-    public void set(final String hivemqId) {
-        this.hivemqId = hivemqId;
     }
 }

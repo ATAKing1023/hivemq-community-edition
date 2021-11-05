@@ -18,7 +18,6 @@ package com.hivemq.extensions.services.publish;
 import com.google.common.primitives.ImmutableIntArray;
 import com.google.common.util.concurrent.Futures;
 import com.hivemq.common.shutdown.ShutdownHooks;
-import com.hivemq.configuration.HivemqId;
 import com.hivemq.configuration.service.FullConfigurationService;
 import com.hivemq.extension.sdk.api.packets.general.Qos;
 import com.hivemq.extension.sdk.api.packets.general.UserProperties;
@@ -81,7 +80,6 @@ public class PublishServiceImplTest {
 
     private GlobalManagedExtensionExecutorService managedPluginExecutorService;
 
-    private final HivemqId hiveMQId = new HivemqId();
     private final FullConfigurationService fullConfigurationService = new TestConfigurationBootstrap().getFullConfigurationService();
     private PublishServiceImpl publishService;
 
@@ -91,7 +89,7 @@ public class PublishServiceImplTest {
         when(rateLimitService.rateLimitExceeded()).thenReturn(false);
         managedPluginExecutorService = new GlobalManagedExtensionExecutorService(shutdownHooks);
         managedPluginExecutorService.postConstruct();
-        publishService = new PublishServiceImpl(rateLimitService, managedPluginExecutorService, internalPublishService, publishDistributor, hiveMQId, topicTree);
+        publishService = new PublishServiceImpl(rateLimitService, managedPluginExecutorService, internalPublishService, publishDistributor, topicTree);
     }
 
     @Test(expected = DoNotImplementException.class)

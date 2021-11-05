@@ -68,7 +68,6 @@ public class Mqtt311ConnectDecoderTest {
     private Mqtt311ConnectDecoder decoder;
 
     private static final byte fixedHeader = 0b0001_0000;
-    private HivemqId hiveMQId;
 
     @Before
     public void setUp() throws Exception {
@@ -78,11 +77,9 @@ public class Mqtt311ConnectDecoderTest {
         when(fullConfiguration.securityConfiguration()).thenReturn(securityConfigurationService);
         when(securityConfigurationService.validateUTF8()).thenReturn(true);
 
-        hiveMQId = new HivemqId();
         decoder = new Mqtt311ConnectDecoder(connacker,
-                new ClientIds(hiveMQId),
-                new TestConfigurationBootstrap().getFullConfigurationService(),
-                hiveMQId);
+                new ClientIds(),
+                new TestConfigurationBootstrap().getFullConfigurationService());
     }
 
     @Test
@@ -414,7 +411,7 @@ public class Mqtt311ConnectDecoderTest {
         final CONNECT connectPacket = decoder.decode(channel, buf, fixedHeader);
 
         assertTrue(connectPacket.getClientIdentifier().length() > 9);
-        assertEquals("hmq_" + hiveMQId.get(), connectPacket.getClientIdentifier().substring(0, 9));
+        assertEquals("hmq_" + HivemqId.get(), connectPacket.getClientIdentifier().substring(0, 9));
     }
 
     @Test

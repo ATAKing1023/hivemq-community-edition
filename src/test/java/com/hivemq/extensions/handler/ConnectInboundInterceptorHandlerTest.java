@@ -17,7 +17,6 @@ package com.hivemq.extensions.handler;
 
 import com.google.common.collect.ImmutableMap;
 import com.hivemq.common.shutdown.ShutdownHooks;
-import com.hivemq.configuration.HivemqId;
 import com.hivemq.configuration.service.FullConfigurationService;
 import com.hivemq.extension.sdk.api.annotations.NotNull;
 import com.hivemq.extension.sdk.api.annotations.Nullable;
@@ -77,7 +76,6 @@ import static org.mockito.Mockito.*;
 @SuppressWarnings("NullabilityAnnotations")
 public class ConnectInboundInterceptorHandlerTest {
 
-    private final HivemqId hivemqId = new HivemqId();
     @Rule
     public TemporaryFolder temporaryFolder = new TemporaryFolder();
     @Mock
@@ -114,7 +112,7 @@ public class ConnectInboundInterceptorHandlerTest {
 
         handler = new ConnectInboundInterceptorHandler(configurationService, asyncer, hiveMQExtensions,
                 pluginTaskExecutorService,
-                hivemqId, interceptors, serverInformation, connacker);
+                interceptors, serverInformation, connacker);
 
         channel.pipeline().addLast("test2", new ChannelInboundHandlerAdapter() {
             @Override

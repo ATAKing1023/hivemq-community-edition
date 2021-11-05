@@ -203,7 +203,6 @@ public abstract class AbstractMqttConnectDecoder extends MqttDecoder<CONNECT> {
      * @param buf          the ByteBuf of the encoded will message
      * @param willQoS      the quality of service of the will message
      * @param isWillRetain the retain flag of the will message
-     * @param hiveMQId     the HiveMQ identifier
      *
      *
      * @return a {@link MqttWillPublish} if valid, else {@code null}.
@@ -212,8 +211,7 @@ public abstract class AbstractMqttConnectDecoder extends MqttDecoder<CONNECT> {
     protected MqttWillPublish readMqtt3WillPublish(final @NotNull Channel channel,
                                                    final @NotNull ByteBuf buf,
                                                    final int willQoS,
-                                                   final boolean isWillRetain,
-                                                   final @NotNull HivemqId hiveMQId) {
+                                                   final boolean isWillRetain) {
 
         final MqttWillPublish.Mqtt3Builder willBuilder = new MqttWillPublish.Mqtt3Builder();
         willBuilder.withQos(QoS.valueOf(willQoS));
@@ -260,7 +258,7 @@ public abstract class AbstractMqttConnectDecoder extends MqttDecoder<CONNECT> {
         final byte[] prefixedBytes = Bytes.getPrefixedBytes(buf);
         final byte[] willMessage = prefixedBytes != null ? prefixedBytes : new byte[0];
 
-        return willBuilder.withPayload(willMessage).withTopic(willTopic).withHivemqId(hiveMQId.get()).build();
+        return willBuilder.withPayload(willMessage).withTopic(willTopic).withHivemqId(HivemqId.get()).build();
 
     }
 

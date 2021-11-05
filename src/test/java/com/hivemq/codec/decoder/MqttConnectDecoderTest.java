@@ -15,7 +15,6 @@
  */
 package com.hivemq.codec.decoder;
 
-import com.hivemq.configuration.HivemqId;
 import com.hivemq.mqtt.handler.connack.MqttConnacker;
 import com.hivemq.mqtt.message.ProtocolVersion;
 import com.hivemq.mqtt.message.reason.Mqtt5ConnAckReasonCode;
@@ -55,11 +54,9 @@ public class MqttConnectDecoderTest {
     public void setUp() throws Exception {
 
         MockitoAnnotations.initMocks(this);
-        final HivemqId hiveMQId = new HivemqId();
         decoder = new MqttConnectDecoder(mqttConnacker,
                                          new TestConfigurationBootstrap().getFullConfigurationService(),
-                                         hiveMQId,
-                                         new ClientIds(hiveMQId));
+                                         new ClientIds());
     }
 
     @Test

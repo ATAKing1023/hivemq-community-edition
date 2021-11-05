@@ -53,14 +53,11 @@ public class Mqtt5ConnectDecoder extends AbstractMqttConnectDecoder {
 
     private static final String PROTOCOL_NAME = "MQTT";
     private static final byte VARIABLE_HEADER_LENGTH = 10;
-    private final @NotNull HivemqId hiveMQId;
 
     public Mqtt5ConnectDecoder(final @NotNull MqttConnacker mqttConnacker,
-                               final @NotNull HivemqId hiveMQId,
                                final @NotNull ClientIds clientIds,
                                final @NotNull FullConfigurationService fullMqttConfigurationService) {
         super(mqttConnacker, fullMqttConfigurationService, clientIds);
-        this.hiveMQId = hiveMQId;
     }
 
     @Override
@@ -479,7 +476,7 @@ public class Mqtt5ConnectDecoder extends AbstractMqttConnectDecoder {
 
         final MqttWillPublish.Mqtt5Builder mqtt5Builder = new MqttWillPublish.Mqtt5Builder();
 
-        mqtt5Builder.withHivemqId(hiveMQId.get()).withQos(QoS.valueOf(willQos)).withRetain(willRetain);
+        mqtt5Builder.withHivemqId(HivemqId.get()).withQos(QoS.valueOf(willQos)).withRetain(willRetain);
 
         final int willPropertiesLength = MqttVariableByteInteger.decode(buf);
         if (propertiesLengthInvalid(channel, buf, willPropertiesLength)) {

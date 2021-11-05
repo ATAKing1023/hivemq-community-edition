@@ -16,7 +16,6 @@
 package com.hivemq.configuration.ioc;
 
 import com.hivemq.bootstrap.ioc.SingletonModule;
-import com.hivemq.configuration.HivemqId;
 import com.hivemq.configuration.service.*;
 import com.hivemq.configuration.service.impl.listener.InternalListenerConfigurationService;
 import com.hivemq.configuration.service.impl.listener.ListenerConfigurationService;
@@ -31,18 +30,14 @@ import com.hivemq.statistics.UsageStatisticsConfig;
 public class ConfigurationModule extends SingletonModule {
 
     private final FullConfigurationService configurationService;
-    private final HivemqId hiveMQId;
 
-    public ConfigurationModule(final FullConfigurationService configurationService, final HivemqId hiveMQId) {
+    public ConfigurationModule(final FullConfigurationService configurationService) {
         super(ConfigurationModule.class);
         this.configurationService = configurationService;
-        this.hiveMQId = hiveMQId;
     }
 
     @Override
     protected void configure() {
-
-        bind(HivemqId.class).toInstance(hiveMQId);
 
         final InternalListenerConfigurationService listenerConfigurationService = (InternalListenerConfigurationService) configurationService.listenerConfiguration();
         bind(ListenerConfigurationService.class).toInstance(listenerConfigurationService);

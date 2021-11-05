@@ -100,7 +100,6 @@ public class IncomingSubscribeServiceTest {
 
     private EmbeddedChannel channel;
     private IncomingSubscribeService incomingSubscribeService;
-    private HivemqId hivemqId;
 
     @Before
     public void setUp() throws Exception {

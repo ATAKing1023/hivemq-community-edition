@@ -50,18 +50,15 @@ import static com.hivemq.mqtt.message.publish.PUBLISH.MESSAGE_EXPIRY_INTERVAL_NO
 @LazySingleton
 public class Mqtt5PublishDecoder extends AbstractMqttPublishDecoder<Mqtt5PUBLISH> {
 
-    private final @NotNull HivemqId hiveMQId;
     private final boolean validatePayloadFormat;
     private final @NotNull TopicAliasLimiter topicAliasLimiter;
 
     @VisibleForTesting
     @Inject
     public Mqtt5PublishDecoder(final @NotNull MqttServerDisconnector disconnector,
-                               final @NotNull HivemqId hiveMQId,
                                final @NotNull FullConfigurationService fullConfigurationService,
                                final @NotNull TopicAliasLimiter topicAliasLimiter) {
         super(disconnector, fullConfigurationService);
-        this.hiveMQId = hiveMQId;
         this.validatePayloadFormat = fullConfigurationService.securityConfiguration().payloadFormatValidation();
         this.topicAliasLimiter = topicAliasLimiter;
     }
@@ -119,7 +116,7 @@ public class Mqtt5PublishDecoder extends AbstractMqttPublishDecoder<Mqtt5PUBLISH
         }
 
         return publishBuilder
-                .withHivemqId(hiveMQId.get())
+                .withHivemqId(HivemqId.get())
                 .withQoS(QoS.valueOf(qos))
                 .withRetain(retain)
                 .withPacketIdentifier(packetIdentifier)

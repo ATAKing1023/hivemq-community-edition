@@ -15,7 +15,6 @@
  */
 package com.hivemq.mqtt.handler.disconnect;
 
-import com.hivemq.configuration.HivemqId;
 import com.hivemq.configuration.service.InternalConfigurations;
 import com.hivemq.extensions.events.OnAuthFailedEvent;
 import com.hivemq.extensions.events.OnServerDisconnectEvent;
@@ -55,7 +54,7 @@ public class MqttServerDisconnectorTest {
     @Before
     public void setUp() throws Exception {
         MockitoAnnotations.initMocks(this);
-        mqttServerDisconnector = new MqttServerDisconnectorImpl(eventLog, new HivemqId());
+        mqttServerDisconnector = new MqttServerDisconnectorImpl(eventLog);
     }
 
     @After
@@ -106,7 +105,7 @@ public class MqttServerDisconnectorTest {
         InternalConfigurations.DISCONNECT_WITH_REASON_CODE.set(false);
         InternalConfigurations.DISCONNECT_WITH_REASON_STRING.set(false);
 
-        mqttServerDisconnector = new MqttServerDisconnectorImpl(eventLog, new HivemqId());
+        mqttServerDisconnector = new MqttServerDisconnectorImpl(eventLog);
 
         final EmbeddedChannel channel = new EmbeddedChannel();
         channel.attr(ChannelAttributes.EXTENSION_CONNECT_EVENT_SENT).set(true);
@@ -162,7 +161,7 @@ public class MqttServerDisconnectorTest {
 
         InternalConfigurations.DISCONNECT_WITH_REASON_STRING.set(false);
 
-        mqttServerDisconnector = new MqttServerDisconnectorImpl(eventLog, new HivemqId());
+        mqttServerDisconnector = new MqttServerDisconnectorImpl(eventLog);
 
         final EmbeddedChannel channel = new EmbeddedChannel();
         channel.attr(ChannelAttributes.EXTENSION_CONNECT_EVENT_SENT).set(true);

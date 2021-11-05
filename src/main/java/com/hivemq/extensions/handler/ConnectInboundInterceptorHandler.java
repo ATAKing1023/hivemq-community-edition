@@ -47,9 +47,7 @@ import com.hivemq.util.ChannelAttributes;
 import com.hivemq.util.Exceptions;
 import com.hivemq.util.ReasonStrings;
 import io.netty.channel.Channel;
-import io.netty.channel.ChannelHandler;
 import io.netty.channel.ChannelHandlerContext;
-import io.netty.channel.ChannelInboundHandlerAdapter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -72,7 +70,6 @@ public class ConnectInboundInterceptorHandler {
     private final @NotNull PluginOutPutAsyncer asyncer;
     private final @NotNull HiveMQExtensions hiveMQExtensions;
     private final @NotNull PluginTaskExecutorService executorService;
-    private final @NotNull HivemqId hivemqId;
     private final @NotNull Interceptors interceptors;
     private final @NotNull ServerInformation serverInformation;
     private final @NotNull MqttConnacker connacker;
@@ -83,7 +80,6 @@ public class ConnectInboundInterceptorHandler {
             final @NotNull PluginOutPutAsyncer asyncer,
             final @NotNull HiveMQExtensions hiveMQExtensions,
             final @NotNull PluginTaskExecutorService executorService,
-            final @NotNull HivemqId hivemqId,
             final @NotNull Interceptors interceptors,
             final @NotNull ServerInformation serverInformation,
             final @NotNull MqttConnacker connacker) {
@@ -92,7 +88,6 @@ public class ConnectInboundInterceptorHandler {
         this.asyncer = asyncer;
         this.hiveMQExtensions = hiveMQExtensions;
         this.executorService = executorService;
-        this.hivemqId = hivemqId;
         this.interceptors = interceptors;
         this.serverInformation = serverInformation;
         this.connacker = connacker;
@@ -213,7 +208,7 @@ public class ConnectInboundInterceptorHandler {
                         Mqtt5ConnAckReasonCode.UNSPECIFIED_ERROR,
                         reasonString);
             } else {
-                final CONNECT connect = CONNECT.from(inputHolder.get().getConnectPacket(), hivemqId.get());
+                final CONNECT connect = CONNECT.from(inputHolder.get().getConnectPacket(), HivemqId.get());
                 ctx.channel().attr(ChannelAttributes.CLIENT_ID).set(connect.getClientIdentifier());
                 ctx.channel()
                         .attr(ChannelAttributes.EXTENSION_CLIENT_INFORMATION)

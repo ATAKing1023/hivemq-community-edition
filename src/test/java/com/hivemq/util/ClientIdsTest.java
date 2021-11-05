@@ -15,7 +15,6 @@
  */
 package com.hivemq.util;
 
-import com.hivemq.configuration.HivemqId;
 import org.junit.Test;
 
 import static org.junit.Assert.assertEquals;
@@ -29,7 +28,7 @@ public class ClientIdsTest {
     @Test
     public void test_100_000_ids_utf_well_formed_and_length_44() {
 
-        final ClientIds clientIds = new ClientIds(new HivemqId());
+        final ClientIds clientIds = new ClientIds();
 
         for (int i = 0; i < 100000; i++) {
 

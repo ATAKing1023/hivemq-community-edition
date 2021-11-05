@@ -15,7 +15,6 @@
  */
 package com.hivemq.security.ssl;
 
-import com.hivemq.configuration.HivemqId;
 import com.hivemq.logging.EventLog;
 import com.hivemq.mqtt.handler.disconnect.MqttServerDisconnector;
 import com.hivemq.mqtt.handler.disconnect.MqttServerDisconnectorImpl;
@@ -70,7 +69,7 @@ public class SslExceptionHandlerTest {
         when(channel.isActive()).thenReturn(true);
         when(clientIdAttribute.get()).thenReturn("client");
 
-        final MqttServerDisconnector mqttServerDisconnector = new MqttServerDisconnectorImpl(eventLog, new HivemqId());
+        final MqttServerDisconnector mqttServerDisconnector = new MqttServerDisconnectorImpl(eventLog);
 
         sslExceptionHandler = new SslExceptionHandler(mqttServerDisconnector);
     }

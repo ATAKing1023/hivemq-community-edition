@@ -19,7 +19,6 @@ import com.google.inject.AbstractModule;
 import com.google.inject.Guice;
 import com.google.inject.Injector;
 import com.hivemq.bootstrap.ioc.SystemInformationModule;
-import com.hivemq.configuration.HivemqId;
 import com.hivemq.configuration.info.SystemInformationImpl;
 import com.hivemq.configuration.service.ConfigurationService;
 import com.hivemq.configuration.service.FullConfigurationService;
@@ -53,7 +52,7 @@ public class ConfigurationModuleTest {
         testConfigurationBootstrap = new TestConfigurationBootstrap();
         final FullConfigurationService fullConfigurationService = testConfigurationBootstrap.getFullConfigurationService();
 
-        injector = Guice.createInjector(new SystemInformationModule(new SystemInformationImpl()), new ConfigurationModule(fullConfigurationService, new HivemqId()),
+        injector = Guice.createInjector(new SystemInformationModule(new SystemInformationImpl()), new ConfigurationModule(fullConfigurationService),
                 new AbstractModule() {
                     @Override
                     protected void configure() {

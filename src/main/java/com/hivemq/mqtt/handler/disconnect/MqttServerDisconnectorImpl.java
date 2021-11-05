@@ -16,7 +16,6 @@
 package com.hivemq.mqtt.handler.disconnect;
 
 import com.google.common.base.Preconditions;
-import com.hivemq.configuration.HivemqId;
 import com.hivemq.configuration.service.InternalConfigurations;
 import com.hivemq.extension.sdk.api.annotations.NotNull;
 import com.hivemq.extension.sdk.api.annotations.Nullable;
@@ -51,12 +50,9 @@ public class MqttServerDisconnectorImpl implements MqttServerDisconnector {
     private final boolean disconnectWithReasonCode;
     private final boolean disconnectWithReasonString;
     private final @NotNull EventLog eventLog;
-    private final @NotNull HivemqId hivemqId;
 
     @Inject
-    public MqttServerDisconnectorImpl(final @NotNull EventLog eventLog,
-                                      final @NotNull HivemqId hivemqId) {
-        this.hivemqId = hivemqId;
+    public MqttServerDisconnectorImpl(final @NotNull EventLog eventLog) {
         this.disconnectWithReasonCode = InternalConfigurations.DISCONNECT_WITH_REASON_CODE.get();
         this.disconnectWithReasonString = InternalConfigurations.DISCONNECT_WITH_REASON_STRING.get();
         this.eventLog = eventLog;

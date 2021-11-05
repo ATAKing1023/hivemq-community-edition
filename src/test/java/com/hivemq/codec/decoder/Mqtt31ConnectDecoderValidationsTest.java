@@ -16,7 +16,6 @@
 package com.hivemq.codec.decoder;
 
 import com.hivemq.codec.decoder.mqtt3.Mqtt31ConnectDecoder;
-import com.hivemq.configuration.HivemqId;
 import com.hivemq.configuration.service.FullConfigurationService;
 import com.hivemq.configuration.service.MqttConfigurationService;
 import com.hivemq.mqtt.handler.connack.MqttConnacker;
@@ -69,9 +68,8 @@ public class Mqtt31ConnectDecoderValidationsTest {
         MockitoAnnotations.initMocks(this);
         when(fullConfigurationService.mqttConfiguration()).thenReturn(mqttConfigurationService);
         decoder = new Mqtt31ConnectDecoder(connacker,
-                new ClientIds(new HivemqId()),
-                new TestConfigurationBootstrap().getFullConfigurationService(),
-                new HivemqId());
+                new ClientIds(),
+                new TestConfigurationBootstrap().getFullConfigurationService());
 
         when(channel.attr(ChannelAttributes.CLIENT_ID)).thenReturn(attribute);
         when(channel.attr(ChannelAttributes.CONNECT_KEEP_ALIVE)).thenReturn(attribute);

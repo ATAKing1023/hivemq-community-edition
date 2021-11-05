@@ -17,7 +17,6 @@ package com.hivemq.mqtt.handler.subscribe.retained;
 
 import com.google.common.collect.ImmutableSet;
 import com.google.common.util.concurrent.Futures;
-import com.hivemq.configuration.HivemqId;
 import com.hivemq.configuration.entity.mqtt.MqttConfigurationDefaults;
 import com.hivemq.configuration.service.MqttConfigurationService;
 import com.hivemq.mqtt.message.MessageIDPools;
@@ -492,7 +491,7 @@ public class SendRetainedMessagesListenerTest {
         final MessageIDPools messageIDPools = mock(MessageIDPools.class);
         when(messageIDPools.forClient(anyString())).thenReturn(new SequentialMessageIDPoolImpl());
 
-        final RetainedMessagesSender retainedMessagesSender = new RetainedMessagesSender(new HivemqId(),
+        final RetainedMessagesSender retainedMessagesSender = new RetainedMessagesSender(
                 mock(PublishPayloadPersistence.class), retainedMessagePersistence, queuePersistence,
                 messageIDPools, mqttConfigurationService);
 
@@ -506,7 +505,7 @@ public class SendRetainedMessagesListenerTest {
         final MessageIDPools messageIDPools = mock(MessageIDPools.class);
         when(messageIDPools.forClient(anyString())).thenReturn(new SequentialMessageIDPoolImpl());
 
-        final RetainedMessagesSender retainedMessagesSender = new RetainedMessagesSender(new HivemqId(),
+        final RetainedMessagesSender retainedMessagesSender = new RetainedMessagesSender(
                 mock(PublishPayloadPersistence.class), retainedMessagePersistence, queuePersistence,
                 messageIDPools, mqttConfigurationService);
 

@@ -16,7 +16,6 @@
 package com.hivemq.bootstrap.netty.initializer;
 
 import com.hivemq.bootstrap.netty.ChannelDependencies;
-import com.hivemq.configuration.HivemqId;
 import com.hivemq.configuration.service.FullConfigurationService;
 import com.hivemq.configuration.service.MqttConfigurationService;
 import com.hivemq.configuration.service.RestrictionsConfigurationService;
@@ -97,7 +96,7 @@ public class AbstractChannelInitializerTest {
         when(restrictionsConfigurationService.noConnectIdleTimeout()).thenReturn(500L);
         when(restrictionsConfigurationService.incomingLimit()).thenReturn(0L);
 
-        final MqttServerDisconnector mqttServerDisconnector = new MqttServerDisconnectorImpl(eventLog, new HivemqId());
+        final MqttServerDisconnector mqttServerDisconnector = new MqttServerDisconnectorImpl(eventLog);
 
         when(channelDependencies.getMqttServerDisconnector()).thenReturn(mqttServerDisconnector);
 
@@ -119,7 +118,7 @@ public class AbstractChannelInitializerTest {
     public void test_init_channel_with_throttling() throws Exception {
 
         when(restrictionsConfigurationService.incomingLimit()).thenReturn(1000L);
-        final MqttServerDisconnector mqttServerDisconnector = new MqttServerDisconnectorImpl(eventLog, new HivemqId());
+        final MqttServerDisconnector mqttServerDisconnector = new MqttServerDisconnectorImpl(eventLog);
         when(channelDependencies.getMqttServerDisconnector()).thenReturn(mqttServerDisconnector);
         abstractChannelInitializer = new TestAbstractChannelInitializer(channelDependencies);
 

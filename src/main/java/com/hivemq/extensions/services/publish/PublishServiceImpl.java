@@ -38,7 +38,6 @@ import com.hivemq.mqtt.services.InternalPublishService;
 import com.hivemq.mqtt.services.PublishDistributor;
 import com.hivemq.mqtt.topic.SubscriberWithIdentifiers;
 import com.hivemq.mqtt.topic.tree.LocalTopicTree;
-import com.hivemq.persistence.util.FutureUtils;
 import com.hivemq.util.Bytes;
 
 import javax.inject.Inject;
@@ -68,9 +67,6 @@ public class PublishServiceImpl implements PublishService {
     private final PublishDistributor publishDistributor;
 
     @NotNull
-    private final HivemqId hiveMQId;
-
-    @NotNull
     private final LocalTopicTree topicTree;
 
     @Inject
@@ -78,13 +74,11 @@ public class PublishServiceImpl implements PublishService {
                               @NotNull final GlobalManagedExtensionExecutorService globalManagedExtensionExecutorService,
                               @NotNull final InternalPublishService internalPublishService,
                               @NotNull final PublishDistributor publishDistributor,
-                              @NotNull final HivemqId hiveMQId,
                               @NotNull final LocalTopicTree topicTree) {
         this.rateLimitService = rateLimitService;
         this.globalManagedExtensionExecutorService = globalManagedExtensionExecutorService;
         this.internalPublishService = internalPublishService;
         this.publishDistributor = publishDistributor;
-        this.hiveMQId = hiveMQId;
         this.topicTree = topicTree;
     }
 
@@ -154,7 +148,7 @@ public class PublishServiceImpl implements PublishService {
                 Mqtt5PayloadFormatIndicator.from(publish.getPayloadFormatIndicator().get()) : null;
 
         return new PUBLISHFactory.Mqtt5Builder()
-                .withHivemqId(hiveMQId.get())
+                .withHivemqId(HivemqId.get())
                 .withQoS(QoS.valueOf(publish.getQos().getQosNumber()))
                 .withRetain(publish.getRetain())
                 .withTopic(publish.getTopic())

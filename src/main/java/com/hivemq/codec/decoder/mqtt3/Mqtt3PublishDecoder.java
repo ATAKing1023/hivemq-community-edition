@@ -38,14 +38,10 @@ import io.netty.channel.Channel;
 @LazySingleton
 public class Mqtt3PublishDecoder extends AbstractMqttPublishDecoder<Mqtt3PUBLISH> {
 
-    private final @NotNull HivemqId hivemqId;
-
     @Inject
-    public Mqtt3PublishDecoder(final @NotNull HivemqId hivemqId,
-                               final @NotNull MqttServerDisconnector disconnector,
+    public Mqtt3PublishDecoder(final @NotNull MqttServerDisconnector disconnector,
                                final @NotNull FullConfigurationService fullConfigurationService) {
         super(disconnector, fullConfigurationService);
-        this.hivemqId = hivemqId;
     }
 
     @Nullable
@@ -102,7 +98,7 @@ public class Mqtt3PublishDecoder extends AbstractMqttPublishDecoder<Mqtt3PUBLISH
         buf.readBytes(payload);
 
         return new PUBLISHFactory.Mqtt3Builder()
-                .withHivemqId(hivemqId.get())
+                .withHivemqId(HivemqId.get())
                 .withMessageExpiryInterval(maxMessageExpiryInterval)
                 .withQoS(QoS.valueOf(qos))
                 .withTopic(topicName)

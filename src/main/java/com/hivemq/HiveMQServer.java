@@ -122,8 +122,7 @@ public class HiveMQServer {
         log.trace("Initializing configuration");
         final FullConfigurationService configService = ConfigurationBootstrap.bootstrapConfig(systemInformation);
 
-        final HivemqId hiveMQId = new HivemqId();
-        log.info("This HiveMQ ID is {}", hiveMQId.get());
+        log.info("This HiveMQ ID is {}", HivemqId.get());
 
         //ungraceful shutdown does not delete tmp folders, so we clean them up on broker start
         log.trace("Cleaning up temporary folders");
@@ -137,8 +136,7 @@ public class HiveMQServer {
 
         log.trace("Initializing persistences");
         final Injector persistenceInjector =
-                GuiceBootstrap.persistenceInjector(systemInformation, metricRegistry, hiveMQId, configService,
-                        lifecycleModule);
+                GuiceBootstrap.persistenceInjector(systemInformation, metricRegistry, configService, lifecycleModule);
         //blocks until all persistences started
         persistenceInjector.getInstance(PersistenceStartup.class).finish();
         final ShutdownHooks shutdownHooks = persistenceInjector.getInstance(ShutdownHooks.class);
@@ -163,7 +161,7 @@ public class HiveMQServer {
         }
 
         log.trace("Initializing Guice");
-        final Injector injector = GuiceBootstrap.bootstrapInjector(systemInformation, metricRegistry, hiveMQId,
+        final Injector injector = GuiceBootstrap.bootstrapInjector(systemInformation, metricRegistry,
                 configService, persistenceInjector, lifecycleModule);
         if (injector == null) {
             return;

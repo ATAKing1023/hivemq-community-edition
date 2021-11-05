@@ -51,19 +51,16 @@ import java.util.concurrent.Future;
 public class ClientSessionStateMachine extends LocalPersistenceSnapshotSupport<ClientSessionLocalPersistence>
         implements InternalStateMachine<ClientSessionOperation> {
 
-    private final HivemqId hivemqId;
     private final ClientSessionPersistence clientSessionPersistence;
     private final ProducerQueues singleWriter;
 
     @Inject
     public ClientSessionStateMachine(
-            final HivemqId hivemqId,
             final ClientSessionPersistence clientSessionPersistence,
             final ClientSessionLocalPersistence localPersistence,
             final @SnapshotPersistence ClientSessionLocalPersistence snapshotPersistence,
             final SingleWriterService singleWriterService) {
         super(localPersistence, snapshotPersistence);
-        this.hivemqId = hivemqId;
         this.clientSessionPersistence = clientSessionPersistence;
         this.singleWriter = singleWriterService.getClientSessionQueue();
     }
@@ -85,7 +82,7 @@ public class ClientSessionStateMachine extends LocalPersistenceSnapshotSupport<C
                         request.getSessionExpiryInterval());
                 break;
             case DISCONNECT:
-                if (!hivemqId.get().equals(request.getHivemqId())) {
+                if (!HivemqId.get().equals(request.getHivemqId())) {
                     future = clientSessionPersistence.forceDisconnectClient(request.getClientId(),
                             true,
                             ClientSessionPersistenceImpl.DisconnectSource.CLUSTER,

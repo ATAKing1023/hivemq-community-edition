@@ -24,7 +24,6 @@ import com.google.inject.Stage;
 import com.hivemq.bootstrap.ioc.lazysingleton.LazySingletonModule;
 import com.hivemq.bootstrap.netty.ioc.NettyModule;
 import com.hivemq.cluster.ioc.ClusterModule;
-import com.hivemq.configuration.HivemqId;
 import com.hivemq.configuration.info.SystemInformation;
 import com.hivemq.configuration.ioc.ConfigurationModule;
 import com.hivemq.configuration.service.FullConfigurationService;
@@ -57,7 +56,6 @@ public class GuiceBootstrap {
     public static Injector bootstrapInjector(
             final @NotNull SystemInformation systemInformation,
             final @NotNull MetricRegistry metricRegistry,
-            final @NotNull HivemqId hiveMQId,
             final @NotNull FullConfigurationService fullConfigurationService,
             final @NotNull Injector persistenceInjector,
             final @NotNull LifecycleModule lifecycleModule) {
@@ -75,7 +73,7 @@ public class GuiceBootstrap {
                 /* Adds lifecycle methods like @PostConstruct */
                 lifecycleModule,
                 /* Binds the configuration service */
-                new ConfigurationModule(fullConfigurationService, hiveMQId),
+                new ConfigurationModule(fullConfigurationService),
                 /* Binds netty specific classes */
                 new NettyModule(), new HiveMQMainModule(),
                 /* Binds MQTT handler specific classes */
@@ -113,14 +111,13 @@ public class GuiceBootstrap {
     public static @NotNull Injector persistenceInjector(
             final @NotNull SystemInformation systemInformation,
             final @NotNull MetricRegistry metricRegistry,
-            final @NotNull HivemqId hiveMQId,
             final @NotNull FullConfigurationService configService,
             final @NotNull LifecycleModule lifecycleModule) {
 
         final ImmutableList.Builder<AbstractModule> modules = ImmutableList.builder();
 
         modules.add(new SystemInformationModule(systemInformation),
-                new ConfigurationModule(configService, hiveMQId),
+                new ConfigurationModule(configService),
                 new LazySingletonModule(),
                 lifecycleModule,
                 new PersistenceMigrationModule(metricRegistry, configService.persistenceConfigurationService()));

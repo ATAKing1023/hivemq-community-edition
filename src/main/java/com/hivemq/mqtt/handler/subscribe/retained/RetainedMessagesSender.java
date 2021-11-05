@@ -65,7 +65,6 @@ public class RetainedMessagesSender {
         CLOSED_CHANNEL_EXCEPTION.setStackTrace(new StackTraceElement[0]);
     }
 
-    private final @NotNull HivemqId hiveMQId;
     private final @NotNull PublishPayloadPersistence publishPayloadPersistence;
     private final @NotNull RetainedMessagePersistence retainedMessagePersistence;
     private final @NotNull ClientQueuePersistence clientQueuePersistence;
@@ -74,14 +73,12 @@ public class RetainedMessagesSender {
 
     @Inject
     public RetainedMessagesSender(
-            final @NotNull HivemqId hiveMQId,
             final @NotNull PublishPayloadPersistence publishPayloadPersistence,
             final @NotNull RetainedMessagePersistence retainedMessagePersistence,
             final @NotNull ClientQueuePersistence clientQueuePersistence,
             final @NotNull MessageIDPools messageIDPools,
             final @NotNull MqttConfigurationService mqttConfigurationService) {
 
-        this.hiveMQId = hiveMQId;
         this.publishPayloadPersistence = publishPayloadPersistence;
         this.retainedMessagePersistence = retainedMessagePersistence;
         this.clientQueuePersistence = clientQueuePersistence;
@@ -113,7 +110,7 @@ public class RetainedMessagesSender {
                 Futures.allAsList(retainedMessageFutures.build());
 
         final SettableFuture<Void> resultFuture = SettableFuture.create();
-        Futures.addCallback(retainedMessagesFuture, new SendRetainedMessageCallback(subscribedTopics, hiveMQId,
+        Futures.addCallback(retainedMessagesFuture, new SendRetainedMessageCallback(subscribedTopics,
                 publishPayloadPersistence, messageIDPools, clientId, resultFuture, channel, clientQueuePersistence,
                 mqttConfigurationService), channel.eventLoop());
 
@@ -124,7 +121,6 @@ public class RetainedMessagesSender {
     private static class SendRetainedMessageCallback implements FutureCallback<List<RetainedMessage>> {
 
         private final @NotNull Topic[] subscribedTopics;
-        private final @NotNull HivemqId hivemqId;
         private final @NotNull PublishPayloadPersistence payloadPersistence;
         private final @NotNull MessageIDPools messageIDPools;
         private final @NotNull String clientId;
@@ -135,7 +131,6 @@ public class RetainedMessagesSender {
 
         SendRetainedMessageCallback(
                 final @NotNull Topic[] subscribedTopics,
-                final @NotNull HivemqId hivemqId,
                 final @NotNull PublishPayloadPersistence payloadPersistence,
                 final @NotNull MessageIDPools messageIDPools,
                 final @NotNull String clientId,
@@ -145,7 +140,6 @@ public class RetainedMessagesSender {
                 final @NotNull MqttConfigurationService mqttConfigurationService) {
 
             this.subscribedTopics = subscribedTopics;
-            this.hivemqId = hivemqId;
             this.payloadPersistence = payloadPersistence;
             this.messageIDPools = messageIDPools;
             this.clientId = clientId;
@@ -182,7 +176,7 @@ public class RetainedMessagesSender {
 
                 final PUBLISHFactory.Mqtt5Builder publishBuilder = new PUBLISHFactory.Mqtt5Builder()
                         .withTimestamp(System.currentTimeMillis())
-                        .withHivemqId(hivemqId.get())
+                        .withHivemqId(HivemqId.get())
                         .withPayload(retainedMessage.getMessage())
                         .withPublishId(retainedMessage.getPublishId())
                         .withPersistence(payloadPersistence)

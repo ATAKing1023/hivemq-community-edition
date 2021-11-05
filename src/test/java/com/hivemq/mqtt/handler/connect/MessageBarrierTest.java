@@ -16,7 +16,6 @@
 package com.hivemq.mqtt.handler.connect;
 
 import com.google.common.collect.ImmutableList;
-import com.hivemq.configuration.HivemqId;
 import com.hivemq.logging.EventLog;
 import com.hivemq.mqtt.handler.disconnect.MqttServerDisconnector;
 import com.hivemq.mqtt.handler.disconnect.MqttServerDisconnectorImpl;
@@ -52,7 +51,7 @@ public class MessageBarrierTest {
     @Before
     public void before() {
         MockitoAnnotations.initMocks(this);
-        final MqttServerDisconnector mqttServerDisconnector = new MqttServerDisconnectorImpl(new EventLog(), new HivemqId());
+        final MqttServerDisconnector mqttServerDisconnector = new MqttServerDisconnectorImpl(new EventLog());
 
         messageBarrier = new MessageBarrier(mqttServerDisconnector);
         embeddedChannel = new EmbeddedChannel(new DummyHandler());

@@ -16,7 +16,6 @@
 package com.hivemq.codec.decoder.mqtt311;
 
 import com.hivemq.codec.decoder.mqtt3.Mqtt311ConnectDecoder;
-import com.hivemq.configuration.HivemqId;
 import com.hivemq.configuration.service.FullConfigurationService;
 import com.hivemq.logging.EventLog;
 import com.hivemq.mqtt.handler.connack.MqttConnacker;
@@ -63,9 +62,8 @@ public class Mqtt311ConnectDecoderValidationsTest {
         MockitoAnnotations.initMocks(this);
         when(channel.attr(any(AttributeKey.class))).thenReturn(mock(Attribute.class));
         decoder = new Mqtt311ConnectDecoder(connacker,
-                new ClientIds(new HivemqId()),
-                new TestConfigurationBootstrap().getFullConfigurationService(),
-                new HivemqId());
+                new ClientIds(),
+                new TestConfigurationBootstrap().getFullConfigurationService());
     }
 
 
@@ -281,9 +279,8 @@ public class Mqtt311ConnectDecoderValidationsTest {
         fullConfigurationService.securityConfiguration().setAllowServerAssignedClientId(false);
 
         decoder = new Mqtt311ConnectDecoder(connacker,
-                new ClientIds(new HivemqId()),
-                fullConfigurationService,
-                new HivemqId());
+                new ClientIds(),
+                fullConfigurationService);
 
         final ChannelFuture cf = mock(ChannelFuture.class);
 
