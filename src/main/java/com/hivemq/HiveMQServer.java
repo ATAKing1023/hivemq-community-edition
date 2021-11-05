@@ -37,6 +37,7 @@ import com.hivemq.metrics.MetricRegistryLogger;
 import com.hivemq.migration.MigrationUnit;
 import com.hivemq.migration.Migrations;
 import com.hivemq.migration.PersistenceTypePair;
+import com.hivemq.migration.meta.PersistenceType;
 import com.hivemq.persistence.PersistenceStartup;
 import com.hivemq.persistence.payload.PublishPayloadPersistence;
 import com.hivemq.statistics.UsageStatistics;
@@ -98,6 +99,8 @@ public class HiveMQServer {
     }
 
     public static void main(final @NotNull String[] args) throws Exception {
+        InternalConfigurations.PAYLOAD_PERSISTENCE_TYPE.set(PersistenceType.FILE_DISTRIBUTED);
+        InternalConfigurations.RETAINED_MESSAGE_PERSISTENCE_TYPE.set(PersistenceType.FILE_DISTRIBUTED);
 
         final long startTime = System.nanoTime();
 

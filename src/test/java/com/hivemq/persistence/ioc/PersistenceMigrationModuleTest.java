@@ -22,12 +22,13 @@ import com.google.inject.Injector;
 import com.hivemq.bootstrap.ioc.lazysingleton.LazySingleton;
 import com.hivemq.bootstrap.ioc.lazysingleton.LazySingletonScope;
 import com.hivemq.configuration.info.SystemInformation;
+import com.hivemq.configuration.service.FullConfigurationService;
 import com.hivemq.configuration.service.MqttConfigurationService;
 import com.hivemq.configuration.service.PersistenceConfigurationService;
 import com.hivemq.persistence.PersistenceStartup;
+import com.hivemq.persistence.local.memory.PublishPayloadMemoryLocalPersistence;
 import com.hivemq.persistence.local.memory.RetainedMessageMemoryLocalPersistence;
-import com.hivemq.persistence.payload.PublishPayloadNoopPersistenceImpl;
-import com.hivemq.persistence.payload.PublishPayloadPersistence;
+import com.hivemq.persistence.payload.PublishPayloadLocalPersistence;
 import com.hivemq.persistence.retained.RetainedMessageLocalPersistence;
 import org.junit.Before;
 import org.junit.Test;
@@ -52,6 +53,9 @@ public class PersistenceMigrationModuleTest {
 
     @Mock
     private PersistenceConfigurationService persistenceConfigurationService;
+
+    @Mock
+    private FullConfigurationService fullConfigurationService;
 
     @Before
     public void setUp() throws Exception {
@@ -92,7 +96,8 @@ public class PersistenceMigrationModuleTest {
                         bind(MqttConfigurationService.class).toInstance(mqttConfigurationService);
                     }
                 });
-        assertTrue(injector.getInstance(PublishPayloadPersistence.class) instanceof PublishPayloadNoopPersistenceImpl);
+//        assertTrue(injector.getInstance(PublishPayloadPersistence.class) instanceof PublishPayloadNoopPersistenceImpl);
+        assertTrue(injector.getInstance(PublishPayloadLocalPersistence.class) instanceof PublishPayloadMemoryLocalPersistence);
         assertTrue(injector.getInstance(RetainedMessageLocalPersistence.class) instanceof RetainedMessageMemoryLocalPersistence);
     }
 }

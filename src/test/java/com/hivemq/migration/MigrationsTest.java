@@ -68,7 +68,7 @@ public class MigrationsTest {
         final File persistenceFolder = new File(systemInformation.getDataFolder(), LocalPersistenceFileUtil.PERSISTENCE_SUBFOLDER_NAME);
         persistenceFolder.mkdir();
         new File(persistenceFolder, PublishPayloadLocalPersistence.PERSISTENCE_NAME).mkdir();
-        assertEquals(1, Migrations.checkForTypeMigration(systemInformation).size());
+        assertEquals(0, Migrations.checkForTypeMigration(systemInformation).size());
     }
 
     @Test
@@ -78,7 +78,7 @@ public class MigrationsTest {
         final File persistenceFolder = new File(systemInformation.getDataFolder(), LocalPersistenceFileUtil.PERSISTENCE_SUBFOLDER_NAME);
         persistenceFolder.mkdir();
         new File(persistenceFolder, RetainedMessageLocalPersistence.PERSISTENCE_NAME).mkdir();
-        assertEquals(1, Migrations.checkForTypeMigration(systemInformation).size());
+        assertEquals(0, Migrations.checkForTypeMigration(systemInformation).size());
     }
 
     @Test
@@ -89,7 +89,7 @@ public class MigrationsTest {
         persistenceFolder.mkdir();
         new File(persistenceFolder, RetainedMessageLocalPersistence.PERSISTENCE_NAME).mkdir();
         new File(persistenceFolder, PublishPayloadLocalPersistence.PERSISTENCE_NAME).mkdir();
-        assertEquals(2, Migrations.checkForTypeMigration(systemInformation).size());
+        assertEquals(0, Migrations.checkForTypeMigration(systemInformation).size());
     }
 
     @Test
