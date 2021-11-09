@@ -36,13 +36,12 @@ public class ClientQueuePublishRequestProcessor extends AbstractMqttClusterReque
     @Override
     protected MqttClusterRequest transform(final ClientQueuePublishRequest request) {
         final ClientQueueOperation operation = new ClientQueueOperation();
-        operation.setType(ClientQueueOperation.Type.PUBLISH);
-        operation.setClient(request.getClient());
-        operation.setPublish(request.getPublish());
-        operation.setSubscriptionQos(request.getSubscriptionQos());
-        operation.setShared(request.isShared());
-        operation.setRetainAsPublished(request.isRetainAsPublished());
-        operation.setSubscriptionIdentifier(request.getSubscriptionIdentifier());
+        if (request.isShared()) {
+            operation.setType(ClientQueueOperation.Type.SHARED_PUBLISH_AVAILABLE);
+        } else {
+            operation.setType(ClientQueueOperation.Type.PUBLISH_AVAILABLE);
+        }
+        operation.setQueueId(request.getQueueId());
         final MqttClusterRequest clusterRequest = new MqttClusterRequest();
         clusterRequest.setClientQueueOperation(operation);
         return clusterRequest;

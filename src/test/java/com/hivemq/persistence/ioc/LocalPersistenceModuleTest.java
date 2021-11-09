@@ -22,11 +22,9 @@ import com.google.inject.AbstractModule;
 import com.google.inject.Guice;
 import com.google.inject.Injector;
 import com.hivemq.bootstrap.ioc.lazysingleton.LazySingletonModule;
+import com.hivemq.configuration.entity.ClusterEntity;
 import com.hivemq.configuration.info.SystemInformation;
-import com.hivemq.configuration.service.FullConfigurationService;
-import com.hivemq.configuration.service.MqttConfigurationService;
-import com.hivemq.configuration.service.PersistenceConfigurationService;
-import com.hivemq.configuration.service.RestrictionsConfigurationService;
+import com.hivemq.configuration.service.*;
 import com.hivemq.configuration.service.impl.RestrictionsConfigurationServiceImpl;
 import com.hivemq.logging.EventLog;
 import com.hivemq.metrics.MetricsHolder;
@@ -130,6 +128,10 @@ public class LocalPersistenceModuleTest {
         when(persistenceInjector.getInstance(PersistenceStartup.class)).thenReturn(Mockito.mock(PersistenceStartup.class));
         when(persistenceInjector.getInstance(PersistenceConfigurationService.class)).thenReturn(persistenceConfigurationService);
         when(persistenceConfigurationService.getMode()).thenReturn(PersistenceMode.FILE);
+
+        final ClusterConfigurationService clusterConfigurationService = mock(ClusterConfigurationService.class);
+        when(clusterConfigurationService.getClusterConfig()).thenReturn(new ClusterEntity());
+        when(configurationService.clusterConfigurationService()).thenReturn(clusterConfigurationService);
 
     }
 

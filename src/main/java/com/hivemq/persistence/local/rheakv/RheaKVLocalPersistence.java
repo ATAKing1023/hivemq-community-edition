@@ -133,9 +133,10 @@ public abstract class RheaKVLocalPersistence implements LocalPersistence, FilePe
             for (int i = 0; i < bucketCount; i++) {
                 final int finalI = i;
                 persistenceStartup.submitEnvironmentCreate(() -> {
+                    final RheaKVStoreOptions storeOptions = createRheaKVStoreOptions(finalI);
                     try {
                         final RheaKVStore rheaKVStore = new DefaultRheaKVStore();
-                        final boolean success = rheaKVStore.init(createRheaKVStoreOptions(finalI));
+                        final boolean success = rheaKVStore.init(storeOptions);
                         buckets[finalI] = rheaKVStore;
                         counter.countDown();
                         if (!success) {
@@ -145,7 +146,7 @@ public abstract class RheaKVLocalPersistence implements LocalPersistence, FilePe
                             throw new UnrecoverableException();
                         }
                     } catch (final Throwable t) { // 因为RocksDB版本问题，可能会抛出NoSuchMethodError
-                        logger.error("Error opening the {} persistence", name, t);
+                        logger.error("Error opening the {} persistence, {}", name, storeOptions, t);
                         throw new UnrecoverableException();
                     }
                 });
@@ -238,6 +239,7 @@ public abstract class RheaKVLocalPersistence implements LocalPersistence, FilePe
 
     protected enum ContentType {
         PUBLISH_PAYLOAD,
-        RETAINED_MESSAGE
+        RETAINED_MESSAGE,
+        CLIENT_QUEUE
     }
 }

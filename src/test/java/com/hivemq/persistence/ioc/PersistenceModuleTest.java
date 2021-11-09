@@ -22,7 +22,9 @@ import com.google.inject.Injector;
 import com.hivemq.bootstrap.ioc.lazysingleton.LazySingleton;
 import com.hivemq.bootstrap.ioc.lazysingleton.LazySingletonScope;
 import com.hivemq.common.shutdown.ShutdownHooks;
+import com.hivemq.configuration.entity.ClusterEntity;
 import com.hivemq.configuration.info.SystemInformation;
+import com.hivemq.configuration.service.ClusterConfigurationService;
 import com.hivemq.configuration.service.FullConfigurationService;
 import com.hivemq.configuration.service.MqttConfigurationService;
 import com.hivemq.configuration.service.RestrictionsConfigurationService;
@@ -63,6 +65,9 @@ public class PersistenceModuleTest {
     @Mock
     private Injector persistenceInjector;
 
+    @Mock
+    private FullConfigurationService fullConfigurationService;
+
     @Before
     public void setUp() throws Exception {
         MockitoAnnotations.initMocks(this);
@@ -84,6 +89,10 @@ public class PersistenceModuleTest {
         when(persistenceInjector.getInstance(PersistenceStartup.class)).thenReturn(Mockito.mock(PersistenceStartup.class));
 
         when(persistenceInjector.getInstance(ShutdownHooks.class)).thenReturn(Mockito.mock(ShutdownHooks.class));
+
+        final ClusterConfigurationService clusterConfigurationService = mock(ClusterConfigurationService.class);
+        when(clusterConfigurationService.getClusterConfig()).thenReturn(new ClusterEntity());
+        when(fullConfigurationService.clusterConfigurationService()).thenReturn(clusterConfigurationService);
     }
 
     @Test
@@ -102,7 +111,7 @@ public class PersistenceModuleTest {
                 bindScope(LazySingleton.class, LazySingletonScope.get());
                 bind(MqttConfigurationService.class).toInstance(mock(MqttConfigurationService.class));
                 bind(MetricsHolder.class).toInstance(mock(MetricsHolder.class));
-                bind(FullConfigurationService.class).toInstance(Mockito.mock(FullConfigurationService.class));
+                bind(FullConfigurationService.class).toInstance(fullConfigurationService);
                 bind(TopicMatcher.class).toInstance(Mockito.mock(TopicMatcher.class));
                 bind(MessageIDPools.class).toInstance(Mockito.mock(MessageIDPools.class));
                 bind(MetricRegistry.class).toInstance(new MetricRegistry());
