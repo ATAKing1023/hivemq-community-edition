@@ -19,6 +19,7 @@ package com.hivemq.cluster.ioc;
 import com.google.inject.Injector;
 import com.hivemq.bootstrap.ioc.SingletonModule;
 import com.hivemq.cluster.ClusterServerManager;
+import com.hivemq.cluster.HazelcastManager;
 import com.hivemq.cluster.clientqueue.ClientQueueStateMachine;
 import com.hivemq.cluster.clientsession.ClientSessionStateMachine;
 import com.hivemq.cluster.clientsession.ClientSessionSubscriptionStateMachine;

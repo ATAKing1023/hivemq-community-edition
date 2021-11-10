@@ -162,6 +162,8 @@ dependencies {
     constraints {
         implementation("com.alipay.sofa:hessian:${property("sofa-hessian.version")}")
     }
+    // hazelcast
+    implementation("com.hazelcast:hazelcast-all:${property("hazelcast.version")}")
 }
 
 dependencies {
