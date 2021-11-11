@@ -19,8 +19,10 @@ import com.codahale.metrics.MetricRegistry;
 import com.google.inject.AbstractModule;
 import com.google.inject.Guice;
 import com.google.inject.Injector;
+import com.hazelcast.cp.IAtomicLong;
 import com.hivemq.bootstrap.ioc.lazysingleton.LazySingleton;
 import com.hivemq.bootstrap.ioc.lazysingleton.LazySingletonScope;
+import com.hivemq.cluster.HazelcastManager;
 import com.hivemq.common.shutdown.ShutdownHooks;
 import com.hivemq.configuration.entity.ClusterEntity;
 import com.hivemq.configuration.info.SystemInformation;
@@ -53,6 +55,7 @@ import org.mockito.MockitoAnnotations;
 import util.TestConfigurationBootstrap;
 
 import static org.junit.Assert.assertSame;
+import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
@@ -67,6 +70,9 @@ public class PersistenceModuleTest {
 
     @Mock
     private FullConfigurationService fullConfigurationService;
+
+    @Mock
+    private HazelcastManager hazelcastManager;
 
     @Before
     public void setUp() throws Exception {
@@ -93,6 +99,7 @@ public class PersistenceModuleTest {
         final ClusterConfigurationService clusterConfigurationService = mock(ClusterConfigurationService.class);
         when(clusterConfigurationService.getClusterConfig()).thenReturn(new ClusterEntity());
         when(fullConfigurationService.clusterConfigurationService()).thenReturn(clusterConfigurationService);
+        when(hazelcastManager.getAtomicLong(anyString())).thenReturn(mock(IAtomicLong.class));
     }
 
     @Test
@@ -119,6 +126,7 @@ public class PersistenceModuleTest {
                 bind(EventLog.class).toInstance(Mockito.mock(EventLog.class));
                 bind(RestrictionsConfigurationService.class).toInstance(new RestrictionsConfigurationServiceImpl());
                 bind(MqttServerDisconnector.class).toInstance(mock(MqttServerDisconnector.class));
+                bind(HazelcastManager.class).toInstance(hazelcastManager);
             }
         });
 

@@ -48,13 +48,23 @@ public class ClusterModule extends SingletonModule<Class<ClusterModule>> {
     protected void configure() {
         install(new SnapshotPersistenceModule(persistenceInjector));
 
-        bind(ClusterServerManager.class).asEagerSingleton();
+        bindInstance(MqttClusterClient.class);
+        bindInstance(ClusterServerManager.class);
+        bindInstance(HazelcastManager.class);
 
         bind(ClientSessionStateMachine.class).in(Singleton.class);
         bind(ClientSessionSubscriptionStateMachine.class).in(Singleton.class);
         bind(ClientQueueStateMachine.class).in(Singleton.class);
         bind(MqttClusterStateMachine.class).in(Singleton.class);
         bind(MqttClusterService.class).in(Singleton.class);
-        bind(MqttClusterClient.class).in(Singleton.class);
+    }
+
+    private void bindInstance(final Class clazz) {
+        final Object instance = persistenceInjector == null ? null : persistenceInjector.getInstance(clazz);
+        if (instance != null) {
+            bind(clazz).toInstance(instance);
+        } else {
+            bind(clazz);
+        }
     }
 }

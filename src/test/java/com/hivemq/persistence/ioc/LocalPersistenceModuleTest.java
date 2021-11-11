@@ -21,7 +21,9 @@ import com.google.common.util.concurrent.ListeningScheduledExecutorService;
 import com.google.inject.AbstractModule;
 import com.google.inject.Guice;
 import com.google.inject.Injector;
+import com.hazelcast.cp.IAtomicLong;
 import com.hivemq.bootstrap.ioc.lazysingleton.LazySingletonModule;
+import com.hivemq.cluster.HazelcastManager;
 import com.hivemq.configuration.entity.ClusterEntity;
 import com.hivemq.configuration.info.SystemInformation;
 import com.hivemq.configuration.service.*;
@@ -56,6 +58,7 @@ import org.mockito.MockitoAnnotations;
 import static com.hivemq.configuration.service.PersistenceConfigurationService.PersistenceMode;
 import static org.junit.Assert.assertSame;
 import static org.junit.Assert.assertTrue;
+import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
@@ -101,6 +104,9 @@ public class LocalPersistenceModuleTest {
     private PersistenceConfigurationService persistenceConfigurationService;
 
     @Mock
+    private HazelcastManager hazelcastManager;
+
+    @Mock
     private Injector persistenceInjector;
 
     @Before
@@ -132,7 +138,7 @@ public class LocalPersistenceModuleTest {
         final ClusterConfigurationService clusterConfigurationService = mock(ClusterConfigurationService.class);
         when(clusterConfigurationService.getClusterConfig()).thenReturn(new ClusterEntity());
         when(configurationService.clusterConfigurationService()).thenReturn(clusterConfigurationService);
-
+        when(hazelcastManager.getAtomicLong(anyString())).thenReturn(mock(IAtomicLong.class));
     }
 
     @Test
@@ -209,6 +215,7 @@ public class LocalPersistenceModuleTest {
                         bind(RestrictionsConfigurationService.class).toInstance(new RestrictionsConfigurationServiceImpl());
                         bind(MqttConfigurationService.class).toInstance(mqttConfigurationService);
                         bind(MqttServerDisconnector.class).toInstance(mock(MqttServerDisconnector.class));
+                        bind(HazelcastManager.class).toInstance(hazelcastManager);
                     }
                 });
     }
