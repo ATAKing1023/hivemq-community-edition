@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.hivemq.cluster;
+package com.hivemq.cluster.serialization;
 
 import com.alipay.remoting.DefaultCustomSerializer;
 import com.alipay.remoting.InvokeContext;
@@ -24,14 +24,6 @@ import com.alipay.remoting.rpc.RequestCommand;
 import com.alipay.remoting.rpc.ResponseCommand;
 import com.alipay.remoting.rpc.protocol.RpcRequestCommand;
 import com.alipay.remoting.rpc.protocol.RpcResponseCommand;
-import com.alipay.remoting.serialization.Serializer;
-import com.caucho.hessian.io.Hessian2Input;
-import com.caucho.hessian.io.Hessian2Output;
-import com.caucho.hessian.io.SerializerFactory;
-
-import java.io.ByteArrayInputStream;
-import java.io.ByteArrayOutputStream;
-import java.io.IOException;
 
 /**
  * 自定义的RPC请求响应Hessian序列化类
@@ -117,53 +109,4 @@ public class HessianCustomSerializer extends DefaultCustomSerializer {
         return true;
     }
 
-    /**
-     * Hessian2序列化类，允许未实现{@link java.io.Serializable}的数据
-     */
-    private static final class HessianSerializer implements Serializer {
-
-        private final SerializerFactory serializerFactory;
-
-        public HessianSerializer() {
-            this.serializerFactory = SerializerFactory.createDefault();
-            this.serializerFactory.setAllowNonSerializable(true);
-        }
-
-        /**
-         * @see com.alipay.remoting.serialization.Serializer#serialize(java.lang.Object)
-         */
-        @Override
-        public byte[] serialize(final Object obj) throws SerializationException {
-            final ByteArrayOutputStream byteArray = new ByteArrayOutputStream();
-            final Hessian2Output output = new Hessian2Output(byteArray);
-            output.setSerializerFactory(serializerFactory);
-            try {
-                output.writeObject(obj);
-                output.close();
-            } catch (final IOException e) {
-                throw new SerializationException("IOException occurred when Hessian serializer encode!", e);
-            }
-
-            return byteArray.toByteArray();
-        }
-
-        /**
-         * @see com.alipay.remoting.serialization.Serializer#deserialize(byte[], java.lang.String)
-         */
-        @SuppressWarnings("unchecked")
-        @Override
-        public <T> T deserialize(final byte[] data, final String classOfT) throws DeserializationException {
-            final Hessian2Input input = new Hessian2Input(new ByteArrayInputStream(data));
-            input.setSerializerFactory(serializerFactory);
-            final Object resultObject;
-            try {
-                resultObject = input.readObject();
-                input.close();
-            } catch (final IOException e) {
-                throw new DeserializationException("IOException occurred when Hessian serializer decode!", e);
-            }
-            return (T) resultObject;
-        }
-
-    }
 }

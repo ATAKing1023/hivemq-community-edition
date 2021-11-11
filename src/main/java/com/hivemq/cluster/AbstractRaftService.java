@@ -23,6 +23,7 @@ import com.alipay.sofa.jraft.Node;
 import com.alipay.sofa.jraft.entity.PeerId;
 import com.alipay.sofa.jraft.entity.Task;
 import com.alipay.sofa.jraft.error.RaftError;
+import com.hivemq.cluster.serialization.HessianCustomSerializer;
 import lombok.extern.slf4j.Slf4j;
 
 import java.nio.ByteBuffer;

@@ -21,6 +21,7 @@ import com.alipay.remoting.serialization.SerializerManager;
 import com.alipay.sofa.jraft.Iterator;
 import com.alipay.sofa.jraft.Status;
 import com.alipay.sofa.jraft.core.StateMachineAdapter;
+import com.hivemq.cluster.serialization.HessianCustomSerializer;
 import lombok.extern.slf4j.Slf4j;
 
 import java.nio.ByteBuffer;

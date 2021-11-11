@@ -23,6 +23,7 @@ import com.hazelcast.core.HazelcastInstance;
 import com.hazelcast.cp.IAtomicLong;
 import com.hazelcast.topic.Message;
 import com.hazelcast.topic.MessageListener;
+import com.hivemq.cluster.serialization.HazelcastGlobalSerializer;
 import com.hivemq.common.shutdown.HiveMQShutdownHook;
 import com.hivemq.common.shutdown.ShutdownHooks;
 import com.hivemq.configuration.entity.ClusterEntity;
@@ -30,6 +31,7 @@ import com.hivemq.configuration.service.FullConfigurationService;
 import com.hivemq.extension.sdk.api.annotations.NotNull;
 import lombok.extern.slf4j.Slf4j;
 
+import javax.annotation.PostConstruct;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 import java.util.HashSet;
@@ -47,7 +49,11 @@ import java.util.concurrent.ConcurrentMap;
 @Singleton
 public class HazelcastManager {
 
-    private final HazelcastInstance hazelcastInstance;
+    private final Config config;
+
+    private final ShutdownHooks registry;
+
+    private HazelcastInstance hazelcastInstance;
 
     private final ConcurrentMap<String, Set<MessageListener<Object>>> topicMessageListenerMap =
             new ConcurrentHashMap<>();
@@ -56,25 +62,12 @@ public class HazelcastManager {
     public HazelcastManager(
             final @NotNull ShutdownHooks registry,
             final @NotNull FullConfigurationService fullConfigurationService) {
+        this.config = createConfig(fullConfigurationService.clusterConfigurationService().getClusterConfig());
+        this.registry = registry;
+    }
 
-        final Config config = new Config();
-
-        final NetworkConfig networkConfig = new NetworkConfig();
-        final JoinConfig joinConfig = new JoinConfig();
-        final TcpIpConfig tcpIpConfig = new TcpIpConfig();
-        final ClusterEntity clusterConfig = fullConfigurationService.clusterConfigurationService().getClusterConfig();
-        tcpIpConfig.setEnabled(true);
-        tcpIpConfig.setMembers(clusterConfig.getNodeList());
-        joinConfig.setTcpIpConfig(tcpIpConfig);
-        networkConfig.setJoin(joinConfig);
-        config.setNetworkConfig(networkConfig);
-
-        if (clusterConfig.getNodeList().size() >= 3) {
-            final CPSubsystemConfig cpSubsystemConfig = new CPSubsystemConfig();
-            cpSubsystemConfig.setCPMemberCount(clusterConfig.getNodeList().size());
-            config.setCPSubsystemConfig(cpSubsystemConfig);
-        }
-
+    @PostConstruct
+    public void postConstruct() {
         log.info("Create hazelcast instance: {}", config);
         this.hazelcastInstance = Hazelcast.newHazelcastInstance(config);
         registry.add(new HiveMQShutdownHook() {
@@ -89,6 +82,33 @@ public class HazelcastManager {
                 hazelcastInstance.shutdown();
             }
         });
+    }
+
+    private Config createConfig(final ClusterEntity clusterConfig) {
+        final Config config = new Config();
+
+        final NetworkConfig networkConfig = new NetworkConfig();
+        final JoinConfig joinConfig = new JoinConfig();
+        final TcpIpConfig tcpIpConfig = new TcpIpConfig();
+        tcpIpConfig.setEnabled(true);
+        tcpIpConfig.setMembers(clusterConfig.getNodeList());
+        joinConfig.setTcpIpConfig(tcpIpConfig);
+        networkConfig.setJoin(joinConfig);
+        config.setNetworkConfig(networkConfig);
+
+        if (clusterConfig.getNodeList().size() >= 3) {
+            final CPSubsystemConfig cpSubsystemConfig = new CPSubsystemConfig();
+            cpSubsystemConfig.setCPMemberCount(clusterConfig.getNodeList().size());
+            config.setCPSubsystemConfig(cpSubsystemConfig);
+        }
+
+        final SerializationConfig serializationConfig = new SerializationConfig();
+        final GlobalSerializerConfig globalSerializerConfig = new GlobalSerializerConfig();
+        globalSerializerConfig.setImplementation(new HazelcastGlobalSerializer());
+        globalSerializerConfig.setOverrideJavaSerialization(true);
+        serializationConfig.setGlobalSerializerConfig(globalSerializerConfig);
+        config.setSerializationConfig(serializationConfig);
+        return config;
     }
 
     public void registerListener(final String topic, final MessageListener<Object> messageListener) {
