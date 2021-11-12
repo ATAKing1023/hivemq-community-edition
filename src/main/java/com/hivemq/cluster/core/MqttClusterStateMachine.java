@@ -23,10 +23,12 @@ import com.alipay.sofa.jraft.storage.snapshot.SnapshotReader;
 import com.alipay.sofa.jraft.storage.snapshot.SnapshotWriter;
 import com.hivemq.cluster.AbstractStateMachine;
 import com.hivemq.cluster.GroupIds;
+import com.hivemq.cluster.clientqueue.ClientQueueOperation;
 import com.hivemq.cluster.clientqueue.ClientQueueStateMachine;
 import com.hivemq.cluster.clientsession.ClientSessionStateMachine;
 import com.hivemq.cluster.clientsession.ClientSessionSubscriptionOperation;
 import com.hivemq.cluster.clientsession.ClientSessionSubscriptionStateMachine;
+import com.hivemq.mqtt.handler.publish.PublishStatus;
 import com.hivemq.persistence.clientsession.callback.SubscriptionResult;
 import lombok.extern.slf4j.Slf4j;
 
@@ -80,7 +82,7 @@ public class MqttClusterStateMachine
         try {
             clientSessionStateMachine.doSnapshotSave(writer);
             clientSessionSubscriptionStateMachine.doSnapshotSave(writer);
-//            clientQueueStateMachine.doSnapshotSave(writer);
+            clientQueueStateMachine.doSnapshotSave(writer);
             done.run(Status.OK());
         } catch (final Exception e) {
             done.run(new Status(RaftError.EIO, "Error saving snapshot %s", e.getMessage()));
@@ -97,7 +99,7 @@ public class MqttClusterStateMachine
         try {
             clientSessionStateMachine.doSnapshotLoad(reader);
             clientSessionSubscriptionStateMachine.doSnapshotLoad(reader);
-//            clientQueueStateMachine.doSnapshotLoad(reader);
+            clientQueueStateMachine.doSnapshotLoad(reader);
             return true;
         } catch (final Exception e) {
             log.error("Error loading snapshot", e);
@@ -112,6 +114,11 @@ public class MqttClusterStateMachine
             if (request.getClientSessionSubscriptionOperation().getType() ==
                     ClientSessionSubscriptionOperation.Type.ADD) {
                 response.setSubscriptionResults((List<SubscriptionResult>) result);
+            }
+        }
+        if (request.getClientQueueOperation() != null) {
+            if (request.getClientQueueOperation().getType() == ClientQueueOperation.Type.PUBLISH) {
+                response.setPublishStatus((PublishStatus) result);
             }
         }
     }

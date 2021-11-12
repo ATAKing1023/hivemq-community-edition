@@ -73,7 +73,6 @@ public class PersistenceMigrationModuleTest {
                         bind(SystemInformation.class).toInstance(systemInformation);
                         bindScope(LazySingleton.class, LazySingletonScope.get());
                         bind(MqttConfigurationService.class).toInstance(mqttConfigurationService);
-                        bind(FullConfigurationService.class).toInstance(fullConfigurationService);
                     }
                 });
 
@@ -95,7 +94,6 @@ public class PersistenceMigrationModuleTest {
                         bind(SystemInformation.class).toInstance(systemInformation);
                         bindScope(LazySingleton.class, LazySingletonScope.get());
                         bind(MqttConfigurationService.class).toInstance(mqttConfigurationService);
-                        bind(FullConfigurationService.class).toInstance(fullConfigurationService);
                     }
                 });
 //        assertTrue(injector.getInstance(PublishPayloadPersistence.class) instanceof PublishPayloadNoopPersistenceImpl);

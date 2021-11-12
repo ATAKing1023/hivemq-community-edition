@@ -17,7 +17,6 @@
 package com.hivemq.cluster;
 
 import com.google.common.util.concurrent.ListenableFuture;
-import lombok.SneakyThrows;
 
 /**
  * 客户端服务接口
@@ -27,17 +26,6 @@ import lombok.SneakyThrows;
  * @since 2021/8/16
  */
 public interface RpcClient<R> {
-
-    /**
-     * 同步执行远程调用
-     *
-     * @param request 请求
-     * @return 响应
-     */
-    @SneakyThrows
-    default R invokeSync(final Object request) {
-        return invoke(request).get();
-    }
 
     /**
      * 执行远程调用

@@ -118,7 +118,7 @@ public class PersistenceModuleTest {
                 bindScope(LazySingleton.class, LazySingletonScope.get());
                 bind(MqttConfigurationService.class).toInstance(mock(MqttConfigurationService.class));
                 bind(MetricsHolder.class).toInstance(mock(MetricsHolder.class));
-                bind(FullConfigurationService.class).toInstance(fullConfigurationService);
+                bind(FullConfigurationService.class).toInstance(Mockito.mock(FullConfigurationService.class));
                 bind(TopicMatcher.class).toInstance(Mockito.mock(TopicMatcher.class));
                 bind(MessageIDPools.class).toInstance(Mockito.mock(MessageIDPools.class));
                 bind(MetricRegistry.class).toInstance(new MetricRegistry());

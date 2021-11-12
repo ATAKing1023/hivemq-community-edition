@@ -22,11 +22,11 @@ import com.hivemq.extension.sdk.api.annotations.NotNull;
 import com.hivemq.extension.sdk.api.annotations.Nullable;
 import com.hivemq.migration.meta.PersistenceType;
 import com.hivemq.persistence.clientqueue.ClientQueueLocalPersistence;
+import com.hivemq.persistence.clientqueue.ClientQueueXodusLocalPersistence;
 import com.hivemq.persistence.ioc.provider.local.ClientSessionLocalProvider;
 import com.hivemq.persistence.ioc.provider.local.ClientSessionSubscriptionLocalProvider;
 import com.hivemq.persistence.local.ClientSessionLocalPersistence;
 import com.hivemq.persistence.local.ClientSessionSubscriptionLocalPersistence;
-import com.hivemq.persistence.local.rheakv.ClientQueueRheaKVLocalPersistence;
 import com.hivemq.persistence.local.xodus.clientsession.ClientSessionSubscriptionXodusLocalPersistence;
 import com.hivemq.persistence.local.xodus.clientsession.ClientSessionXodusLocalPersistence;
 
@@ -60,7 +60,7 @@ class LocalPersistenceFileModule extends SingletonModule<Class<LocalPersistenceF
                 ClientSessionSubscriptionLocalProvider.class);
 
         bindLocalPersistence(ClientQueueLocalPersistence.class,
-                ClientQueueRheaKVLocalPersistence.class,
+                ClientQueueXodusLocalPersistence.class,
                 null);
     }
 

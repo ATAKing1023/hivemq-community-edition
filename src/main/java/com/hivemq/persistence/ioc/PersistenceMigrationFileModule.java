@@ -21,11 +21,11 @@ import com.hivemq.configuration.service.InternalConfigurations;
 import com.hivemq.extension.sdk.api.annotations.NotNull;
 import com.hivemq.migration.meta.PersistenceType;
 import com.hivemq.persistence.clientqueue.ClientQueueLocalPersistence;
+import com.hivemq.persistence.clientqueue.ClientQueueXodusLocalPersistence;
 import com.hivemq.persistence.ioc.provider.local.ClientSessionLocalProvider;
 import com.hivemq.persistence.ioc.provider.local.ClientSessionSubscriptionLocalProvider;
 import com.hivemq.persistence.local.ClientSessionLocalPersistence;
 import com.hivemq.persistence.local.ClientSessionSubscriptionLocalPersistence;
-import com.hivemq.persistence.local.rheakv.ClientQueueRheaKVLocalPersistence;
 
 import javax.inject.Singleton;
 
@@ -48,6 +48,6 @@ public class PersistenceMigrationFileModule extends SingletonModule<Class<Persis
 
         bind(ClientSessionLocalPersistence.class).toProvider(ClientSessionLocalProvider.class).in(Singleton.class);
         bind(ClientSessionSubscriptionLocalPersistence.class).toProvider(ClientSessionSubscriptionLocalProvider.class).in(Singleton.class);
-        bind(ClientQueueLocalPersistence.class).to(ClientQueueRheaKVLocalPersistence.class).in(Singleton.class);
+        bind(ClientQueueLocalPersistence.class).to(ClientQueueXodusLocalPersistence.class).in(Singleton.class);
     }
 }

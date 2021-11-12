@@ -16,7 +16,10 @@
 
 package com.hivemq.cluster.clientqueue.rpc;
 
+import com.google.common.primitives.ImmutableIntArray;
 import com.hivemq.extension.sdk.api.annotations.NotNull;
+import com.hivemq.extension.sdk.api.annotations.Nullable;
+import com.hivemq.mqtt.message.publish.PUBLISH;
 import lombok.Value;
 
 import java.io.Serializable;
@@ -30,6 +33,10 @@ import java.io.Serializable;
 @Value
 public class ClientQueuePublishRequest implements Serializable {
 
-    @NotNull String queueId;
+    @NotNull String client;
+    @NotNull PUBLISH publish;
+    int subscriptionQos;
     boolean shared;
+    boolean retainAsPublished;
+    @Nullable ImmutableIntArray subscriptionIdentifier;
 }
