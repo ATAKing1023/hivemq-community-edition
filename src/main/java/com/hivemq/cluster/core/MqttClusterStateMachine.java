@@ -108,7 +108,6 @@ public class MqttClusterStateMachine
     @Override
     protected void setResponseData(
             final MqttClusterRequest request, final MqttClusterResponse response, final Object result) {
-        log.info("request: {}, response: {}, result: {}", request, response, result);
         if (request.getClientSessionSubscriptionOperation() != null) {
             if (request.getClientSessionSubscriptionOperation().getType() ==
                     ClientSessionSubscriptionOperation.Type.ADD) {

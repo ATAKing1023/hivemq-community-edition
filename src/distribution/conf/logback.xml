@@ -18,7 +18,7 @@
 
     <appender name="CONSOLE" class="ch.qos.logback.core.ConsoleAppender">
         <encoder>
-            <pattern>%-30(%d %level)- %msg%n%ex</pattern>
+            <pattern>%-30(%d %level) [%logger{50}]- %msg%n%ex</pattern>
         </encoder>
     </appender>
 
@@ -34,7 +34,7 @@
             <maxHistory>30</maxHistory>
         </rollingPolicy>
         <encoder>
-            <pattern>%-30(%d %level)- %msg%n%ex</pattern>
+            <pattern>%-30(%d %level) [%logger{50}]- %msg%n%ex</pattern>
         </encoder>
     </appender>
 
@@ -91,5 +91,10 @@
     <logger name="org.eclipse.jetty" level="ERROR"/>
     <logger name="com.google.common.util.concurrent.Futures.CombinedFuture" level="OFF"/>
     <logger name="oshi" level="ERROR"/>
+    <logger name="io.netty.util" level="ERROR"/>
+    <logger name="com.hivemq.cluster" level="DEBUG"/>
+    <logger name="com.alipay.sofa" level="INFO"/>
+    <logger name="com.alipay.sofa.jraft.rhea" level="WARN"/>
+    <logger name="com.hivemq.cluster" level="DEBUG"/>
 
 </configuration>
