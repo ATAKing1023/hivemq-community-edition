@@ -16,10 +16,14 @@
 package com.hivemq.persistence.payload;
 
 import com.google.common.util.concurrent.ListeningScheduledExecutorService;
-import com.hivemq.configuration.HivemqId;
+import com.hazelcast.core.Hazelcast;
+import com.hazelcast.core.HazelcastInstance;
+import com.hazelcast.cp.IAtomicLong;
+import com.hivemq.cluster.HazelcastManager;
 import com.hivemq.configuration.service.InternalConfigurations;
 import com.hivemq.mqtt.message.publish.PUBLISH;
 import net.openhft.hashing.LongHashFunction;
+import org.apache.commons.lang3.RandomStringUtils;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -28,8 +32,9 @@ import org.mockito.MockitoAnnotations;
 import util.LogbackCapturingAppender;
 
 import java.util.Arrays;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicLong;
 
 import static org.junit.Assert.*;
 import static org.mockito.Mockito.*;
@@ -72,6 +77,7 @@ public class PublishPayloadPersistenceImplTest {
 
     @Test
     public void add_new_entries() throws Exception {
+        final String hivemqId = RandomStringUtils.randomAlphanumeric(5);
         final byte[] payload1 = "payload1".getBytes();
         final byte[] payload2 = "payload2".getBytes();
         persistence.add(payload1, 1, PUBLISH.getUniqueId(HivemqId.get(), 123));
@@ -85,6 +91,7 @@ public class PublishPayloadPersistenceImplTest {
 
     @Test
     public void add_existent_entry() throws Exception {
+        final String hivemqId = RandomStringUtils.randomAlphanumeric(5);
         final byte[] payload = "payload".getBytes();
         persistence.add(payload, 1, PUBLISH.getUniqueId(HivemqId.get(), 123));
         persistence.add(payload, 2, PUBLISH.getUniqueId(HivemqId.get(), 123));
@@ -97,6 +104,7 @@ public class PublishPayloadPersistenceImplTest {
 
     @Test
     public void get_from_cache() throws Exception {
+        final String hivemqId = RandomStringUtils.randomAlphanumeric(5);
         final byte[] payload = "payload".getBytes();
         persistence.add(payload, 1, PUBLISH.getUniqueId(HivemqId.get(), 123));
 
@@ -114,6 +122,7 @@ public class PublishPayloadPersistenceImplTest {
 
     @Test
     public void get_from_local_persistence() throws Exception {
+        final String hivemqId = RandomStringUtils.randomAlphanumeric(5);
         final byte[] payload = "payload".getBytes();
         persistence.add(payload, 1, PUBLISH.getUniqueId(HivemqId.get(), 123));
 

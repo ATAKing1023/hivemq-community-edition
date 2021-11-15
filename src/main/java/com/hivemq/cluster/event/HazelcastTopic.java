@@ -14,29 +14,14 @@
  * limitations under the License.
  */
 
-package com.hivemq.cluster.clientqueue.rpc;
-
-import com.google.common.primitives.ImmutableIntArray;
-import com.hivemq.extension.sdk.api.annotations.NotNull;
-import com.hivemq.extension.sdk.api.annotations.Nullable;
-import com.hivemq.mqtt.message.publish.PUBLISH;
-import lombok.Value;
-
-import java.io.Serializable;
+package com.hivemq.cluster.event;
 
 /**
- * 客户端队列消息发布请求
+ * Hazelcast消息主题
  *
  * @author ankang
- * @since 2021/9/3
+ * @since 2021/11/12
  */
-@Value
-public class ClientQueuePublishRequest implements Serializable {
-
-    @NotNull String client;
-    @NotNull PUBLISH publish;
-    int subscriptionQos;
-    boolean shared;
-    boolean retainAsPublished;
-    @Nullable ImmutableIntArray subscriptionIdentifier;
+public enum HazelcastTopic {
+    CLIENT_QUEUE_PUBLISH
 }

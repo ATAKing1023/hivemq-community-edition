@@ -16,7 +16,6 @@
 
 package com.hivemq.cluster.core;
 
-import com.hivemq.cluster.clientqueue.ClientQueueOperation;
 import com.hivemq.cluster.clientsession.ClientSessionOperation;
 import com.hivemq.cluster.clientsession.ClientSessionSubscriptionOperation;
 import lombok.Data;
@@ -35,6 +34,4 @@ public class MqttClusterRequest implements Serializable {
     private ClientSessionOperation clientSessionOperation;
 
     private ClientSessionSubscriptionOperation clientSessionSubscriptionOperation;
-
-    private ClientQueueOperation clientQueueOperation;
 }

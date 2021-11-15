@@ -18,7 +18,7 @@ package com.hivemq.cluster.core;
 
 import com.hivemq.cluster.AbstractRpcClient;
 import com.hivemq.cluster.ClusterServerManager;
-import com.hivemq.cluster.GroupIds;
+import com.hivemq.cluster.RaftGroupId;
 
 import javax.inject.Inject;
 import javax.inject.Singleton;
@@ -39,6 +39,6 @@ public class MqttClusterClient extends AbstractRpcClient<MqttClusterResponse> {
 
     @Override
     public String getGroupId() {
-        return GroupIds.MQTT_CLUSTER;
+        return RaftGroupId.MQTT_CLUSTER.name();
     }
 }

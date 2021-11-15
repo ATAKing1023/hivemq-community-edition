@@ -14,34 +14,27 @@
  * limitations under the License.
  */
 
-package com.hivemq.cluster.clientqueue;
+package com.hivemq.cluster.event;
 
 import com.google.common.primitives.ImmutableIntArray;
 import com.hivemq.extension.sdk.api.annotations.NotNull;
 import com.hivemq.extension.sdk.api.annotations.Nullable;
 import com.hivemq.mqtt.message.publish.PUBLISH;
-import lombok.Data;
-
-import java.io.Serializable;
+import lombok.Value;
 
 /**
- * 客户端队列操作请求
+ * 客户端队列消息发布事件
  *
  * @author ankang
- * @since 2021/9/3
+ * @since 2021/11/12
  */
-@Data
-public class ClientQueueOperation implements Serializable {
+@Value
+public class ClientQueuePublishEvent {
 
-    private @NotNull Type type;
-    private @NotNull String client;
-    private @NotNull PUBLISH publish;
-    private int subscriptionQos;
-    private boolean shared;
-    private boolean retainAsPublished;
-    private @Nullable ImmutableIntArray subscriptionIdentifier;
-
-    public enum Type {
-        PUBLISH
-    }
+    @NotNull String client;
+    @NotNull PUBLISH publish;
+    int subscriptionQos;
+    boolean shared;
+    boolean retainAsPublished;
+    @Nullable ImmutableIntArray subscriptionIdentifier;
 }

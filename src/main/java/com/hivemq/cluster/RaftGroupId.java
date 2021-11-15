@@ -17,15 +17,11 @@
 package com.hivemq.cluster;
 
 /**
- * Raft群组ID常量
+ * Raft群组ID
  *
  * @author ankang
  * @since 2021/8/14
  */
-public final class GroupIds {
-
-    /**
-     * MQTT集群操作
-     */
-    public static final String MQTT_CLUSTER = "mqtt-cluster";
+public enum RaftGroupId {
+    MQTT_CLUSTER, REFERENCE_COUNT
 }

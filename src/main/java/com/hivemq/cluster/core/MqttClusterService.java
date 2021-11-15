@@ -19,7 +19,6 @@ package com.hivemq.cluster.core;
 import com.alipay.remoting.rpc.protocol.UserProcessor;
 import com.hivemq.cluster.AbstractRaftService;
 import com.hivemq.cluster.ClusterServerManager;
-import com.hivemq.cluster.clientqueue.rpc.ClientQueuePublishRequestProcessor;
 import com.hivemq.cluster.clientsession.rpc.*;
 
 import javax.inject.Inject;
@@ -50,7 +49,6 @@ public class MqttClusterService extends AbstractRaftService<MqttClusterRequest, 
         processors.add(new ClientDisconnectRequestProcessor(this));
         processors.add(new ClientSessionSubscriptionAddRequestProcessor(this));
         processors.add(new ClientSessionSubscriptionRemoveRequestProcessor(this));
-        processors.add(new ClientQueuePublishRequestProcessor(this));
         return processors;
     }
 }

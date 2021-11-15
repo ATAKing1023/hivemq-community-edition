@@ -72,6 +72,7 @@ public class PersistenceMigrationModuleTest {
                     protected void configure() {
                         bind(SystemInformation.class).toInstance(systemInformation);
                         bindScope(LazySingleton.class, LazySingletonScope.get());
+                        bind(FullConfigurationService.class).toInstance(fullConfigurationService);
                         bind(MqttConfigurationService.class).toInstance(mqttConfigurationService);
                     }
                 });
@@ -93,6 +94,7 @@ public class PersistenceMigrationModuleTest {
                     protected void configure() {
                         bind(SystemInformation.class).toInstance(systemInformation);
                         bindScope(LazySingleton.class, LazySingletonScope.get());
+                        bind(FullConfigurationService.class).toInstance(fullConfigurationService);
                         bind(MqttConfigurationService.class).toInstance(mqttConfigurationService);
                     }
                 });

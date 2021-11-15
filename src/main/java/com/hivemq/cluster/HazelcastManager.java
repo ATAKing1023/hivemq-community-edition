@@ -16,6 +16,7 @@
 
 package com.hivemq.cluster;
 
+import com.hazelcast.cluster.Member;
 import com.hazelcast.config.*;
 import com.hazelcast.config.cp.CPSubsystemConfig;
 import com.hazelcast.core.Hazelcast;
@@ -23,6 +24,7 @@ import com.hazelcast.core.HazelcastInstance;
 import com.hazelcast.cp.IAtomicLong;
 import com.hazelcast.topic.Message;
 import com.hazelcast.topic.MessageListener;
+import com.hivemq.cluster.event.HazelcastTopic;
 import com.hivemq.cluster.serialization.HazelcastGlobalSerializer;
 import com.hivemq.common.shutdown.HiveMQShutdownHook;
 import com.hivemq.common.shutdown.ShutdownHooks;
@@ -36,6 +38,7 @@ import javax.inject.Inject;
 import javax.inject.Singleton;
 import java.util.HashSet;
 import java.util.Set;
+import java.util.concurrent.CompletionStage;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 
@@ -55,13 +58,12 @@ public class HazelcastManager {
 
     private HazelcastInstance hazelcastInstance;
 
-    private final ConcurrentMap<String, Set<MessageListener<Object>>> topicMessageListenerMap =
+    private final ConcurrentMap<HazelcastTopic, Set<MessageListener<Object>>> topicMessageListenerMap =
             new ConcurrentHashMap<>();
 
     @Inject
     public HazelcastManager(
-            final @NotNull ShutdownHooks registry,
-            final @NotNull FullConfigurationService fullConfigurationService) {
+            final @NotNull ShutdownHooks registry, final @NotNull FullConfigurationService fullConfigurationService) {
         this.config = createConfig(fullConfigurationService.clusterConfigurationService().getClusterConfig());
         this.registry = registry;
     }
@@ -69,7 +71,16 @@ public class HazelcastManager {
     @PostConstruct
     public void postConstruct() {
         log.info("Create hazelcast instance: {}", config);
-        this.hazelcastInstance = Hazelcast.newHazelcastInstance(config);
+        hazelcastInstance = Hazelcast.getOrCreateHazelcastInstance(config);
+        // pre-init raft group for performance
+        for (final HazelcastTopic topic : HazelcastTopic.values()) {
+            hazelcastInstance.getReliableTopic(topic.name());
+        }
+        if (config.getCPSubsystemConfig().getCPMemberCount() > 0) {
+            for (final RaftGroupId groupId : RaftGroupId.values()) {
+                hazelcastInstance.getCPSubsystem().getCPSubsystemManagementService().getCPGroup(groupId.name());
+            }
+        }
         registry.add(new HiveMQShutdownHook() {
             @Override
             public String name() {
@@ -85,7 +96,7 @@ public class HazelcastManager {
     }
 
     private Config createConfig(final ClusterEntity clusterConfig) {
-        final Config config = new Config();
+        final Config config = new Config("mqtt-hazelcast");
 
         final NetworkConfig networkConfig = new NetworkConfig();
         final JoinConfig joinConfig = new JoinConfig();
@@ -96,9 +107,10 @@ public class HazelcastManager {
         networkConfig.setJoin(joinConfig);
         config.setNetworkConfig(networkConfig);
 
-        if (clusterConfig.getNodeList().size() >= 3) {
+        if (clusterConfig.getNodeList().size() >= CPSubsystemConfig.MIN_GROUP_SIZE) {
             final CPSubsystemConfig cpSubsystemConfig = new CPSubsystemConfig();
             cpSubsystemConfig.setCPMemberCount(clusterConfig.getNodeList().size());
+            cpSubsystemConfig.setGroupSize(CPSubsystemConfig.MIN_GROUP_SIZE);
             config.setCPSubsystemConfig(cpSubsystemConfig);
         }
 
@@ -111,7 +123,7 @@ public class HazelcastManager {
         return config;
     }
 
-    public void registerListener(final String topic, final MessageListener<Object> messageListener) {
+    public void registerListener(final HazelcastTopic topic, final MessageListener<Object> messageListener) {
         final MessageListener<Object> wrappedListener = new MessageListenerWrapper<>(messageListener);
         if (hazelcastInstance == null) {
             topicMessageListenerMap.compute(topic, (key, value) -> {
@@ -122,11 +134,11 @@ public class HazelcastManager {
                 return value;
             });
         } else {
-            hazelcastInstance.getReliableTopic(topic).addMessageListener(wrappedListener);
+            hazelcastInstance.getReliableTopic(topic.name()).addMessageListener(wrappedListener);
         }
     }
 
-    public void publish(final String topic, final Object event) {
+    public void publish(final HazelcastTopic topic, final Object event) {
         log.debug("publish message: [topic={}, event={}]", topic, event);
         hazelcastInstance.getReliableTopic(topic).publish(event);
     }
@@ -145,13 +157,22 @@ public class HazelcastManager {
 
         @Override
         public void onMessage(final Message<E> message) {
+            final Member publishingMember = message.getPublishingMember();
+            if (publishingMember.localMember()) {
+                logMessage("ignore local message: ", message);
+            } else {
+                logMessage("received message: ", message);
+                this.messageListener.onMessage(message);
+            }
+        }
+
+        private void logMessage(final String content, final Message<?> message) {
             log.debug(
-                    "received message: [source={}, messageObject={}, publishingMember={}, publishTime={}]",
+                    content + "[source={}, messageObject={}, publishingMember={}, publishTime={}]",
                     message.getSource(),
                     message.getMessageObject(),
                     message.getPublishingMember(),
                     message.getPublishTime());
-            this.messageListener.onMessage(message);
         }
     }
 }
