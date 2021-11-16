@@ -21,16 +21,12 @@ import com.google.common.util.concurrent.ListenableFuture;
 import com.hivemq.cluster.InternalStateMachine;
 import com.hivemq.cluster.LocalPersistenceSnapshotSupport;
 import com.hivemq.cluster.ioc.SnapshotPersistence;
-import com.hivemq.configuration.HivemqId;
-import com.hivemq.mqtt.message.reason.Mqtt5DisconnectReasonCode;
 import com.hivemq.persistence.ProducerQueues;
 import com.hivemq.persistence.SingleWriterService;
 import com.hivemq.persistence.clientsession.ClientSession;
 import com.hivemq.persistence.clientsession.ClientSessionPersistence;
-import com.hivemq.persistence.clientsession.ClientSessionPersistenceImpl;
 import com.hivemq.persistence.local.ClientSessionLocalPersistence;
 import com.hivemq.persistence.util.FutureUtils;
-import com.hivemq.util.ReasonStrings;
 import lombok.extern.slf4j.Slf4j;
 
 import javax.inject.Inject;
@@ -80,15 +76,6 @@ public class ClientSessionStateMachine extends LocalPersistenceSnapshotSupport<C
                 future = clientSessionPersistence.clientDisconnected(request.getClientId(),
                         request.isSendWill(),
                         request.getSessionExpiryInterval());
-                break;
-            case DISCONNECT:
-                if (!HivemqId.get().equals(request.getHivemqId())) {
-                    future = clientSessionPersistence.forceDisconnectClient(request.getClientId(),
-                            true,
-                            ClientSessionPersistenceImpl.DisconnectSource.CLUSTER,
-                            Mqtt5DisconnectReasonCode.SESSION_TAKEN_OVER,
-                            ReasonStrings.DISCONNECT_SESSION_TAKEN_OVER);
-                }
                 break;
         }
         return future;

@@ -17,8 +17,8 @@
 package com.hivemq.cluster.clientsession.rpc;
 
 import com.hivemq.cluster.clientsession.ClientSessionSubscriptionOperation;
-import com.hivemq.cluster.core.AbstractMqttClusterRequestProcessor;
 import com.hivemq.cluster.core.MqttClusterRequest;
+import com.hivemq.cluster.core.MqttClusterRequestProcessor;
 import com.hivemq.cluster.core.MqttClusterService;
 
 /**
@@ -28,7 +28,7 @@ import com.hivemq.cluster.core.MqttClusterService;
  * @since 2021/8/18
  */
 public class ClientSessionSubscriptionAddRequestProcessor
-        extends AbstractMqttClusterRequestProcessor<ClientSessionSubscriptionAddRequest> {
+        extends MqttClusterRequestProcessor<ClientSessionSubscriptionAddRequest> {
 
     public ClientSessionSubscriptionAddRequestProcessor(final MqttClusterService raftService) {
         super(raftService);

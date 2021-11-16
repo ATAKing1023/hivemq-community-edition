@@ -17,8 +17,8 @@
 package com.hivemq.cluster.clientsession.rpc;
 
 import com.hivemq.cluster.clientsession.ClientSessionOperation;
-import com.hivemq.cluster.core.AbstractMqttClusterRequestProcessor;
 import com.hivemq.cluster.core.MqttClusterRequest;
+import com.hivemq.cluster.core.MqttClusterRequestProcessor;
 import com.hivemq.cluster.core.MqttClusterService;
 
 /**
@@ -27,8 +27,7 @@ import com.hivemq.cluster.core.MqttClusterService;
  * @author ankang
  * @since 2021/8/16
  */
-public class ClientSessionRemoveRequestProcessor
-        extends AbstractMqttClusterRequestProcessor<ClientSessionRemoveRequest> {
+public class ClientSessionRemoveRequestProcessor extends MqttClusterRequestProcessor<ClientSessionRemoveRequest> {
 
     public ClientSessionRemoveRequestProcessor(final MqttClusterService raftService) {
         super(raftService);

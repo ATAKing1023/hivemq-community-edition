@@ -40,11 +40,8 @@ public class ClientSessionOperation implements Serializable {
     private @Nullable MqttWillPublish willPublish;
     private @Nullable Long queueLimit;
 
-    private String hivemqId;
-
     public enum Type {
         ADD,
-        REMOVE,
-        DISCONNECT
+        REMOVE
     }
 }

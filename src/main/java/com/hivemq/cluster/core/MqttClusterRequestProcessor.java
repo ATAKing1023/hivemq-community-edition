@@ -25,10 +25,10 @@ import com.hivemq.cluster.AbstractProcessor;
  * @author ankang
  * @since 2021/11/3
  */
-public abstract class AbstractMqttClusterRequestProcessor<T>
+public abstract class MqttClusterRequestProcessor<T>
         extends AbstractProcessor<MqttClusterRequest, MqttClusterResponse, MqttClusterClosure, MqttClusterService, T> {
 
-    protected AbstractMqttClusterRequestProcessor(final MqttClusterService raftService) {
+    protected MqttClusterRequestProcessor(final MqttClusterService raftService) {
         super(raftService);
     }
 

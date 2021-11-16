@@ -14,12 +14,10 @@
  * limitations under the License.
  */
 
-package com.hivemq.cluster.clientsession.rpc;
+package com.hivemq.cluster.event;
 
 import com.hivemq.extension.sdk.api.annotations.NotNull;
 import lombok.Value;
-
-import java.io.Serializable;
 
 /**
  * 客户端断开连接请求
@@ -28,9 +26,7 @@ import java.io.Serializable;
  * @since 2021/8/30
  */
 @Value
-public class ClientDisconnectRequest implements Serializable {
+public class ClientDisconnectEvent {
 
     @NotNull String clientId;
-
-    @NotNull String hivemqId;
 }

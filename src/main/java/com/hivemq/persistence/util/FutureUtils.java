@@ -25,6 +25,7 @@ import com.hivemq.extension.sdk.api.annotations.NotNull;
 import java.util.Collection;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.CompletionStage;
 
 /**
  * @author Lukas Brandl
@@ -64,5 +65,9 @@ public class FutureUtils {
     public static <K, V, C extends Collection<Map<K, V>>> @NotNull ListenableFuture<Map<K, V>> combineMapResults(
             final @NotNull ListenableFuture<C> collectionFuture) {
         return delegate.combineMapResults(collectionFuture);
+    }
+
+    public static <T> @NotNull ListenableFuture<T> transform(final @NotNull CompletionStage<T> completableFuture) {
+        return delegate.transform(completableFuture);
     }
 }

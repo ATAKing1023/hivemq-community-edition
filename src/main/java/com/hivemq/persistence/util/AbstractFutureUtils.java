@@ -25,6 +25,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.*;
+import java.util.concurrent.CompletionStage;
 import java.util.concurrent.Executor;
 import java.util.concurrent.ExecutorService;
 
@@ -143,6 +144,18 @@ public abstract class AbstractFutureUtils {
             }
         }, executor);
         return resultFuture;
+    }
+
+    public <T> ListenableFuture<T> transform(final @NotNull CompletionStage<T> completableFuture) {
+        final SettableFuture<T> settableFuture = SettableFuture.create();
+        completableFuture.whenComplete((value, throwable) -> {
+            if (throwable != null) {
+                settableFuture.setException(throwable);
+            } else {
+                settableFuture.set(value);
+            }
+        });
+        return settableFuture;
     }
 
     private static class AnyToVoidFunction implements Function<Object, Void> {
