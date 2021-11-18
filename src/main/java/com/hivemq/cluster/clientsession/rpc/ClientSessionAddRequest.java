@@ -16,12 +16,13 @@
 
 package com.hivemq.cluster.clientsession.rpc;
 
+import com.hivemq.cluster.HivemqClusterRequest;
 import com.hivemq.extension.sdk.api.annotations.NotNull;
 import com.hivemq.extension.sdk.api.annotations.Nullable;
 import com.hivemq.mqtt.message.connect.MqttWillPublish;
+import lombok.EqualsAndHashCode;
+import lombok.ToString;
 import lombok.Value;
-
-import java.io.Serializable;
 
 /**
  * 客户端会话新增请求
@@ -30,7 +31,9 @@ import java.io.Serializable;
  * @since 2021/8/11
  */
 @Value
-public class ClientSessionAddRequest implements Serializable {
+@ToString(callSuper = true)
+@EqualsAndHashCode(callSuper = true)
+public class ClientSessionAddRequest extends HivemqClusterRequest {
 
     @NotNull String clientId;
     boolean cleanStart;

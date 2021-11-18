@@ -35,7 +35,7 @@ public class ClientSessionAddRequestProcessor extends MqttClusterRequestProcesso
 
     @Override
     protected MqttClusterRequest transform(final ClientSessionAddRequest request) {
-        final ClientSessionOperation operation = new ClientSessionOperation();
+        final ClientSessionOperation operation = new ClientSessionOperation(request.getHivemqId());
         operation.setType(ClientSessionOperation.Type.ADD);
         operation.setClientId(request.getClientId());
         operation.setCleanStart(request.isCleanStart());

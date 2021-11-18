@@ -16,10 +16,12 @@
 
 package com.hivemq.cluster.clientsession.rpc;
 
+import com.hivemq.cluster.HivemqClusterRequest;
 import com.hivemq.extension.sdk.api.annotations.NotNull;
+import lombok.EqualsAndHashCode;
+import lombok.ToString;
 import lombok.Value;
 
-import java.io.Serializable;
 import java.util.Set;
 
 /**
@@ -29,7 +31,9 @@ import java.util.Set;
  * @since 2021/8/18
  */
 @Value
-public class ClientSessionSubscriptionRemoveRequest implements Serializable {
+@ToString(callSuper = true)
+@EqualsAndHashCode(callSuper = true)
+public class ClientSessionSubscriptionRemoveRequest extends HivemqClusterRequest {
 
     @NotNull String clientId;
     @NotNull Set<String> topics;

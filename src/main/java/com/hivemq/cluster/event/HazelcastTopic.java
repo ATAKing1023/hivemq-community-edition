@@ -23,5 +23,5 @@ package com.hivemq.cluster.event;
  * @since 2021/11/12
  */
 public enum HazelcastTopic {
-    CLIENT_DISCONNECT, CLIENT_QUEUE_PUBLISH
+    CLIENT_DISCONNECT, CLIENT_QUEUE_PUBLISH, CLUSTER_RESPONSE
 }

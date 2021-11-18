@@ -17,20 +17,15 @@
 package com.hivemq.cluster.event;
 
 import com.hivemq.extension.sdk.api.annotations.NotNull;
-import lombok.EqualsAndHashCode;
-import lombok.ToString;
 import lombok.Value;
 
 /**
- * 客户端断开连接请求
+ * 集群响应事件
  *
  * @author ankang
- * @since 2021/8/30
+ * @since 2021/11/18
  */
 @Value
-@ToString(callSuper = true)
-@EqualsAndHashCode(callSuper = true)
-public class ClientDisconnectEvent extends IdEvent {
-
-    @NotNull String clientId;
+public class ClusterResponseEvent {
+    @NotNull String id;
 }

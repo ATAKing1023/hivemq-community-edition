@@ -36,7 +36,7 @@ public class ClientSessionSubscriptionAddRequestProcessor
 
     @Override
     protected MqttClusterRequest transform(final ClientSessionSubscriptionAddRequest request) {
-        final ClientSessionSubscriptionOperation operation = new ClientSessionSubscriptionOperation();
+        final ClientSessionSubscriptionOperation operation = new ClientSessionSubscriptionOperation(request.getHivemqId());
         operation.setType(ClientSessionSubscriptionOperation.Type.ADD);
         operation.setClientId(request.getClientId());
         operation.setTopicObjects(request.getTopics());

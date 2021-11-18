@@ -48,6 +48,7 @@ public abstract class AbstractRpcClient<R extends BaseResponse> implements RpcCl
 
     @Override
     public ListenableFuture<R> invoke(final Object request) {
+        log.debug("Invoke {}", request);
         final SettableFuture<R> future = SettableFuture.create();
         try {
             final Status status =

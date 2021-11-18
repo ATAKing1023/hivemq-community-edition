@@ -16,11 +16,14 @@
 
 package com.hivemq.cluster.clientsession;
 
+import com.hivemq.cluster.HivemqClusterRequest;
 import com.hivemq.extension.sdk.api.annotations.NotNull;
 import com.hivemq.mqtt.message.subscribe.Topic;
-import lombok.Data;
+import lombok.EqualsAndHashCode;
+import lombok.Getter;
+import lombok.Setter;
+import lombok.ToString;
 
-import java.io.Serializable;
 import java.util.Set;
 
 /**
@@ -29,13 +32,20 @@ import java.util.Set;
  * @author ankang
  * @since 2021/8/18
  */
-@Data
-public class ClientSessionSubscriptionOperation implements Serializable {
+@Getter
+@Setter
+@ToString(callSuper = true)
+@EqualsAndHashCode(callSuper = true)
+public class ClientSessionSubscriptionOperation extends HivemqClusterRequest {
 
     private @NotNull Type type;
     private @NotNull String clientId;
     private @NotNull Set<Topic> topicObjects;
     private @NotNull Set<String> topicStrings;
+
+    public ClientSessionSubscriptionOperation(final String hivemqId) {
+        super(hivemqId);
+    }
 
     public enum Type {
         ADD,

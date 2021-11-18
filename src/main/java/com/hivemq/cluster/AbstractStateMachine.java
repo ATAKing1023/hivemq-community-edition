@@ -69,7 +69,7 @@ public abstract class AbstractStateMachine<P, R extends BaseResponse, C extends 
                 }
             }
             if (request != null) {
-                log.debug("{} at logIndex={}", request, iter.getIndex());
+                log.debug("Apply {} at logIndex={}", request, iter.getIndex());
                 try {
                     final Future<?> future = doApply(request);
                     final Object result = future == null ? null : future.get();

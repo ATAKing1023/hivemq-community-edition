@@ -36,7 +36,7 @@ public class ClientSessionSubscriptionRemoveRequestProcessor
 
     @Override
     protected MqttClusterRequest transform(final ClientSessionSubscriptionRemoveRequest request) {
-        final ClientSessionSubscriptionOperation operation = new ClientSessionSubscriptionOperation();
+        final ClientSessionSubscriptionOperation operation = new ClientSessionSubscriptionOperation(request.getHivemqId());
         operation.setType(ClientSessionSubscriptionOperation.Type.REMOVE);
         operation.setClientId(request.getClientId());
         operation.setTopicStrings(request.getTopics());

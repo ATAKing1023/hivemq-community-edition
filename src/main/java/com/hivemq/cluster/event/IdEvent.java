@@ -16,21 +16,27 @@
 
 package com.hivemq.cluster.event;
 
-import com.hivemq.extension.sdk.api.annotations.NotNull;
 import lombok.EqualsAndHashCode;
+import lombok.Getter;
 import lombok.ToString;
-import lombok.Value;
+
+import java.io.Serializable;
+import java.util.UUID;
 
 /**
- * 客户端断开连接请求
+ * 能唯一标识的事件，用于请求响应匹配
  *
  * @author ankang
- * @since 2021/8/30
+ * @since 2021/11/18
  */
-@Value
-@ToString(callSuper = true)
-@EqualsAndHashCode(callSuper = true)
-public class ClientDisconnectEvent extends IdEvent {
+@Getter
+@ToString
+@EqualsAndHashCode
+public abstract class IdEvent implements Serializable {
 
-    @NotNull String clientId;
+    private final String id;
+
+    public IdEvent() {
+        this.id = UUID.randomUUID().toString();
+    }
 }

@@ -16,15 +16,20 @@
 
 package com.hivemq.cluster;
 
+import com.google.common.util.concurrent.ListenableFuture;
+import com.google.common.util.concurrent.SettableFuture;
 import com.hazelcast.cluster.Member;
 import com.hazelcast.config.*;
 import com.hazelcast.config.cp.CPSubsystemConfig;
 import com.hazelcast.core.Hazelcast;
 import com.hazelcast.core.HazelcastInstance;
 import com.hazelcast.cp.IAtomicLong;
+import com.hazelcast.topic.ITopic;
 import com.hazelcast.topic.Message;
 import com.hazelcast.topic.MessageListener;
+import com.hivemq.cluster.event.ClusterResponseEvent;
 import com.hivemq.cluster.event.HazelcastTopic;
+import com.hivemq.cluster.event.IdEvent;
 import com.hivemq.cluster.serialization.HazelcastGlobalSerializer;
 import com.hivemq.common.shutdown.HiveMQShutdownHook;
 import com.hivemq.common.shutdown.ShutdownHooks;
@@ -37,10 +42,10 @@ import javax.annotation.PostConstruct;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 import java.util.HashSet;
+import java.util.Objects;
 import java.util.Set;
-import java.util.concurrent.CompletionStage;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ConcurrentMap;
+import java.util.UUID;
+import java.util.concurrent.*;
 
 /**
  * Hazelcast管理器
@@ -60,6 +65,8 @@ public class HazelcastManager {
 
     private final ConcurrentMap<HazelcastTopic, Set<MessageListener<Object>>> topicMessageListenerMap =
             new ConcurrentHashMap<>();
+
+    private final ScheduledExecutorService scheduledExecutorService = Executors.newSingleThreadScheduledExecutor();
 
     @Inject
     public HazelcastManager(
@@ -140,7 +147,45 @@ public class HazelcastManager {
 
     public void publish(final HazelcastTopic topic, final Object event) {
         log.debug("publish message: [topic={}, event={}]", topic, event);
-        hazelcastInstance.getReliableTopic(topic).publish(event);
+        hazelcastInstance.getReliableTopic(topic.name()).publish(event);
+    }
+
+    public CompletionStage<Void> publishAsync(final HazelcastTopic topic, final Object event) {
+        log.debug("publish message (async): [topic={}, event={}]", topic, event);
+        return hazelcastInstance.getReliableTopic(topic.name()).publishAsync(event);
+    }
+
+    public ListenableFuture<Void> sendRequest(final HazelcastTopic topic, final IdEvent event) {
+        final SettableFuture<Void> settableFuture = SettableFuture.create();
+        final Set<Member> members = new HashSet<>(hazelcastInstance.getCluster().getMembers());
+        members.remove(hazelcastInstance.getCluster().getLocalMember());
+        final ITopic<ClusterResponseEvent> clusterResponseTopic =
+                hazelcastInstance.getReliableTopic(HazelcastTopic.CLUSTER_RESPONSE.name());
+        final UUID registrationId = clusterResponseTopic.addMessageListener(message -> {
+            final Member publishingMember = message.getPublishingMember();
+            if (Objects.equals(event.getId(), message.getMessageObject().getId())) {
+                log.debug("event {} received cluster response from {}", event.getId(), publishingMember);
+                members.remove(publishingMember);
+                if (members.isEmpty()) {
+                    log.debug("event {} finished waiting for cluster response", event.getId());
+                    settableFuture.set(null);
+                }
+            }
+        });
+        publish(topic, event);
+        // 设置超时机制，防止集群成员变动或其他原因导致无法收到所有响应
+        scheduledExecutorService.schedule(() -> {
+            if (!settableFuture.isDone()) {
+                log.info("event {} timeout waiting for cluster response from {}", event.getId(), members);
+                settableFuture.set(null);
+            }
+            clusterResponseTopic.removeMessageListener(registrationId);
+        }, 1, TimeUnit.SECONDS);
+        return settableFuture;
+    }
+
+    public void sendResponse(final String eventId) {
+        publish(HazelcastTopic.CLUSTER_RESPONSE, new ClusterResponseEvent(eventId));
     }
 
     public IAtomicLong getAtomicLong(final String name) {

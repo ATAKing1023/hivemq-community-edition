@@ -14,23 +14,37 @@
  * limitations under the License.
  */
 
-package com.hivemq.cluster.event;
+package com.hivemq.cluster;
 
+import com.hivemq.configuration.HivemqId;
 import com.hivemq.extension.sdk.api.annotations.NotNull;
 import lombok.EqualsAndHashCode;
 import lombok.ToString;
-import lombok.Value;
+
+import java.io.Serializable;
 
 /**
- * 客户端断开连接请求
+ * HiveMQ集群请求基类
  *
  * @author ankang
- * @since 2021/8/30
+ * @since 2021/11/18
  */
-@Value
-@ToString(callSuper = true)
-@EqualsAndHashCode(callSuper = true)
-public class ClientDisconnectEvent extends IdEvent {
+@ToString
+@EqualsAndHashCode
+public abstract class HivemqClusterRequest implements Serializable {
 
-    @NotNull String clientId;
+    @NotNull
+    private final String hivemqId;
+
+    public HivemqClusterRequest() {
+        this(HivemqId.get());
+    }
+
+    public HivemqClusterRequest(final String hivemqId) {
+        this.hivemqId = hivemqId;
+    }
+
+    public String getHivemqId() {
+        return hivemqId;
+    }
 }

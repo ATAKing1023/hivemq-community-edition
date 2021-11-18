@@ -35,7 +35,7 @@ public class ClientSessionRemoveRequestProcessor extends MqttClusterRequestProce
 
     @Override
     protected MqttClusterRequest transform(final ClientSessionRemoveRequest request) {
-        final ClientSessionOperation operation = new ClientSessionOperation();
+        final ClientSessionOperation operation = new ClientSessionOperation(request.getHivemqId());
         operation.setType(ClientSessionOperation.Type.REMOVE);
         operation.setClientId(request.getClientId());
         operation.setSendWill(request.isSendWill());

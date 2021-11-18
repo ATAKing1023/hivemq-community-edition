@@ -16,12 +16,14 @@
 
 package com.hivemq.cluster.clientsession;
 
+import com.hivemq.cluster.HivemqClusterRequest;
 import com.hivemq.extension.sdk.api.annotations.NotNull;
 import com.hivemq.extension.sdk.api.annotations.Nullable;
 import com.hivemq.mqtt.message.connect.MqttWillPublish;
-import lombok.Data;
-
-import java.io.Serializable;
+import lombok.EqualsAndHashCode;
+import lombok.Getter;
+import lombok.Setter;
+import lombok.ToString;
 
 /**
  * 客户端会话操作请求
@@ -29,8 +31,11 @@ import java.io.Serializable;
  * @author ankang
  * @since 2021/8/12
  */
-@Data
-public class ClientSessionOperation implements Serializable {
+@Getter
+@Setter
+@ToString(callSuper = true)
+@EqualsAndHashCode(callSuper = true)
+public class ClientSessionOperation extends HivemqClusterRequest {
 
     private @NotNull Type type;
     private @NotNull String clientId;
@@ -39,6 +44,10 @@ public class ClientSessionOperation implements Serializable {
     private long sessionExpiryInterval;
     private @Nullable MqttWillPublish willPublish;
     private @Nullable Long queueLimit;
+
+    public ClientSessionOperation(final String hivemqId) {
+        super(hivemqId);
+    }
 
     public enum Type {
         ADD,
