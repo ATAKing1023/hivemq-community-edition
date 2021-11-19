@@ -18,6 +18,8 @@ package com.hivemq.mqtt.handler.disconnect;
 import com.codahale.metrics.MetricRegistry;
 import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.SettableFuture;
+import com.hivemq.cluster.clientsession.rpc.ClientSessionRemoveRequest;
+import com.hivemq.cluster.core.MqttClusterClient;
 import com.hivemq.limitation.TopicAliasLimiter;
 import com.hivemq.logging.EventLog;
 import com.hivemq.metrics.MetricsHolder;
@@ -36,6 +38,7 @@ import io.netty.channel.embedded.EmbeddedChannel;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
+import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.Mockito;
 import org.mockito.MockitoAnnotations;
@@ -67,17 +70,23 @@ public class DisconnectHandlerTest {
     @Mock
     private ChannelPersistence channelPersistence;
 
+    @Mock
+    private MqttClusterClient mqttClusterClient;
+
     MetricsHolder metricsHolder;
 
     @Before
     public void setUp() throws Exception {
         MockitoAnnotations.initMocks(this);
 
+        when(mqttClusterClient.invoke(any())).thenReturn(Futures.immediateFuture(null));
+
         eventLog = spy(new EventLog());
 
         metricsHolder = new MetricsHolder(new MetricRegistry());
 
-        final DisconnectHandler disconnectHandler = new DisconnectHandler(eventLog, metricsHolder, topicAliasLimiter, messageIDPools, clientSessionPersistence, channelPersistence);
+        final DisconnectHandler disconnectHandler = new DisconnectHandler(eventLog, metricsHolder, topicAliasLimiter, messageIDPools, clientSessionPersistence,
+                mqttClusterClient, channelPersistence);
         embeddedChannel = new EmbeddedChannel(disconnectHandler);
     }
 
@@ -222,7 +231,11 @@ public class DisconnectHandlerTest {
 
         embeddedChannel.disconnect().get();
 
-        verify(clientSessionPersistence, Mockito.times(1)).clientDisconnected(eq("client"), eq(true), anyLong());
+//        verify(clientSessionPersistence, Mockito.times(1)).clientDisconnected(eq("client"), eq(true), anyLong());
+        final ArgumentCaptor<ClientSessionRemoveRequest> captor = ArgumentCaptor.forClass(ClientSessionRemoveRequest.class);
+        verify(mqttClusterClient, times(1)).invoke(captor.capture());
+        assertEquals("client", captor.getValue().getClientId());
+        assertTrue(captor.getValue().isSendWill());
     }
 
     @Test
@@ -241,7 +254,10 @@ public class DisconnectHandlerTest {
 
         embeddedChannel.disconnect().get();
 
-        verify(clientSessionPersistence, times(1)).clientDisconnected(eq("client"), anyBoolean(), anyLong());
+//        verify(clientSessionPersistence, times(1)).clientDisconnected(eq("client"), anyBoolean(), anyLong());
+        final ArgumentCaptor<ClientSessionRemoveRequest> captor = ArgumentCaptor.forClass(ClientSessionRemoveRequest.class);
+        verify(mqttClusterClient, times(1)).invoke(captor.capture());
+        assertEquals("client", captor.getValue().getClientId());
         verify(channelPersistence, never()).remove("client");
     }
 

@@ -21,7 +21,9 @@ import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.SettableFuture;
 import com.hivemq.bootstrap.netty.ChannelDependencies;
 import com.hivemq.bootstrap.netty.ChannelHandlerNames;
-import com.hivemq.configuration.HivemqId;
+import com.hivemq.cluster.HazelcastManager;
+import com.hivemq.cluster.clientsession.rpc.ClientSessionAddRequest;
+import com.hivemq.cluster.core.MqttClusterClient;
 import com.hivemq.configuration.service.FullConfigurationService;
 import com.hivemq.configuration.service.InternalConfigurations;
 import com.hivemq.extension.sdk.api.annotations.Nullable;
@@ -81,6 +83,7 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
+import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.Mockito;
 import org.mockito.MockitoAnnotations;
@@ -110,6 +113,12 @@ public class ConnectHandlerTest {
 
     @Mock
     private ClientSessionPersistence clientSessionPersistence;
+
+    @Mock
+    private MqttClusterClient mqttClusterClient;
+
+    @Mock
+    private HazelcastManager hazelcastManager;
 
     @Mock
     private ChannelPersistence channelPersistence;
@@ -187,6 +196,9 @@ public class ConnectHandlerTest {
                 anyLong(),
                 isNull(),
                 isNull())).thenReturn(Futures.immediateFuture(null));
+
+        when(mqttClusterClient.invoke(any())).thenReturn(Futures.immediateFuture(null));
+        when(hazelcastManager.sendRequest(any(), any())).thenReturn(Futures.immediateFuture(null));
 
         buildPipeline();
     }
@@ -1458,12 +1470,19 @@ public class ConnectHandlerTest {
 
         handler.afterTakeover(ctx, connect);
 
-        verify(clientSessionPersistence).clientConnected(
-                eq("client"),
-                eq(false),
-                eq(SESSION_EXPIRY_MAX),
-                isNull(),
-                isNull());
+//        verify(clientSessionPersistence).clientConnected(
+//                eq("client"),
+//                eq(false),
+//                eq(SESSION_EXPIRY_MAX),
+//                isNull(),
+//                isNull());
+        final ArgumentCaptor<ClientSessionAddRequest> captor = ArgumentCaptor.forClass(ClientSessionAddRequest.class);
+        verify(mqttClusterClient).invoke(captor.capture());
+        assertEquals("client", captor.getValue().getClientId());
+        assertFalse(captor.getValue().isCleanStart());
+        assertEquals(SESSION_EXPIRY_MAX, captor.getValue().getSessionExpiryInterval());
+        assertNull(captor.getValue().getWillPublish());
+        assertNull(captor.getValue().getQueueLimit());
     }
 
     @Test
@@ -1480,12 +1499,19 @@ public class ConnectHandlerTest {
 
         handler.afterTakeover(ctx, connect);
 
-        verify(clientSessionPersistence).clientConnected(
-                eq("client"),
-                eq(false),
-                eq(SESSION_EXPIRY_MAX),
-                eq(null),
-                eq(123L));
+//        verify(clientSessionPersistence).clientConnected(
+//                eq("client"),
+//                eq(false),
+//                eq(SESSION_EXPIRY_MAX),
+//                eq(null),
+//                eq(123L));
+        final ArgumentCaptor<ClientSessionAddRequest> captor = ArgumentCaptor.forClass(ClientSessionAddRequest.class);
+        verify(mqttClusterClient).invoke(captor.capture());
+        assertEquals("client", captor.getValue().getClientId());
+        assertFalse(captor.getValue().isCleanStart());
+        assertEquals(SESSION_EXPIRY_MAX, captor.getValue().getSessionExpiryInterval());
+        assertNull(captor.getValue().getWillPublish());
+        assertEquals(Long.valueOf(123L), captor.getValue().getQueueLimit());
     }
 
     @Test
@@ -1503,6 +1529,7 @@ public class ConnectHandlerTest {
                 anyLong(),
                 isNull(),
                 isNull())).thenReturn(Futures.immediateFailedFuture(new RuntimeException("test")));
+        when(mqttClusterClient.invoke(any())).thenReturn(Futures.immediateFailedFuture(new RuntimeException("test")));
 
         assertTrue(embeddedChannel.isOpen());
 
@@ -1540,7 +1567,8 @@ public class ConnectHandlerTest {
         final Provider<FlowControlHandler> flowControlHandlerProvider =
                 () -> new FlowControlHandler(configurationService.mqttConfiguration(), serverDisconnector);
 
-        handler = new ConnectHandler(clientSessionPersistence,
+        handler = new ConnectHandler(
+                clientSessionPersistence, mqttClusterClient,
                 channelPersistence,
                 configurationService,
                 publishFlowHandlerProvider,

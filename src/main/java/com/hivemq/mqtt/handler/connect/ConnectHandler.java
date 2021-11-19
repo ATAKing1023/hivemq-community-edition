@@ -85,6 +85,7 @@ public class ConnectHandler extends SimpleChannelInboundHandler<CONNECT> impleme
     private static final int MAX_TAKEOVER_RETRIES = 100;
 
     private final @NotNull ClientSessionPersistence clientSessionPersistence;
+    private final @NotNull MqttClusterClient mqttClusterClient;
     private final @NotNull ChannelPersistence channelPersistence;
     private final @NotNull FullConfigurationService configurationService;
     private final @NotNull Provider<PublishFlowHandler> publishFlowHandlerProvider;
@@ -111,6 +112,7 @@ public class ConnectHandler extends SimpleChannelInboundHandler<CONNECT> impleme
     @Inject
     public ConnectHandler(
             final @NotNull ClientSessionPersistence clientSessionPersistence,
+            final @NotNull MqttClusterClient mqttClusterClient,
             final @NotNull ChannelPersistence channelPersistence,
             final @NotNull FullConfigurationService configurationService,
             final @NotNull Provider<PublishFlowHandler> publishFlowHandlerProvider,
@@ -125,6 +127,7 @@ public class ConnectHandler extends SimpleChannelInboundHandler<CONNECT> impleme
             final @NotNull MqttServerDisconnector mqttServerDisconnector) {
 
         this.clientSessionPersistence = clientSessionPersistence;
+        this.mqttClusterClient = mqttClusterClient;
         this.channelPersistence = channelPersistence;
         this.configurationService = configurationService;
         this.publishFlowHandlerProvider = publishFlowHandlerProvider;
@@ -290,7 +293,9 @@ public class ConnectHandler extends SimpleChannelInboundHandler<CONNECT> impleme
             final long sessionExpiryInterval,
             @Nullable final MqttWillPublish willPublish,
             @Nullable final Long queueSizeMaximum) {
-        return clientSessionPersistence.clientConnected(clientId, cleanStart, sessionExpiryInterval, willPublish, queueSizeMaximum);
+//         return clientSessionPersistence.clientConnected(clientId, cleanStart, sessionExpiryInterval, willPublish, queueSizeMaximum);
+        final ClientSessionAddRequest request = new ClientSessionAddRequest(clientId, cleanStart, sessionExpiryInterval, willPublish, queueSizeMaximum);
+        return FutureUtils.toVoidFuture(mqttClusterClient.invoke(request));
     }
 
     private boolean checkClientId(final @NotNull ChannelHandlerContext ctx, final @NotNull CONNECT msg) {

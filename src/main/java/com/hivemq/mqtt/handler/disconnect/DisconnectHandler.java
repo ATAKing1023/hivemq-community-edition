@@ -18,6 +18,8 @@ package com.hivemq.mqtt.handler.disconnect;
 import com.google.common.util.concurrent.FutureCallback;
 import com.google.common.util.concurrent.ListenableFuture;
 import com.google.common.util.concurrent.SettableFuture;
+import com.hivemq.cluster.clientsession.rpc.ClientSessionRemoveRequest;
+import com.hivemq.cluster.core.MqttClusterClient;
 import com.hivemq.configuration.service.InternalConfigurations;
 import com.hivemq.extension.sdk.api.annotations.NotNull;
 import com.hivemq.extension.sdk.api.annotations.Nullable;
@@ -62,6 +64,7 @@ public class DisconnectHandler extends SimpleChannelInboundHandler<DISCONNECT> {
     private final @NotNull MessageIDPools messageIDPools;
     private final @NotNull ClientSessionPersistence clientSessionPersistence;
     private final @NotNull ChannelPersistence channelPersistence;
+    private final @NotNull MqttClusterClient mqttClusterClient;
 
     private final boolean logClientReasonString;
 
@@ -72,12 +75,14 @@ public class DisconnectHandler extends SimpleChannelInboundHandler<DISCONNECT> {
             final @NotNull TopicAliasLimiter topicAliasLimiter,
             final @NotNull MessageIDPools messageIDPools,
             final @NotNull ClientSessionPersistence clientSessionPersistence,
+            final @NotNull MqttClusterClient mqttClusterClient,
             final @NotNull ChannelPersistence channelPersistence) {
         this.eventLog = eventLog;
         this.metricsHolder = metricsHolder;
         this.topicAliasLimiter = topicAliasLimiter;
         this.messageIDPools = messageIDPools;
         this.clientSessionPersistence = clientSessionPersistence;
+        this.mqttClusterClient = mqttClusterClient;
         this.channelPersistence = channelPersistence;
         this.logClientReasonString = InternalConfigurations.LOG_CLIENT_REASON_STRING_ON_DISCONNECT;
     }
@@ -183,7 +188,9 @@ public class DisconnectHandler extends SimpleChannelInboundHandler<DISCONNECT> {
         messageIDPools.remove(clientId);
         final boolean preventWill = channel.attr(ChannelAttributes.PREVENT_LWT).get() != null ? channel.attr(ChannelAttributes.PREVENT_LWT).get() : false;
         final boolean sendWill = !preventWill && (channel.attr(ChannelAttributes.SEND_WILL).get() != null ? channel.attr(ChannelAttributes.SEND_WILL).get() : true);
-        final ListenableFuture<Void> persistenceFuture = clientSessionPersistence.clientDisconnected(clientId, sendWill, sessionExpiryInterval);
+//         final ListenableFuture<Void> persistenceFuture = clientSessionPersistence.clientDisconnected(clientId, sendWill, sessionExpiryInterval);
+        final ClientSessionRemoveRequest request = new ClientSessionRemoveRequest(clientId, sendWill, sessionExpiryInterval);
+        final ListenableFuture<Void> persistenceFuture = FutureUtils.toVoidFuture(mqttClusterClient.invoke(request));
         FutureUtils.addPersistenceCallback(persistenceFuture, new FutureCallback<>() {
                 @Override
                 public void onSuccess(@Nullable final Void result) {
