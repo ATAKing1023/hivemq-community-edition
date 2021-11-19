@@ -16,6 +16,7 @@
 
 package com.hivemq.cluster;
 
+import com.google.common.annotations.VisibleForTesting;
 import com.google.common.util.concurrent.ListenableFuture;
 import com.google.common.util.concurrent.SettableFuture;
 import com.hazelcast.cluster.Member;
@@ -102,34 +103,12 @@ public class HazelcastManager {
         });
     }
 
-    private Config createConfig(final ClusterEntity clusterConfig) {
-        final Config config = new Config("mqtt-hazelcast");
-
-        final NetworkConfig networkConfig = new NetworkConfig();
-        final JoinConfig joinConfig = new JoinConfig();
-        final TcpIpConfig tcpIpConfig = new TcpIpConfig();
-        tcpIpConfig.setEnabled(true);
-        tcpIpConfig.setMembers(clusterConfig.getNodeList());
-        joinConfig.setTcpIpConfig(tcpIpConfig);
-        networkConfig.setJoin(joinConfig);
-        config.setNetworkConfig(networkConfig);
-
-        if (clusterConfig.getNodeList().size() >= CPSubsystemConfig.MIN_GROUP_SIZE) {
-            final CPSubsystemConfig cpSubsystemConfig = new CPSubsystemConfig();
-            cpSubsystemConfig.setCPMemberCount(clusterConfig.getNodeList().size());
-            cpSubsystemConfig.setGroupSize(CPSubsystemConfig.MIN_GROUP_SIZE);
-            config.setCPSubsystemConfig(cpSubsystemConfig);
-        }
-
-        final SerializationConfig serializationConfig = new SerializationConfig();
-        final GlobalSerializerConfig globalSerializerConfig = new GlobalSerializerConfig();
-        globalSerializerConfig.setImplementation(new HazelcastGlobalSerializer());
-        globalSerializerConfig.setOverrideJavaSerialization(true);
-        serializationConfig.setGlobalSerializerConfig(globalSerializerConfig);
-        config.setSerializationConfig(serializationConfig);
-        return config;
-    }
-
+    /**
+     * 注册集群消息监听，不会向消息监听派发本地消息
+     *
+     * @param topic           主题
+     * @param messageListener 消息监听
+     */
     public void registerListener(final HazelcastTopic topic, final MessageListener<Object> messageListener) {
         final MessageListener<Object> wrappedListener = new MessageListenerWrapper<>(messageListener);
         if (hazelcastInstance == null) {
@@ -145,17 +124,49 @@ public class HazelcastManager {
         }
     }
 
+    /**
+     * 同步发送集群消息
+     *
+     * @param topic 主题
+     * @param event 事件
+     */
     public void publish(final HazelcastTopic topic, final Object event) {
         log.debug("publish message: [topic={}, event={}]", topic, event);
         hazelcastInstance.getReliableTopic(topic.name()).publish(event);
     }
 
+    /**
+     * 异步发送集群消息
+     *
+     * @param topic 主题
+     * @param event 事件
+     * @return 发送操作的Future对象
+     */
     public CompletionStage<Void> publishAsync(final HazelcastTopic topic, final Object event) {
         log.debug("publish message (async): [topic={}, event={}]", topic, event);
         return hazelcastInstance.getReliableTopic(topic.name()).publishAsync(event);
     }
 
+    /**
+     * 发送请求事件，等待集群中所有节点返回响应事件或者超时（默认1秒超时）
+     *
+     * @param topic 主题
+     * @param event 事件
+     * @return 集群处理的Future对象
+     */
     public ListenableFuture<Void> sendRequest(final HazelcastTopic topic, final IdEvent event) {
+        return sendRequest(topic, event, 1000);
+    }
+
+    /**
+     * 发送请求事件，等待集群中所有节点返回响应事件或者超时
+     *
+     * @param topic   主题
+     * @param event   事件
+     * @param timeout 超时时间（毫秒）
+     * @return 集群处理的Future对象
+     */
+    public ListenableFuture<Void> sendRequest(final HazelcastTopic topic, final IdEvent event, final long timeout) {
         final SettableFuture<Void> settableFuture = SettableFuture.create();
         final Set<Member> members = new HashSet<>(hazelcastInstance.getCluster().getMembers());
         members.remove(hazelcastInstance.getCluster().getLocalMember());
@@ -180,20 +191,69 @@ public class HazelcastManager {
                 settableFuture.set(null);
             }
             clusterResponseTopic.removeMessageListener(registrationId);
-        }, 1, TimeUnit.SECONDS);
+        }, timeout, TimeUnit.MILLISECONDS);
         return settableFuture;
     }
 
+    /**
+     * 发送响应事件
+     *
+     * @param eventId 请求事件ID
+     */
     public void sendResponse(final String eventId) {
         publish(HazelcastTopic.CLUSTER_RESPONSE, new ClusterResponseEvent(eventId));
     }
 
+    /**
+     * 延迟发布响应事件，用于等待其他异步任务完成
+     *
+     * @param eventId 请求事件ID
+     * @param delay   延迟（毫秒）
+     */
+    public void sendDelayedResponse(final String eventId, final long delay) {
+        scheduledExecutorService.schedule(() -> sendResponse(eventId), delay, TimeUnit.MILLISECONDS);
+    }
+
+    /**
+     * 获取消息引用计数
+     *
+     * @param payloadId 消息体ID
+     * @return 引用计数
+     */
     public IAtomicLong getReferenceCount(final String payloadId) {
         return getAtomicLong(payloadId + "@" + RaftGroupId.REFERENCE_COUNT.name());
     }
 
+    @VisibleForTesting
     public IAtomicLong getAtomicLong(final String name) {
         return hazelcastInstance.getCPSubsystem().getAtomicLong(name);
+    }
+
+    private Config createConfig(final ClusterEntity clusterConfig) {
+        final Config config = new Config("mqtt-hazelcast");
+
+        final NetworkConfig networkConfig = new NetworkConfig();
+        final JoinConfig joinConfig = new JoinConfig();
+        final TcpIpConfig tcpIpConfig = new TcpIpConfig();
+        tcpIpConfig.setEnabled(true);
+        tcpIpConfig.setMembers(clusterConfig.getNodeList());
+        joinConfig.setTcpIpConfig(tcpIpConfig);
+        networkConfig.setJoin(joinConfig);
+        config.setNetworkConfig(networkConfig);
+
+        if (clusterConfig.getNodeList().size() >= CPSubsystemConfig.MIN_GROUP_SIZE) {
+            final CPSubsystemConfig cpSubsystemConfig = new CPSubsystemConfig();
+            cpSubsystemConfig.setCPMemberCount(clusterConfig.getNodeList().size());
+            config.setCPSubsystemConfig(cpSubsystemConfig);
+        }
+
+        final SerializationConfig serializationConfig = new SerializationConfig();
+        final GlobalSerializerConfig globalSerializerConfig = new GlobalSerializerConfig();
+        globalSerializerConfig.setImplementation(new HazelcastGlobalSerializer());
+        globalSerializerConfig.setOverrideJavaSerialization(true);
+        serializationConfig.setGlobalSerializerConfig(globalSerializerConfig);
+        config.setSerializationConfig(serializationConfig);
+        return config;
     }
 
     private static class MessageListenerWrapper<E> implements MessageListener<E> {

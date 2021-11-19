@@ -152,14 +152,16 @@ public class ConnectHandler extends SimpleChannelInboundHandler<CONNECT> impleme
         this.hazelcastManager = hazelcastManager;
         this.hazelcastManager.registerListener(HazelcastTopic.CLIENT_DISCONNECT, message -> {
             final ClientDisconnectEvent event = (ClientDisconnectEvent) message.getMessageObject();
-            final ListenableFuture<Boolean> disconnectFuture =
-                    clientSessionPersistence.forceDisconnectClient(event.getClientId(),
-                            true,
-                            ClientSessionPersistenceImpl.DisconnectSource.CLUSTER,
-                            Mqtt5DisconnectReasonCode.SESSION_TAKEN_OVER,
-                            ReasonStrings.DISCONNECT_SESSION_TAKEN_OVER);
-            disconnectFuture.addListener(() -> hazelcastManager.sendResponse(event.getId()),
-                    MoreExecutors.directExecutor());
+            final ListenableFuture<Boolean> disconnectFuture = clientSessionPersistence.forceDisconnectClient(
+                    event.getClientId(),
+                    true,
+                    ClientSessionPersistenceImpl.DisconnectSource.CLUSTER,
+                    Mqtt5DisconnectReasonCode.SESSION_TAKEN_OVER,
+                    ReasonStrings.DISCONNECT_SESSION_TAKEN_OVER);
+            disconnectFuture.addListener(() -> {
+                // 等待Netty数据清理完成
+                hazelcastManager.sendDelayedResponse(event.getId(), 100);
+            }, MoreExecutors.directExecutor());
         });
     }
 
