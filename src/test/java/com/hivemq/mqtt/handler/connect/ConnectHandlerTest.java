@@ -1580,7 +1580,8 @@ public class ConnectHandlerTest {
                 internalAuthServiceImpl,
                 authorizers,
                 pluginAuthorizerService,
-                serverDisconnector);
+                serverDisconnector,
+                hazelcastManager);
 
         handler.postConstruct();
         embeddedChannel.pipeline()

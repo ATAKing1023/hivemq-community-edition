@@ -17,6 +17,11 @@ package com.hivemq.mqtt.handler.connect;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.util.concurrent.*;
+import com.hivemq.cluster.HazelcastManager;
+import com.hivemq.cluster.clientsession.rpc.ClientSessionAddRequest;
+import com.hivemq.cluster.core.MqttClusterClient;
+import com.hivemq.cluster.event.ClientDisconnectEvent;
+import com.hivemq.cluster.event.HazelcastTopic;
 import com.hivemq.configuration.service.FullConfigurationService;
 import com.hivemq.configuration.service.InternalConfigurations;
 import com.hivemq.extension.sdk.api.annotations.NotNull;
@@ -50,7 +55,9 @@ import com.hivemq.mqtt.message.reason.Mqtt5DisconnectReasonCode;
 import com.hivemq.mqtt.services.PublishPollService;
 import com.hivemq.persistence.ChannelPersistence;
 import com.hivemq.persistence.clientsession.ClientSessionPersistence;
+import com.hivemq.persistence.clientsession.ClientSessionPersistenceImpl;
 import com.hivemq.persistence.clientsession.SharedSubscriptionService;
+import com.hivemq.persistence.util.FutureUtils;
 import com.hivemq.util.*;
 import io.netty.channel.*;
 import io.netty.handler.timeout.IdleStateHandler;
@@ -98,6 +105,7 @@ public class ConnectHandler extends SimpleChannelInboundHandler<CONNECT> impleme
     private final @NotNull PluginAuthenticatorService pluginAuthenticatorService;
     private final @NotNull PluginAuthorizerService pluginAuthorizerService;
     private final @NotNull MqttServerDisconnector mqttServerDisconnector;
+    private final @NotNull HazelcastManager hazelcastManager;
 
     private int maxClientIdLength;
     private long configuredSessionExpiryInterval;
@@ -124,7 +132,8 @@ public class ConnectHandler extends SimpleChannelInboundHandler<CONNECT> impleme
             final @NotNull PluginAuthenticatorService pluginAuthenticatorService,
             final @NotNull Authorizers authorizers,
             final @NotNull PluginAuthorizerService pluginAuthorizerService,
-            final @NotNull MqttServerDisconnector mqttServerDisconnector) {
+            final @NotNull MqttServerDisconnector mqttServerDisconnector,
+            final @NotNull HazelcastManager hazelcastManager) {
 
         this.clientSessionPersistence = clientSessionPersistence;
         this.mqttClusterClient = mqttClusterClient;
@@ -140,6 +149,18 @@ public class ConnectHandler extends SimpleChannelInboundHandler<CONNECT> impleme
         this.authorizers = authorizers;
         this.pluginAuthorizerService = pluginAuthorizerService;
         this.mqttServerDisconnector = mqttServerDisconnector;
+        this.hazelcastManager = hazelcastManager;
+        this.hazelcastManager.registerListener(HazelcastTopic.CLIENT_DISCONNECT, message -> {
+            final ClientDisconnectEvent event = (ClientDisconnectEvent) message.getMessageObject();
+            final ListenableFuture<Boolean> disconnectFuture =
+                    clientSessionPersistence.forceDisconnectClient(event.getClientId(),
+                            true,
+                            ClientSessionPersistenceImpl.DisconnectSource.CLUSTER,
+                            Mqtt5DisconnectReasonCode.SESSION_TAKEN_OVER,
+                            ReasonStrings.DISCONNECT_SESSION_TAKEN_OVER);
+            disconnectFuture.addListener(() -> hazelcastManager.sendResponse(event.getId()),
+                    MoreExecutors.directExecutor());
+        });
     }
 
     @PostConstruct
@@ -416,7 +437,10 @@ public class ConnectHandler extends SimpleChannelInboundHandler<CONNECT> impleme
         Futures.addCallback(disconnectFuture, new FutureCallback<>() {
             @Override
             public void onSuccess(@Nullable final Void result) {
-                afterTakeover(ctx, msg);
+                final ListenableFuture<Void> clusterDisconnectFuture =
+                        hazelcastManager.sendRequest(HazelcastTopic.CLIENT_DISCONNECT,
+                                new ClientDisconnectEvent(msg.getClientIdentifier()));
+                clusterDisconnectFuture.addListener(() -> afterTakeover(ctx, msg), ctx.executor());
             }
 
             @Override
