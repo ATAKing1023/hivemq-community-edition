@@ -15,14 +15,10 @@
  */
 package com.hivemq.persistence.payload;
 
-import com.google.common.annotations.VisibleForTesting;
-import com.google.common.collect.ImmutableMap;
 import com.google.inject.Inject;
 import com.hivemq.bootstrap.ioc.lazysingleton.LazySingleton;
 import com.hivemq.extension.sdk.api.annotations.NotNull;
 import com.hivemq.extension.sdk.api.annotations.Nullable;
-
-import java.util.concurrent.atomic.AtomicLong;
 
 /**
  * @author Daniel Krüger
@@ -83,13 +79,6 @@ public class PublishPayloadNoopPersistenceImpl implements PublishPayloadPersiste
     @Override
     public void closeDB() {
         //NOOP
-    }
-
-    @NotNull
-    @Override
-    @VisibleForTesting
-    public ImmutableMap<String, AtomicLong> getReferenceCountersAsMap() {
-        throw new UnsupportedOperationException("getAllIds iys not supported for in-memory persistence");
     }
 
 }

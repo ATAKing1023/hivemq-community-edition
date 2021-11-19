@@ -15,12 +15,8 @@
  */
 package com.hivemq.persistence.payload;
 
-import com.google.common.annotations.VisibleForTesting;
-import com.google.common.collect.ImmutableMap;
 import com.hivemq.extension.sdk.api.annotations.NotNull;
 import com.hivemq.extension.sdk.api.annotations.Nullable;
-
-import java.util.concurrent.atomic.AtomicLong;
 
 /**
  * @author Lukas Brandl
@@ -84,11 +80,4 @@ public interface PublishPayloadPersistence {
      * close the persistence with all buckets.
      */
     void closeDB();
-
-    /**
-     * @return all reference counts for all publish payloads in a readonly map.
-     */
-    @NotNull
-    @VisibleForTesting
-    ImmutableMap<String, AtomicLong> getReferenceCountersAsMap();
 }

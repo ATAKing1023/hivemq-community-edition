@@ -16,13 +16,13 @@
 package com.hivemq.persistence.payload;
 
 import com.google.common.cache.Cache;
+import com.hazelcast.cp.IAtomicLong;
+import com.hivemq.cluster.HazelcastManager;
 import com.hivemq.util.Exceptions;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Queue;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.locks.Lock;
 
 /**
@@ -35,7 +35,7 @@ public class RemoveEntryTask implements Runnable {
     private final BucketLock bucketLock;
     private final Queue<RemovablePayload> removablePayloads;
     private final long removeDelay;
-    private final ConcurrentHashMap<String, AtomicLong> referenceCounter;
+    private final HazelcastManager hazelcastManager;
     private final long taskMaxDuration;
 
     public RemoveEntryTask(final Cache<String, byte[]> payloadCache,
@@ -43,7 +43,7 @@ public class RemoveEntryTask implements Runnable {
                            final BucketLock bucketLock,
                            final Queue<RemovablePayload> removablePayloads,
                            final long removeDelay,
-                           final ConcurrentHashMap<String, AtomicLong> referenceCounter,
+                           final HazelcastManager hazelcastManager,
                            final long taskMaxDuration) {
 
         this.payloadCache = payloadCache;
@@ -51,7 +51,7 @@ public class RemoveEntryTask implements Runnable {
         this.bucketLock = bucketLock;
         this.removablePayloads = removablePayloads;
         this.removeDelay = removeDelay;
-        this.referenceCounter = referenceCounter;
+        this.hazelcastManager = hazelcastManager;
         this.taskMaxDuration = taskMaxDuration;
     }
 
@@ -67,7 +67,7 @@ public class RemoveEntryTask implements Runnable {
                     lock.lock();
                     final String payloadId = removablePayload.getId();
                     try {
-                        final AtomicLong referenceCount = referenceCounter.get(payloadId);
+                        final IAtomicLong referenceCount = hazelcastManager.getReferenceCount(payloadId);
                         if (referenceCount == null) {
                             //The reference count can be null, if it was marked as removable twice.
                             //Which is possible if a payload marked as removable and we receive the same payload again and mark it as removable again,
@@ -78,7 +78,6 @@ public class RemoveEntryTask implements Runnable {
                         if (referenceCount.get() == 0) {
                             payloadCache.invalidate(payloadId);
                             localPersistence.remove(payloadId);
-                            referenceCounter.remove(payloadId);
                         }
 
                     } finally {

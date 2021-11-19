@@ -17,6 +17,9 @@ package com.hivemq.persistence.payload;
 
 import com.google.common.cache.Cache;
 import com.google.common.cache.CacheBuilder;
+import com.hazelcast.core.Hazelcast;
+import com.hazelcast.core.HazelcastInstance;
+import com.hivemq.cluster.HazelcastManager;
 import com.hivemq.configuration.HivemqId;
 import com.hivemq.mqtt.message.publish.PUBLISH;
 import org.junit.Before;
@@ -25,12 +28,15 @@ import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
 
 import java.util.Queue;
-import java.util.concurrent.*;
-import java.util.concurrent.atomic.AtomicLong;
+import java.util.concurrent.Executors;
+import java.util.concurrent.LinkedTransferQueue;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
 
 import static org.junit.Assert.*;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.doThrow;
+import static org.mockito.Mockito.when;
 
 /**
  * @author Lukas Brandl
@@ -39,11 +45,14 @@ public class RemoveEntryTaskTest {
 
     @Mock
     private PublishPayloadLocalPersistence localPersistence;
+    @Mock
+    private HazelcastManager hazelcastManager;
+
+    HazelcastInstance hazelcastInstance = Hazelcast.newHazelcastInstance();
 
     private Cache<String, byte[]> payloadCache;
     private BucketLock bucketLock;
     private Queue<RemovablePayload> removablePayloads;
-    private final ConcurrentHashMap<String, AtomicLong> referenceCounter = new ConcurrentHashMap<>();
 
     @Before
     public void setUp() throws Exception {
@@ -54,42 +63,42 @@ public class RemoveEntryTaskTest {
                 .build();
         bucketLock = new BucketLock(1);
         removablePayloads = new LinkedTransferQueue<>();
+
+        when(hazelcastManager.getReferenceCount(anyString())).then(invocation ->
+                hazelcastInstance.getCPSubsystem().getAtomicLong(invocation.getArgument(0)));
     }
 
     @Test
     public void test_no_remove_during_delay() throws Exception {
         removablePayloads.add(new RemovablePayload(PUBLISH.getUniqueId(HivemqId.get(), 1), System.currentTimeMillis()));
         payloadCache.put(PUBLISH.getUniqueId(HivemqId.get(), 1), "test".getBytes());
-        referenceCounter.put(PUBLISH.getUniqueId(HivemqId.get(), 1), new AtomicLong(0));
-        final RemoveEntryTask task = new RemoveEntryTask(payloadCache, localPersistence, bucketLock, removablePayloads, 10000L, referenceCounter, 10000);
+        hazelcastManager.getReferenceCount(PUBLISH.getUniqueId(HivemqId.get(), 1)).set(0);
+        final RemoveEntryTask task = new RemoveEntryTask(payloadCache, localPersistence, bucketLock, removablePayloads, 10000L, hazelcastManager, 10000);
         task.run();
         assertNotNull(payloadCache.getIfPresent(PUBLISH.getUniqueId(HivemqId.get(), 1)));
         assertEquals(1, removablePayloads.size());
-        assertEquals(1, referenceCounter.size());
     }
 
     @Test
     public void test_no_remove_if_refcount_not_zero() throws Exception {
         removablePayloads.add(new RemovablePayload(PUBLISH.getUniqueId(HivemqId.get(), 1), System.currentTimeMillis() - 100L));
         payloadCache.put(PUBLISH.getUniqueId(HivemqId.get(), 1), "test".getBytes());
-        referenceCounter.put(PUBLISH.getUniqueId(HivemqId.get(), 1), new AtomicLong(1));
-        final RemoveEntryTask task = new RemoveEntryTask(payloadCache, localPersistence, bucketLock, removablePayloads, 10L, referenceCounter, 10000);
+        hazelcastManager.getReferenceCount(PUBLISH.getUniqueId(HivemqId.get(), 1)).set(1);
+        final RemoveEntryTask task = new RemoveEntryTask(payloadCache, localPersistence, bucketLock, removablePayloads, 10L, hazelcastManager, 10000);
         task.run();
         assertNotNull(payloadCache.getIfPresent(PUBLISH.getUniqueId(HivemqId.get(), 1)));
         assertEquals(0, removablePayloads.size());
-        assertEquals(1, referenceCounter.size());
     }
 
     @Test
     public void test_remove_after_delay() throws Exception {
         removablePayloads.add(new RemovablePayload(PUBLISH.getUniqueId(HivemqId.get(), 1), System.currentTimeMillis() - 100L));
         payloadCache.put(PUBLISH.getUniqueId(HivemqId.get(), 1), "test".getBytes());
-        referenceCounter.put(PUBLISH.getUniqueId(HivemqId.get(), 1), new AtomicLong(0));
-        final RemoveEntryTask task = new RemoveEntryTask(payloadCache, localPersistence, bucketLock, removablePayloads, 10L, referenceCounter, 10000);
+        hazelcastManager.getReferenceCount(PUBLISH.getUniqueId(HivemqId.get(), 1)).set(0);
+        final RemoveEntryTask task = new RemoveEntryTask(payloadCache, localPersistence, bucketLock, removablePayloads, 10L, hazelcastManager, 10000);
         task.run();
         assertNull(payloadCache.getIfPresent(PUBLISH.getUniqueId(HivemqId.get(), 1)));
         assertEquals(0, removablePayloads.size());
-        assertEquals(0, referenceCounter.size());
     }
 
     @Test
@@ -98,14 +107,13 @@ public class RemoveEntryTaskTest {
         removablePayloads.add(new RemovablePayload(PUBLISH.getUniqueId(HivemqId.get(), 2), System.currentTimeMillis()));
         payloadCache.put(PUBLISH.getUniqueId(HivemqId.get(), 1), "test".getBytes());
         payloadCache.put(PUBLISH.getUniqueId(HivemqId.get(), 2), "test".getBytes());
-        referenceCounter.put(PUBLISH.getUniqueId(HivemqId.get(), 1), new AtomicLong(0));
-        referenceCounter.put(PUBLISH.getUniqueId(HivemqId.get(), 2), new AtomicLong(0));
-        final RemoveEntryTask task = new RemoveEntryTask(payloadCache, localPersistence, bucketLock, removablePayloads, 10000L, referenceCounter, 10000);
+        hazelcastManager.getReferenceCount(PUBLISH.getUniqueId(HivemqId.get(), 1)).set(0);
+        hazelcastManager.getReferenceCount(PUBLISH.getUniqueId(HivemqId.get(), 2)).set(0);
+        final RemoveEntryTask task = new RemoveEntryTask(payloadCache, localPersistence, bucketLock, removablePayloads, 10000L, hazelcastManager, 10000);
         task.run();
         assertNull(payloadCache.getIfPresent(PUBLISH.getUniqueId(HivemqId.get(), 1)));
         assertNotNull(payloadCache.getIfPresent(PUBLISH.getUniqueId(HivemqId.get(), 2)));
         assertEquals(1, removablePayloads.size());
-        assertEquals(1, referenceCounter.size());
     }
 
     @Test
@@ -113,12 +121,11 @@ public class RemoveEntryTaskTest {
         removablePayloads.add(new RemovablePayload(PUBLISH.getUniqueId(HivemqId.get(), 1), System.currentTimeMillis() - 100L));
         removablePayloads.add(new RemovablePayload(PUBLISH.getUniqueId(HivemqId.get(), 1), System.currentTimeMillis() - 500L));
         payloadCache.put(PUBLISH.getUniqueId(HivemqId.get(), 1), "test".getBytes());
-        referenceCounter.put(PUBLISH.getUniqueId(HivemqId.get(), 1), new AtomicLong(0));
-        final RemoveEntryTask task = new RemoveEntryTask(payloadCache, localPersistence, bucketLock, removablePayloads, 10L, referenceCounter, 10000);
+        hazelcastManager.getReferenceCount(PUBLISH.getUniqueId(HivemqId.get(), 1)).set(0);
+        final RemoveEntryTask task = new RemoveEntryTask(payloadCache, localPersistence, bucketLock, removablePayloads, 10L, hazelcastManager, 10000);
         task.run();
         assertNull(payloadCache.getIfPresent(PUBLISH.getUniqueId(HivemqId.get(), 1)));
         assertEquals(0, removablePayloads.size());
-        assertEquals(0, referenceCounter.size());
     }
 
     @Test(timeout = 5000)
@@ -126,19 +133,18 @@ public class RemoveEntryTaskTest {
         removablePayloads.add(new RemovablePayload(PUBLISH.getUniqueId(HivemqId.get(), 1), System.currentTimeMillis() - 100L));
         removablePayloads.add(new RemovablePayload(PUBLISH.getUniqueId(HivemqId.get(), 1), System.currentTimeMillis() - 100L));
         payloadCache.put(PUBLISH.getUniqueId(HivemqId.get(), 1), "test".getBytes());
-        referenceCounter.put(PUBLISH.getUniqueId(HivemqId.get(), 1), new AtomicLong(0));
+        hazelcastManager.getReferenceCount(PUBLISH.getUniqueId(HivemqId.get(), 1)).set(0);
         doThrow(new RuntimeException("expected")).doNothing().when(localPersistence).remove(anyString());
         final ScheduledExecutorService executorService = Executors.newSingleThreadScheduledExecutor();
-        final RemoveEntryTask task = new RemoveEntryTask(payloadCache, localPersistence, bucketLock, removablePayloads, 10L, referenceCounter, 10000);
+        final RemoveEntryTask task = new RemoveEntryTask(payloadCache, localPersistence, bucketLock, removablePayloads, 10L, hazelcastManager, 10000);
         executorService.scheduleAtFixedRate(task, 10, 10, TimeUnit.MILLISECONDS);
 
-        while (payloadCache.getIfPresent(PUBLISH.getUniqueId(HivemqId.get(), 1)) != null || removablePayloads.size() > 0 || referenceCounter.size() > 0) {
+        while (payloadCache.getIfPresent(PUBLISH.getUniqueId(HivemqId.get(), 1)) != null || removablePayloads.size() > 0) {
             Thread.sleep(10);
         }
 
         assertNull(payloadCache.getIfPresent(PUBLISH.getUniqueId(HivemqId.get(), 1)));
         assertEquals(0, removablePayloads.size());
-        assertEquals(0, referenceCounter.size());
         executorService.shutdown();
     }
 }

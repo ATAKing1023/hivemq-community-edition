@@ -18,11 +18,12 @@ package com.hivemq.persistence.payload;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.cache.Cache;
 import com.google.common.cache.CacheBuilder;
-import com.google.common.collect.ImmutableMap;
 import com.google.common.util.concurrent.ListenableScheduledFuture;
 import com.google.common.util.concurrent.ListeningScheduledExecutorService;
 import com.google.inject.Inject;
+import com.hazelcast.cp.IAtomicLong;
 import com.hivemq.bootstrap.ioc.lazysingleton.LazySingleton;
+import com.hivemq.cluster.HazelcastManager;
 import com.hivemq.configuration.HivemqId;
 import com.hivemq.configuration.service.InternalConfigurations;
 import com.hivemq.extension.sdk.api.annotations.NotNull;
@@ -33,10 +34,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.Queue;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.LinkedTransferQueue;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.locks.Lock;
 
 import static com.google.common.base.Preconditions.checkNotNull;
@@ -59,14 +58,17 @@ public class PublishPayloadPersistenceImpl implements PublishPayloadPersistence 
     private final @NotNull BucketLock bucketLock;
 
     @NotNull Cache<String, byte[]> payloadCache;
-    final ConcurrentHashMap<String, AtomicLong> referenceCounter = new ConcurrentHashMap<>();
+
     final Queue<RemovablePayload> removablePayloads = new LinkedTransferQueue<>();
 
     private @Nullable ListenableScheduledFuture<?> removeTaskFuture;
 
+    final HazelcastManager hazelcastManager;
+
     @Inject
     PublishPayloadPersistenceImpl(final @NotNull PublishPayloadLocalPersistence localPersistence,
-                                  final @NotNull @PayloadPersistence ListeningScheduledExecutorService scheduledExecutorService) {
+                                  final @NotNull @PayloadPersistence ListeningScheduledExecutorService scheduledExecutorService,
+                                  final @NotNull HazelcastManager hazelcastManager) {
 
         this.localPersistence = localPersistence;
         this.scheduledExecutorService = scheduledExecutorService;
@@ -79,6 +81,7 @@ public class PublishPayloadPersistenceImpl implements PublishPayloadPersistence 
 
         removeSchedule = InternalConfigurations.PAYLOAD_PERSISTENCE_CLEANUP_SCHEDULE.get();
         bucketLock = new BucketLock(InternalConfigurations.PAYLOAD_PERSISTENCE_BUCKET_COUNT.get());
+        this.hazelcastManager = hazelcastManager;
     }
 
     // The payload persistence has to be initialized after the other persistence bootstraps are finished.
@@ -94,7 +97,7 @@ public class PublishPayloadPersistenceImpl implements PublishPayloadPersistence 
             if (!scheduledExecutorService.isShutdown()) {
                 removeTaskFuture = scheduledExecutorService.scheduleAtFixedRate(
                         new RemoveEntryTask(payloadCache, localPersistence, bucketLock, removablePayloads, removeDelay,
-                                referenceCounter, taskSchedule), initialSchedule, taskSchedule, TimeUnit.MILLISECONDS);
+                                hazelcastManager, taskSchedule), initialSchedule, taskSchedule, TimeUnit.MILLISECONDS);
             }
         }
     }
@@ -106,18 +109,12 @@ public class PublishPayloadPersistenceImpl implements PublishPayloadPersistence 
     public boolean add(@NotNull final byte[] payload, final long referenceCount, final String payloadId) {
         checkNotNull(payload, "Payload must not be null");
         accessBucket(payloadId, () -> {
-            final AtomicLong counter = referenceCounter.get(payloadId);
-            if (payloadCache.getIfPresent(payloadId) != null && counter != null) {
-                counter.addAndGet(referenceCount);
-            } else {
-                if (counter == null) {
-                    referenceCounter.put(payloadId, new AtomicLong(referenceCount));
-                } else {
-                    counter.addAndGet(referenceCount);
-                }
+            final IAtomicLong counter = hazelcastManager.getReferenceCount(payloadId);
+            if (payloadCache.getIfPresent(payloadId) == null) {
                 payloadCache.put(payloadId, payload);
                 localPersistence.put(payloadId, payload);
             }
+            counter.addAndGet(referenceCount);
         });
         return true;
     }
@@ -174,12 +171,8 @@ public class PublishPayloadPersistenceImpl implements PublishPayloadPersistence 
         // Since this method is only called during bootstrap, it is not performance critical.
         // Therefore locking is not an issue here.
         accessBucket(payloadId, () -> {
-            final AtomicLong referenceCount = referenceCounter.get(payloadId);
-            if (referenceCount == null) {
-                referenceCounter.put(payloadId, new AtomicLong(1));
-            } else {
-                referenceCount.incrementAndGet();
-            }
+            final IAtomicLong referenceCount = hazelcastManager.getReferenceCount(payloadId);
+            referenceCount.incrementAndGet();
         });
     }
 
@@ -188,7 +181,7 @@ public class PublishPayloadPersistenceImpl implements PublishPayloadPersistence 
      */
     @Override
     public void decrementReferenceCounter(final String id) {
-        final AtomicLong counter = referenceCounter.get(id);
+        final IAtomicLong counter = hazelcastManager.getReferenceCount(id);
         if (counter == null || counter.get() <= 0) {
             log.warn("Tried to decrement a payload reference counter ({}) that was already zero.", id);
             if (InternalConfigurations.LOG_REFERENCE_COUNTING_STACKTRACE_AS_WARNING) {
@@ -223,13 +216,6 @@ public class PublishPayloadPersistenceImpl implements PublishPayloadPersistence 
             removeTaskFuture.cancel(true);
         }
         localPersistence.closeDB();
-    }
-
-    @NotNull
-    @Override
-    @VisibleForTesting
-    public ImmutableMap<String, AtomicLong> getReferenceCountersAsMap() {
-        return ImmutableMap.copyOf(referenceCounter);
     }
 
     private void accessBucket(final String payloadId, final @NotNull BucketAccessCallback callback) {

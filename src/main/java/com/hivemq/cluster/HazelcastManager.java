@@ -188,6 +188,10 @@ public class HazelcastManager {
         publish(HazelcastTopic.CLUSTER_RESPONSE, new ClusterResponseEvent(eventId));
     }
 
+    public IAtomicLong getReferenceCount(final String payloadId) {
+        return getAtomicLong(payloadId + "@" + RaftGroupId.REFERENCE_COUNT.name());
+    }
+
     public IAtomicLong getAtomicLong(final String name) {
         return hazelcastInstance.getCPSubsystem().getAtomicLong(name);
     }
