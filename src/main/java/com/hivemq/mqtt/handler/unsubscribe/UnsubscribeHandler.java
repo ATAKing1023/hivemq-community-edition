@@ -21,6 +21,8 @@ import com.google.common.collect.ImmutableSet;
 import com.google.common.util.concurrent.FutureCallback;
 import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
+import com.hivemq.cluster.clientsession.rpc.ClientSessionSubscriptionRemoveRequest;
+import com.hivemq.cluster.core.MqttClusterClient;
 import com.hivemq.extension.sdk.api.annotations.NotNull;
 import com.hivemq.mqtt.handler.connect.SubscribeMessageBarrier;
 import com.hivemq.mqtt.message.ProtocolVersion;
@@ -38,6 +40,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import javax.inject.Inject;
+import java.util.Collections;
 
 import static com.hivemq.persistence.clientsession.SharedSubscriptionServiceImpl.SharedSubscription;
 
@@ -53,12 +56,15 @@ public class UnsubscribeHandler extends SimpleChannelInboundHandler<UNSUBSCRIBE>
     private static final Logger log = LoggerFactory.getLogger(UnsubscribeHandler.class);
 
     private final @NotNull ClientSessionSubscriptionPersistence clientSessionSubscriptionPersistence;
+    private final @NotNull MqttClusterClient mqttClusterClient;
     private final @NotNull SharedSubscriptionService sharedSubscriptionService;
 
     @Inject
     public UnsubscribeHandler(final @NotNull ClientSessionSubscriptionPersistence clientSessionSubscriptionPersistence,
+                              final @NotNull MqttClusterClient mqttClusterClient,
                               final @NotNull SharedSubscriptionService sharedSubscriptionService) {
         this.clientSessionSubscriptionPersistence = clientSessionSubscriptionPersistence;
+        this.mqttClusterClient = mqttClusterClient;
         this.sharedSubscriptionService = sharedSubscriptionService;
     }
 
@@ -76,14 +82,18 @@ public class UnsubscribeHandler extends SimpleChannelInboundHandler<UNSUBSCRIBE>
 
         final ListenableFuture<Void> future;
         if (batch(msg)) {
-            future = clientSessionSubscriptionPersistence.removeSubscriptions(clientId, ImmutableSet.copyOf(msg.getTopics()));
+//            future = clientSessionSubscriptionPersistence.removeSubscriptions(clientId, ImmutableSet.copyOf(msg.getTopics()));
+            final ClientSessionSubscriptionRemoveRequest request = new ClientSessionSubscriptionRemoveRequest(clientId, ImmutableSet.copyOf(msg.getTopics()));
+            future = FutureUtils.toVoidFuture(mqttClusterClient.invoke(request));
             for (int i = 0; i < msg.getTopics().size(); i++) {
                 reasonCodes[i] = Mqtt5UnsubAckReasonCode.SUCCESS;
             }
         } else {
             for (int i = 0; i < msg.getTopics().size(); i++) {
                 final String topic = msg.getTopics().get(i);
-                builder.add(clientSessionSubscriptionPersistence.remove(clientId, topic));
+//                builder.add(clientSessionSubscriptionPersistence.remove(clientId, topic));
+                final ClientSessionSubscriptionRemoveRequest request = new ClientSessionSubscriptionRemoveRequest(clientId, Collections.singleton(topic));
+                builder.add(FutureUtils.toVoidFuture(mqttClusterClient.invoke(request)));
                 reasonCodes[i] = Mqtt5UnsubAckReasonCode.SUCCESS;
                 log.trace("Unsubscribed from topic [{}] for client [{}]", topic, clientId);
             }

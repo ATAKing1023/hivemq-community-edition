@@ -19,10 +19,9 @@ import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Sets;
-import com.google.common.util.concurrent.FutureCallback;
-import com.google.common.util.concurrent.Futures;
-import com.google.common.util.concurrent.ListenableFuture;
-import com.google.common.util.concurrent.SettableFuture;
+import com.google.common.util.concurrent.*;
+import com.hivemq.cluster.clientsession.rpc.ClientSessionSubscriptionAddRequest;
+import com.hivemq.cluster.core.MqttClusterClient;
 import com.hivemq.configuration.service.MqttConfigurationService;
 import com.hivemq.configuration.service.RestrictionsConfigurationService;
 import com.hivemq.extension.sdk.api.annotations.NotNull;
@@ -57,10 +56,7 @@ import org.slf4j.LoggerFactory;
 
 import javax.inject.Inject;
 import javax.inject.Singleton;
-import java.util.Comparator;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
 
 import static com.hivemq.mqtt.message.reason.Mqtt5SubAckReasonCode.UNSPECIFIED_ERROR;
 import static com.hivemq.mqtt.message.reason.Mqtt5SubAckReasonCode.fromCode;
@@ -95,6 +91,8 @@ public class IncomingSubscribeService {
 
     private final @NotNull ClientSessionSubscriptionPersistence clientSessionSubscriptionPersistence;
 
+    private final @NotNull MqttClusterClient mqttClusterClient;
+
     private final @NotNull RetainedMessagePersistence retainedMessagePersistence;
 
     private final @NotNull SharedSubscriptionService sharedSubscriptionService;
@@ -109,6 +107,7 @@ public class IncomingSubscribeService {
 
     @Inject
     IncomingSubscribeService(final @NotNull ClientSessionSubscriptionPersistence clientSessionSubscriptionPersistence,
+                             final @NotNull MqttClusterClient mqttClusterClient,
                              final @NotNull RetainedMessagePersistence retainedMessagePersistence,
                              final @NotNull SharedSubscriptionService sharedSubscriptionService,
                              final @NotNull RetainedMessagesSender retainedMessagesSender,
@@ -117,6 +116,7 @@ public class IncomingSubscribeService {
                              final @NotNull MqttServerDisconnector mqttServerDisconnector) {
 
         this.clientSessionSubscriptionPersistence = clientSessionSubscriptionPersistence;
+        this.mqttClusterClient = mqttClusterClient;
         this.retainedMessagePersistence = retainedMessagePersistence;
         this.sharedSubscriptionService = sharedSubscriptionService;
         this.retainedMessagesSender = retainedMessagesSender;
@@ -306,7 +306,12 @@ public class IncomingSubscribeService {
                 final SettableFuture<SubscriptionResult> settableFuture = SettableFuture.create();
                 singleAddFutures.add(settableFuture);
                 futureCount++;
-                final ListenableFuture<SubscriptionResult> addSubscriptionFuture = clientSessionSubscriptionPersistence.addSubscription(clientId, topic);
+//                final ListenableFuture<SubscriptionResult> addSubscriptionFuture = clientSessionSubscriptionPersistence.addSubscription(clientId, topic);
+                final ClientSessionSubscriptionAddRequest request = new ClientSessionSubscriptionAddRequest(clientId, Collections.singleton(topic));
+                final ListenableFuture<SubscriptionResult> addSubscriptionFuture = Futures.transform(
+                        mqttClusterClient.invoke(request),
+                        response -> response == null ? null : response.getSubscriptionResult(),
+                        MoreExecutors.directExecutor());
                 FutureUtils.addPersistenceCallback(addSubscriptionFuture, new SubscribePersistenceCallback(settableFuture, clientId, topic, mqttVersion, answerCodes, i));
             }
         }
@@ -388,7 +393,13 @@ public class IncomingSubscribeService {
     private ListenableFuture<ImmutableList<SubscriptionResult>> persistBatchedSubscriptions(@NotNull final String clientId, @NotNull final SUBSCRIBE msg, @NotNull final Set<Topic> cleanedSubscriptions, @NotNull final ProtocolVersion mqttVersion, @NotNull final Mqtt5SubAckReasonCode[] answerCodes) {
         final SettableFuture<ImmutableList<SubscriptionResult>> settableFuture = SettableFuture.create();
         final ImmutableSet<Topic> topics = ImmutableSet.copyOf(cleanedSubscriptions);
-        final ListenableFuture<ImmutableList<SubscriptionResult>> addSubscriptionFuture = clientSessionSubscriptionPersistence.addSubscriptions(clientId, topics);
+//        final ListenableFuture<ImmutableList<SubscriptionResult>> addSubscriptionFuture = clientSessionSubscriptionPersistence.addSubscriptions(clientId, topics);
+        final ClientSessionSubscriptionAddRequest request = new ClientSessionSubscriptionAddRequest(clientId, topics);
+        final ListenableFuture<ImmutableList<SubscriptionResult>> addSubscriptionFuture = Futures.transform(
+                mqttClusterClient.invoke(request),
+                response -> response == null ? null : ImmutableList.copyOf(response.getSubscriptionResults()),
+                MoreExecutors.directExecutor()
+        );
         FutureUtils.addPersistenceCallback(addSubscriptionFuture, new SubscribePersistenceBatchedCallback(settableFuture, clientId, msg, mqttVersion, answerCodes));
         return settableFuture;
     }

@@ -19,6 +19,8 @@ import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Lists;
 import com.google.common.util.concurrent.Futures;
 import com.hivemq.bootstrap.netty.ChannelHandlerNames;
+import com.hivemq.cluster.clientsession.rpc.ClientSessionSubscriptionRemoveRequest;
+import com.hivemq.cluster.core.MqttClusterClient;
 import com.hivemq.mqtt.message.ProtocolVersion;
 import com.hivemq.mqtt.message.reason.Mqtt5UnsubAckReasonCode;
 import com.hivemq.mqtt.message.unsuback.UNSUBACK;
@@ -32,20 +34,19 @@ import io.netty.channel.embedded.EmbeddedChannel;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
+import org.mockito.ArgumentCaptor;
 import org.mockito.Matchers;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
 import util.DummyHandler;
 import util.InitFutureUtilsExecutorRule;
 
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.List;
-import java.util.Queue;
+import java.util.*;
 
 import static com.google.common.collect.Lists.newArrayList;
 import static org.junit.Assert.*;
-import static org.mockito.Matchers.*;
+import static org.mockito.Matchers.any;
+import static org.mockito.Matchers.anyString;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -62,6 +63,9 @@ public class UnsubscribeHandlerTest {
     ClientSessionSubscriptionPersistence clientSessionSubscriptionPersistence;
 
     @Mock
+    MqttClusterClient mqttClusterClient;
+
+    @Mock
     SharedSubscriptionService sharedSubscriptionService;
 
     private UnsubscribeHandler unsubscribeHandler;
@@ -71,12 +75,14 @@ public class UnsubscribeHandlerTest {
     @Before
     public void setUp() throws Exception {
         MockitoAnnotations.initMocks(this);
-        unsubscribeHandler = new UnsubscribeHandler(clientSessionSubscriptionPersistence, sharedSubscriptionService);
+        unsubscribeHandler = new UnsubscribeHandler(clientSessionSubscriptionPersistence,
+                mqttClusterClient, sharedSubscriptionService);
         channel = new EmbeddedChannel(unsubscribeHandler);
         channel.pipeline().addFirst(ChannelHandlerNames.MQTT_MESSAGE_ENCODER, new DummyHandler());
         channel.attr(ChannelAttributes.CLIENT_ID).set("myTestClient");
         when(clientSessionSubscriptionPersistence.remove(anyString(), any(String.class))).thenReturn(Futures.immediateFuture(null));
         when(clientSessionSubscriptionPersistence.removeSubscriptions(anyString(), Matchers.any(ImmutableSet.class))).thenReturn(Futures.<Void>immediateFuture(null));
+        when(mqttClusterClient.invoke(any())).thenReturn(Futures.immediateFuture(null));
     }
 
     @Test
@@ -93,8 +99,11 @@ public class UnsubscribeHandlerTest {
         final UNSUBACK response = (UNSUBACK) objects.element();
         assertEquals(10, response.getPacketIdentifier());
 
-        verify(clientSessionSubscriptionPersistence).remove("myTestClient", topic);
-
+//        verify(clientSessionSubscriptionPersistence).remove("myTestClient", topic);
+        final ArgumentCaptor<ClientSessionSubscriptionRemoveRequest> captor = ArgumentCaptor.forClass(ClientSessionSubscriptionRemoveRequest.class);
+        verify(mqttClusterClient).invoke(captor.capture());
+        assertEquals("myTestClient", captor.getValue().getClientId());
+        assertEquals(Set.of(topic), captor.getValue().getTopics());
     }
 
     @Test
@@ -116,14 +125,18 @@ public class UnsubscribeHandlerTest {
         assertEquals(1, response.getReasonCodes().size());
         assertEquals(Mqtt5UnsubAckReasonCode.SUCCESS, response.getReasonCodes().get(0));
 
-        verify(clientSessionSubscriptionPersistence).remove("myTestClient", topic);
-
+//        verify(clientSessionSubscriptionPersistence).remove("myTestClient", topic);
+        final ArgumentCaptor<ClientSessionSubscriptionRemoveRequest> captor = ArgumentCaptor.forClass(ClientSessionSubscriptionRemoveRequest.class);
+        verify(mqttClusterClient).invoke(captor.capture());
+        assertEquals("myTestClient", captor.getValue().getClientId());
+        assertEquals(Set.of(topic), captor.getValue().getTopics());
     }
 
     @Test
     public void test_unsubscribe_single_and_acknowledge_error_mqtt5() {
 
-        when(clientSessionSubscriptionPersistence.remove(anyString(), any(String.class))).thenReturn(Futures.immediateFailedFuture(new NullPointerException("something is missing")));
+//        when(clientSessionSubscriptionPersistence.remove(anyString(), any(String.class))).thenReturn(Futures.immediateFailedFuture(new NullPointerException("something is missing")));
+        when(mqttClusterClient.invoke(any(ClientSessionSubscriptionRemoveRequest.class))).thenReturn(Futures.immediateFailedFuture(new NullPointerException("something is missing")));
 
         channel.attr(ChannelAttributes.MQTT_VERSION).set(ProtocolVersion.MQTTv5);
 
@@ -141,8 +154,11 @@ public class UnsubscribeHandlerTest {
         assertEquals(1, response.getReasonCodes().size());
         assertEquals(Mqtt5UnsubAckReasonCode.UNSPECIFIED_ERROR, response.getReasonCodes().get(0));
 
-        verify(clientSessionSubscriptionPersistence).remove("myTestClient", topic);
-
+//        verify(clientSessionSubscriptionPersistence).remove("myTestClient", topic);
+        final ArgumentCaptor<ClientSessionSubscriptionRemoveRequest> captor = ArgumentCaptor.forClass(ClientSessionSubscriptionRemoveRequest.class);
+        verify(mqttClusterClient).invoke(captor.capture());
+        assertEquals("myTestClient", captor.getValue().getClientId());
+        assertEquals(Set.of(topic), captor.getValue().getTopics());
     }
 
     @Test
@@ -167,9 +183,10 @@ public class UnsubscribeHandlerTest {
         final UNSUBACK response = (UNSUBACK) objects.element();
         assertEquals(10, response.getPacketIdentifier());
 
-        verify(clientSessionSubscriptionPersistence).removeSubscriptions(eq("myTestClient"), any(ImmutableSet.class));
-
-
+//        verify(clientSessionSubscriptionPersistence).removeSubscriptions(eq("myTestClient"), any(ImmutableSet.class));
+        final ArgumentCaptor<ClientSessionSubscriptionRemoveRequest> captor = ArgumentCaptor.forClass(ClientSessionSubscriptionRemoveRequest.class);
+        verify(mqttClusterClient).invoke(captor.capture());
+        assertEquals("myTestClient", captor.getValue().getClientId());
     }
 
     @Test
@@ -200,14 +217,17 @@ public class UnsubscribeHandlerTest {
         assertEquals(Mqtt5UnsubAckReasonCode.SUCCESS, response.getReasonCodes().get(1));
         assertEquals(Mqtt5UnsubAckReasonCode.SUCCESS, response.getReasonCodes().get(2));
 
-        verify(clientSessionSubscriptionPersistence).removeSubscriptions(eq("myTestClient"), any(ImmutableSet.class));
-
+//        verify(clientSessionSubscriptionPersistence).removeSubscriptions(eq("myTestClient"), any(ImmutableSet.class));
+        final ArgumentCaptor<ClientSessionSubscriptionRemoveRequest> captor = ArgumentCaptor.forClass(ClientSessionSubscriptionRemoveRequest.class);
+        verify(mqttClusterClient).invoke(captor.capture());
+        assertEquals("myTestClient", captor.getValue().getClientId());
     }
 
     @Test
     public void test_unsubscribe_batched_and_acknowledge_error_mqtt5() {
 
-        when(clientSessionSubscriptionPersistence.removeSubscriptions(anyString(), Matchers.any(ImmutableSet.class))).thenReturn(Futures.immediateFailedFuture(new NullPointerException("something is missing")));
+//        when(clientSessionSubscriptionPersistence.removeSubscriptions(anyString(), Matchers.any(ImmutableSet.class))).thenReturn(Futures.immediateFailedFuture(new NullPointerException("something is missing")));
+        when(mqttClusterClient.invoke(any(ClientSessionSubscriptionRemoveRequest.class))).thenReturn(Futures.immediateFailedFuture(new NullPointerException("something is missing")));
 
         channel.attr(ChannelAttributes.MQTT_VERSION).set(ProtocolVersion.MQTTv5);
 
@@ -234,8 +254,10 @@ public class UnsubscribeHandlerTest {
         assertEquals(Mqtt5UnsubAckReasonCode.UNSPECIFIED_ERROR, response.getReasonCodes().get(1));
         assertEquals(Mqtt5UnsubAckReasonCode.UNSPECIFIED_ERROR, response.getReasonCodes().get(2));
 
-        verify(clientSessionSubscriptionPersistence).removeSubscriptions(eq("myTestClient"), any(ImmutableSet.class));
-
+//        verify(clientSessionSubscriptionPersistence).removeSubscriptions(eq("myTestClient"), any(ImmutableSet.class));
+        final ArgumentCaptor<ClientSessionSubscriptionRemoveRequest> captor = ArgumentCaptor.forClass(ClientSessionSubscriptionRemoveRequest.class);
+        verify(mqttClusterClient).invoke(captor.capture());
+        assertEquals("myTestClient", captor.getValue().getClientId());
     }
 
     @Test

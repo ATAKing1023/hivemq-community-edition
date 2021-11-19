@@ -20,7 +20,8 @@ import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
 import com.google.common.util.concurrent.Futures;
-import com.hivemq.configuration.HivemqId;
+import com.hivemq.cluster.clientsession.rpc.ClientSessionSubscriptionAddRequest;
+import com.hivemq.cluster.core.MqttClusterClient;
 import com.hivemq.configuration.service.MqttConfigurationService;
 import com.hivemq.configuration.service.RestrictionsConfigurationService;
 import com.hivemq.extension.sdk.api.auth.parameter.TopicPermission;
@@ -54,6 +55,7 @@ import org.mockito.MockitoAnnotations;
 import util.InitFutureUtilsExecutorRule;
 import util.TestConfigurationBootstrap;
 
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.Queue;
 
@@ -61,8 +63,6 @@ import static org.junit.Assert.*;
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.anyObject;
 import static org.mockito.Matchers.anyString;
-import static org.mockito.Matchers.eq;
-import static org.mockito.Matchers.same;
 import static org.mockito.Mockito.*;
 
 @SuppressWarnings("ALL")
@@ -73,6 +73,9 @@ public class IncomingSubscribeServiceTest {
 
     @Mock
     private ClientSessionSubscriptionPersistence clientSessionSubscriptionPersistence;
+
+    @Mock
+    private MqttClusterClient mqttClusterClient;
 
     @Mock
     private RetainedMessagePersistence retainedMessagePersistence;
@@ -105,8 +108,8 @@ public class IncomingSubscribeServiceTest {
     public void setUp() throws Exception {
 
         MockitoAnnotations.initMocks(this);
-        hivemqId = new HivemqId();
-        incomingSubscribeService = new IncomingSubscribeService(clientSessionSubscriptionPersistence, retainedMessagePersistence, sharedSubscriptionService, retainedMessagesSender, mqttConfigurationService, restrictionsConfigurationService, new MqttServerDisconnectorImpl(eventLog, hivemqId));
+        incomingSubscribeService = new IncomingSubscribeService(clientSessionSubscriptionPersistence,
+                mqttClusterClient, retainedMessagePersistence, sharedSubscriptionService, retainedMessagesSender, mqttConfigurationService, restrictionsConfigurationService, new MqttServerDisconnectorImpl(eventLog));
 
         channel = new EmbeddedChannel();
         channel.attr(ChannelAttributes.CLIENT_ID).set("client");
@@ -117,6 +120,8 @@ public class IncomingSubscribeServiceTest {
         when(ctx.writeAndFlush(anyObject())).thenReturn(channelFuture);
         when(ctx.executor()).thenReturn(ImmediateEventExecutor.INSTANCE);
         when(restrictionsConfigurationService.maxTopicLength()).thenReturn(65535);
+
+        when(mqttClusterClient.invoke(any(ClientSessionSubscriptionAddRequest.class))).thenReturn(Futures.immediateFuture(null));
     }
 
 
@@ -138,7 +143,11 @@ public class IncomingSubscribeServiceTest {
         assertEquals(1, response.getReasonCodes().size());
         assertEquals((byte) QoS.AT_LEAST_ONCE.getQosNumber(), response.getReasonCodes().get(0).getCode());
 
-        verify(clientSessionSubscriptionPersistence).addSubscription(eq("client"), same(topic));
+//        verify(clientSessionSubscriptionPersistence).addSubscription(eq("client"), same(topic));
+        final ArgumentCaptor<ClientSessionSubscriptionAddRequest> captor = ArgumentCaptor.forClass(ClientSessionSubscriptionAddRequest.class);
+        verify(mqttClusterClient).invoke(captor.capture());
+        assertEquals("client", captor.getValue().getClientId());
+        assertEquals(Collections.singleton(topic), captor.getValue().getTopics());
     }
 
     @Test
@@ -163,7 +172,10 @@ public class IncomingSubscribeServiceTest {
         assertEquals((byte) QoS.AT_MOST_ONCE.getQosNumber(), response.getReasonCodes().get(1).getCode());
         assertEquals((byte) QoS.EXACTLY_ONCE.getQosNumber(), response.getReasonCodes().get(2).getCode());
 
-        verify(clientSessionSubscriptionPersistence).addSubscriptions(eq("client"), any(ImmutableSet.class));
+//        verify(clientSessionSubscriptionPersistence).addSubscriptions(eq("client"), any(ImmutableSet.class));
+        final ArgumentCaptor<ClientSessionSubscriptionAddRequest> captor = ArgumentCaptor.forClass(ClientSessionSubscriptionAddRequest.class);
+        verify(mqttClusterClient).invoke(captor.capture());
+        assertEquals("client", captor.getValue().getClientId());
     }
 
     @Test
@@ -186,7 +198,10 @@ public class IncomingSubscribeServiceTest {
         assertEquals((byte) QoS.AT_MOST_ONCE.getQosNumber(), response.getReasonCodes().get(1).getCode());
         assertEquals((byte) QoS.EXACTLY_ONCE.getQosNumber(), response.getReasonCodes().get(2).getCode());
 
-        verify(clientSessionSubscriptionPersistence).addSubscriptions(eq("client"), any(ImmutableSet.class));
+//        verify(clientSessionSubscriptionPersistence).addSubscriptions(eq("client"), any(ImmutableSet.class));
+        final ArgumentCaptor<ClientSessionSubscriptionAddRequest> captor = ArgumentCaptor.forClass(ClientSessionSubscriptionAddRequest.class);
+        verify(mqttClusterClient).invoke(captor.capture());
+        assertEquals("client", captor.getValue().getClientId());
     }
 
     @Test
@@ -211,7 +226,11 @@ public class IncomingSubscribeServiceTest {
         assertEquals((byte) QoS.AT_LEAST_ONCE.getQosNumber(), response.getReasonCodes().get(1).getCode());
         assertEquals((byte) QoS.AT_MOST_ONCE.getQosNumber(), response.getReasonCodes().get(2).getCode());
 
-        verify(clientSessionSubscriptionPersistence).addSubscription(eq("client"), same(topic3));
+//        verify(clientSessionSubscriptionPersistence).addSubscription(eq("client"), same(topic3));
+        final ArgumentCaptor<ClientSessionSubscriptionAddRequest> captor = ArgumentCaptor.forClass(ClientSessionSubscriptionAddRequest.class);
+        verify(mqttClusterClient).invoke(captor.capture());
+        assertEquals("client", captor.getValue().getClientId());
+        assertEquals(Collections.singleton(topic3), captor.getValue().getTopics());
     }
 
     @Test
@@ -238,7 +257,11 @@ public class IncomingSubscribeServiceTest {
         assertEquals((byte) QoS.AT_LEAST_ONCE.getQosNumber(), response.getReasonCodes().get(1).getCode());
         assertEquals((byte) QoS.AT_MOST_ONCE.getQosNumber(), response.getReasonCodes().get(2).getCode());
 
-        verify(clientSessionSubscriptionPersistence).addSubscriptions(eq("client"), eq(persistedTopics));
+//        verify(clientSessionSubscriptionPersistence).addSubscriptions(eq("client"), eq(persistedTopics));
+        final ArgumentCaptor<ClientSessionSubscriptionAddRequest> captor = ArgumentCaptor.forClass(ClientSessionSubscriptionAddRequest.class);
+        verify(mqttClusterClient).invoke(captor.capture());
+        assertEquals("client", captor.getValue().getClientId());
+        assertEquals(persistedTopics, captor.getValue().getTopics());
     }
 
     @Test
@@ -288,7 +311,8 @@ public class IncomingSubscribeServiceTest {
 
         assertFalse(channel.isActive());
         
-        verify(clientSessionSubscriptionPersistence, never()).addSubscriptions(any(), any());
+//        verify(clientSessionSubscriptionPersistence, never()).addSubscriptions(any(), any());
+        verify(mqttClusterClient, never()).invoke(any(ClientSessionSubscriptionAddRequest.class));
     }
 
     @Test
@@ -304,7 +328,8 @@ public class IncomingSubscribeServiceTest {
 
         assertFalse(channel.isActive());
         
-        verify(clientSessionSubscriptionPersistence, never()).addSubscriptions(any(), any());
+//        verify(clientSessionSubscriptionPersistence, never()).addSubscriptions(any(), any());
+        verify(mqttClusterClient, never()).invoke(any(ClientSessionSubscriptionAddRequest.class));
     }
 
     @Test
@@ -319,7 +344,8 @@ public class IncomingSubscribeServiceTest {
         incomingSubscribeService.processSubscribe(ctx, subscribe, false);
 
         assertFalse(channel.isActive());
-        verify(clientSessionSubscriptionPersistence, never()).addSubscriptions(any(), any());
+//        verify(clientSessionSubscriptionPersistence, never()).addSubscriptions(any(), any());
+        verify(mqttClusterClient, never()).invoke(any(ClientSessionSubscriptionAddRequest.class));
     }
 
     @Test
@@ -335,7 +361,8 @@ public class IncomingSubscribeServiceTest {
 
         assertFalse(channel.isActive());
 
-        verify(clientSessionSubscriptionPersistence, never()).addSubscriptions(any(), any());
+//        verify(clientSessionSubscriptionPersistence, never()).addSubscriptions(any(), any());
+        verify(mqttClusterClient, never()).invoke(any(ClientSessionSubscriptionAddRequest.class));
     }
 
     @Test
@@ -352,7 +379,8 @@ public class IncomingSubscribeServiceTest {
 
         assertFalse(channel.isActive());
 
-        verify(clientSessionSubscriptionPersistence, never()).addSubscriptions(any(), any());
+//        verify(clientSessionSubscriptionPersistence, never()).addSubscriptions(any(), any());
+        verify(mqttClusterClient, never()).invoke(any(ClientSessionSubscriptionAddRequest.class));
     }
 
     @Test
@@ -369,7 +397,8 @@ public class IncomingSubscribeServiceTest {
 
         assertFalse(channel.isActive());
 
-        verify(clientSessionSubscriptionPersistence, never()).addSubscriptions(any(), any());
+//        verify(clientSessionSubscriptionPersistence, never()).addSubscriptions(any(), any());
+        verify(mqttClusterClient, never()).invoke(any(ClientSessionSubscriptionAddRequest.class));
     }
 
 
@@ -392,7 +421,10 @@ public class IncomingSubscribeServiceTest {
         assertEquals(1, response.getReasonCodes().size());
         assertEquals((byte) QoS.AT_LEAST_ONCE.getQosNumber(), response.getReasonCodes().get(0).getCode());
 
-        verify(clientSessionSubscriptionPersistence).addSubscription(eq("client"), same(topic));
+//        verify(clientSessionSubscriptionPersistence).addSubscription(eq("client"), same(topic));
+        final ArgumentCaptor<ClientSessionSubscriptionAddRequest> captor = ArgumentCaptor.forClass(ClientSessionSubscriptionAddRequest.class);
+        verify(mqttClusterClient).invoke(captor.capture());
+        assertEquals("client", captor.getValue().getClientId());
     }
 
     @Test
@@ -414,7 +446,8 @@ public class IncomingSubscribeServiceTest {
         assertEquals(1, response.getReasonCodes().size());
         assertEquals(Mqtt5SubAckReasonCode.NOT_AUTHORIZED, response.getReasonCodes().get(0));
 
-        verify(clientSessionSubscriptionPersistence, never()).addSubscription(eq("client"), same(topic));
+//        verify(clientSessionSubscriptionPersistence, never()).addSubscription(eq("client"), same(topic));
+        verify(mqttClusterClient, never()).invoke(any(ClientSessionSubscriptionAddRequest.class));
     }
 
     @Test
@@ -439,13 +472,16 @@ public class IncomingSubscribeServiceTest {
         assertEquals((byte) QoS.AT_MOST_ONCE.getQosNumber(), response.getReasonCodes().get(1).getCode());
         assertEquals((byte) QoS.EXACTLY_ONCE.getQosNumber(), response.getReasonCodes().get(2).getCode());
 
-        verify(clientSessionSubscriptionPersistence).addSubscriptions(eq("client"), any(ImmutableSet.class));
+//        verify(clientSessionSubscriptionPersistence).addSubscriptions(eq("client"), any(ImmutableSet.class));
+        final ArgumentCaptor<ClientSessionSubscriptionAddRequest> captor = ArgumentCaptor.forClass(ClientSessionSubscriptionAddRequest.class);
+        verify(mqttClusterClient).invoke(captor.capture());
+        assertEquals("client", captor.getValue().getClientId());
     }
 
     @Test
     public void test_subscribe_multiple_all_not_authorized() throws Exception {
 
-        final ArgumentCaptor<ImmutableSet> captor = ArgumentCaptor.forClass(ImmutableSet.class);
+//        final ArgumentCaptor<ImmutableSet> captor = ArgumentCaptor.forClass(ImmutableSet.class);
         final Topic topic1 = new Topic("test1", QoS.AT_LEAST_ONCE);
         final Topic topic2 = new Topic("test2", QoS.AT_MOST_ONCE);
         final Topic topic3 = new Topic("test3", QoS.EXACTLY_ONCE);
@@ -468,14 +504,18 @@ public class IncomingSubscribeServiceTest {
                 "Not authorized to subscribe to topic 'test2' with QoS '0'. " +
                 "Not authorized to subscribe to topic 'test3' with QoS '2'. ", response.getReasonString());
 
-        verify(clientSessionSubscriptionPersistence).addSubscriptions(eq("client"), captor.capture());
-        assertEquals(0, captor.getValue().size());
+//        verify(clientSessionSubscriptionPersistence).addSubscriptions(eq("client"), captor.capture());
+//        assertEquals(0, captor.getValue().size());
+        final ArgumentCaptor<ClientSessionSubscriptionAddRequest> captor = ArgumentCaptor.forClass(ClientSessionSubscriptionAddRequest.class);
+        verify(mqttClusterClient).invoke(captor.capture());
+        assertEquals("client", captor.getValue().getClientId());
+        assertEquals(0, captor.getValue().getTopics().size());
     }
 
     @Test
     public void test_subscribe_multiple_some_not_authorized() throws Exception {
 
-        final ArgumentCaptor<ImmutableSet> captor = ArgumentCaptor.forClass(ImmutableSet.class);
+//        final ArgumentCaptor<ImmutableSet> captor = ArgumentCaptor.forClass(ImmutableSet.class);
         final Topic topic1 = new Topic("test1", QoS.AT_LEAST_ONCE);
         final Topic topic2 = new Topic("test2", QoS.AT_MOST_ONCE);
         final Topic topic3 = new Topic("test3", QoS.EXACTLY_ONCE);
@@ -501,10 +541,17 @@ public class IncomingSubscribeServiceTest {
         assertEquals("Not authorized to subscribe to topic 'test2' with QoS '0'. " +
                 "Not authorized to subscribe to topic 'test3' with QoS '2'. ", response.getReasonString());
 
-        verify(clientSessionSubscriptionPersistence).addSubscriptions(eq("client"), captor.capture());
-        assertEquals(2, captor.getValue().size());
-        final ImmutableList<Topic> immutableList = captor.getValue().asList();
-        for (Topic topic : immutableList) {
+//        verify(clientSessionSubscriptionPersistence).addSubscriptions(eq("client"), captor.capture());
+//        assertEquals(2, captor.getValue().size());
+//        final ImmutableList<Topic> immutableList = captor.getValue().asList();
+//        for (Topic topic : immutableList) {
+//            assertTrue(topic.getTopic().equals("test1") || topic.getTopic().equals("test4"));
+//        }
+        final ArgumentCaptor<ClientSessionSubscriptionAddRequest> captor = ArgumentCaptor.forClass(ClientSessionSubscriptionAddRequest.class);
+        verify(mqttClusterClient).invoke(captor.capture());
+        assertEquals("client", captor.getValue().getClientId());
+        assertEquals(2, captor.getValue().getTopics().size());
+        for (Topic topic : captor.getValue().getTopics()) {
             assertTrue(topic.getTopic().equals("test1") || topic.getTopic().equals("test4"));
         }
     }
@@ -526,7 +573,7 @@ public class IncomingSubscribeServiceTest {
     @Test
     public void test_process_authorizers_present_no_default() throws Exception {
 
-        final ArgumentCaptor<ImmutableSet> authorizedTopicsCaptor = ArgumentCaptor.forClass(ImmutableSet.class);
+//        final ArgumentCaptor<ImmutableSet> authorizedTopicsCaptor = ArgumentCaptor.forClass(ImmutableSet.class);
         final Topic topic1 = new Topic("test1", QoS.AT_LEAST_ONCE);
         final Topic topic2 = new Topic("test2", QoS.AT_MOST_ONCE);
         final Topic topic3 = new Topic("test3", QoS.EXACTLY_ONCE);
@@ -546,8 +593,12 @@ public class IncomingSubscribeServiceTest {
         assertEquals(Mqtt5SubAckReasonCode.NOT_AUTHORIZED, response.getReasonCodes().get(1));
         assertEquals(Mqtt5SubAckReasonCode.NOT_AUTHORIZED, response.getReasonCodes().get(2));
 
-        verify(clientSessionSubscriptionPersistence).addSubscriptions(eq("client"), authorizedTopicsCaptor.capture());
-        assertEquals(1, authorizedTopicsCaptor.getValue().size());
+//        verify(clientSessionSubscriptionPersistence).addSubscriptions(eq("client"), authorizedTopicsCaptor.capture());
+//        assertEquals(1, authorizedTopicsCaptor.getValue().size());
+        final ArgumentCaptor<ClientSessionSubscriptionAddRequest> captor = ArgumentCaptor.forClass(ClientSessionSubscriptionAddRequest.class);
+        verify(mqttClusterClient).invoke(captor.capture());
+        assertEquals("client", captor.getValue().getClientId());
+        assertEquals(1, captor.getValue().getTopics().size());
     }
 
 }
