@@ -21,6 +21,9 @@ import com.google.common.util.concurrent.FutureCallback;
 import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
 import com.google.common.util.concurrent.SettableFuture;
+import com.hivemq.cluster.HazelcastManager;
+import com.hivemq.cluster.event.ClientQueuePublishEvent;
+import com.hivemq.cluster.event.HazelcastTopic;
 import com.hivemq.configuration.service.MqttConfigurationService;
 import com.hivemq.extension.sdk.api.annotations.NotNull;
 import com.hivemq.extension.sdk.api.annotations.Nullable;
@@ -62,18 +65,32 @@ public class PublishDistributorImpl implements PublishDistributor {
     private final SingleWriterService singleWriterService;
     @NotNull
     private final MqttConfigurationService mqttConfigurationService;
+    @NotNull
+    private final HazelcastManager hazelcastManager;
 
     @Inject
     public PublishDistributorImpl(@NotNull final PublishPayloadPersistence payloadPersistence,
                                   @NotNull final ClientQueuePersistence clientQueuePersistence,
                                   @NotNull final ClientSessionPersistence clientSessionPersistence,
                                   @NotNull final SingleWriterService singleWriterService,
-                                  @NotNull final MqttConfigurationService mqttConfigurationService) {
+                                  @NotNull final MqttConfigurationService mqttConfigurationService,
+                                  @NotNull final HazelcastManager hazelcastManager) {
         this.payloadPersistence = payloadPersistence;
         this.clientQueuePersistence = clientQueuePersistence;
         this.clientSessionPersistence = clientSessionPersistence;
         this.singleWriterService = singleWriterService;
         this.mqttConfigurationService = mqttConfigurationService;
+        this.hazelcastManager = hazelcastManager;
+        this.hazelcastManager.registerListener(HazelcastTopic.CLIENT_QUEUE_PUBLISH, message -> {
+            final ClientQueuePublishEvent event = (ClientQueuePublishEvent) message.getMessageObject();
+            handlePublish(
+                    event.getPublish(),
+                    event.getClient(),
+                    event.getSubscriptionQos(),
+                    event.isShared(),
+                    event.isRetainAsPublished(),
+                    event.getSubscriptionIdentifier());
+        });
     }
 
     @NotNull
@@ -119,7 +136,14 @@ public class PublishDistributorImpl implements PublishDistributor {
     public ListenableFuture<PublishStatus> sendMessageToSubscriber(@NotNull final PUBLISH publish, @NotNull final String clientId, final int subscriptionQos,
                                                                    final boolean sharedSubscription, final boolean retainAsPublished,
                                                                    @Nullable final ImmutableIntArray subscriptionIdentifier) {
-
+        hazelcastManager.publishAsync(
+                HazelcastTopic.CLIENT_QUEUE_PUBLISH,
+                new ClientQueuePublishEvent(clientId,
+                        publish,
+                        subscriptionQos,
+                        sharedSubscription,
+                        retainAsPublished,
+                        subscriptionIdentifier));
         return handlePublish(publish, clientId, subscriptionQos, sharedSubscription, retainAsPublished, subscriptionIdentifier);
     }
 

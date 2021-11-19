@@ -18,9 +18,8 @@ package com.hivemq.mqtt.services;
 import com.google.common.primitives.ImmutableIntArray;
 import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.MoreExecutors;
-import com.hivemq.configuration.service.FullConfigurationService;
+import com.hivemq.cluster.HazelcastManager;
 import com.hivemq.configuration.service.MqttConfigurationService;
-import com.hivemq.configuration.service.PersistenceConfigurationService;
 import com.hivemq.extension.sdk.api.annotations.NotNull;
 import com.hivemq.mqtt.handler.publish.PublishStatus;
 import com.hivemq.mqtt.message.QoS;
@@ -72,6 +71,8 @@ public class PublishDistributorImplTest {
     private @NotNull ClientSessionPersistence clientSessionPersistence;
     @Mock
     private @NotNull MqttConfigurationService mqttConfigurationService;
+    @Mock
+    private @NotNull HazelcastManager hazelcastManager;
 
     private @NotNull PublishDistributorImpl publishDistributor;
     private @NotNull SingleWriterService singleWriterService;
@@ -81,7 +82,7 @@ public class PublishDistributorImplTest {
         closeableMock = MockitoAnnotations.openMocks(this);
         singleWriterService = TestSingleWriterFactory.defaultSingleWriter();
         publishDistributor = new PublishDistributorImpl(payloadPersistence, clientQueuePersistence, clientSessionPersistence,
-                singleWriterService, mqttConfigurationService);
+                singleWriterService, mqttConfigurationService, hazelcastManager);
     }
 
     @After
