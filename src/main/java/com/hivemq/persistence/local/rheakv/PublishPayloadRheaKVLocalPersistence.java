@@ -23,7 +23,7 @@ import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.ImmutableList;
 import com.google.inject.Inject;
 import com.hivemq.bootstrap.ioc.lazysingleton.LazySingleton;
-import com.hivemq.configuration.service.FullConfigurationService;
+import com.hivemq.cluster.ClusterServerManager;
 import com.hivemq.configuration.service.InternalConfigurations;
 import com.hivemq.extension.sdk.api.annotations.NotNull;
 import com.hivemq.extension.sdk.api.annotations.Nullable;
@@ -57,11 +57,11 @@ public class PublishPayloadRheaKVLocalPersistence extends RheaKVLocalPersistence
     public PublishPayloadRheaKVLocalPersistence(
             final @NotNull LocalPersistenceFileUtil localPersistenceFileUtil,
             final @NotNull PersistenceStartup persistenceStartup,
-            final @NotNull FullConfigurationService configurationService) {
+            final @NotNull ClusterServerManager clusterServerManager) {
         super(
                 localPersistenceFileUtil,
                 persistenceStartup,
-                configurationService.clusterConfigurationService(),
+                clusterServerManager,
                 InternalConfigurations.PAYLOAD_PERSISTENCE_BUCKET_COUNT.get(),
                 InternalConfigurations.PAYLOAD_PERSISTENCE_TYPE.get() == PersistenceType.FILE_DISTRIBUTED);
     }

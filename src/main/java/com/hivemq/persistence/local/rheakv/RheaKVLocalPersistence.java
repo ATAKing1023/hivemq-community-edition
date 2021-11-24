@@ -18,12 +18,8 @@ package com.hivemq.persistence.local.rheakv;
 
 import com.alipay.sofa.jraft.rhea.client.DefaultRheaKVStore;
 import com.alipay.sofa.jraft.rhea.client.RheaKVStore;
-import com.alipay.sofa.jraft.rhea.options.PlacementDriverOptions;
 import com.alipay.sofa.jraft.rhea.options.RheaKVStoreOptions;
-import com.alipay.sofa.jraft.rhea.options.RocksDBOptions;
-import com.alipay.sofa.jraft.rhea.options.StoreEngineOptions;
-import com.alipay.sofa.jraft.util.Endpoint;
-import com.hivemq.configuration.service.ClusterConfigurationService;
+import com.hivemq.cluster.ClusterServerManager;
 import com.hivemq.exceptions.UnrecoverableException;
 import com.hivemq.extension.sdk.api.annotations.NotNull;
 import com.hivemq.persistence.FilePersistence;
@@ -34,7 +30,6 @@ import com.hivemq.util.LocalPersistenceFileUtil;
 import org.slf4j.Logger;
 
 import java.io.File;
-import java.util.List;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicBoolean;
 
@@ -51,21 +46,21 @@ public abstract class RheaKVLocalPersistence implements LocalPersistence, FilePe
     protected final @NotNull RheaKVStore[] buckets;
     private final @NotNull LocalPersistenceFileUtil localPersistenceFileUtil;
     private final @NotNull PersistenceStartup persistenceStartup;
-    private final @NotNull ClusterConfigurationService clusterConfigurationService;
+    private final @NotNull ClusterServerManager clusterServerManager;
     private final int bucketCount;
     private final boolean enabled;
 
     protected RheaKVLocalPersistence(
             final @NotNull LocalPersistenceFileUtil localPersistenceFileUtil,
             final @NotNull PersistenceStartup persistenceStartup,
-            final @NotNull ClusterConfigurationService clusterConfigurationService,
+            final @NotNull ClusterServerManager clusterServerManager,
             final int internalBucketCount,
             final boolean enabled) {
         this.bucketCount = internalBucketCount;
         this.buckets = new RheaKVStore[bucketCount];
         this.localPersistenceFileUtil = localPersistenceFileUtil;
         this.persistenceStartup = persistenceStartup;
-        this.clusterConfigurationService = clusterConfigurationService;
+        this.clusterServerManager = clusterServerManager;
         this.enabled = enabled;
     }
 
@@ -153,7 +148,8 @@ public abstract class RheaKVLocalPersistence implements LocalPersistence, FilePe
             counter.await();
         } catch (final Exception e) {
             logger.error("An error occurred while opening the {} persistence. Is another HiveMQ instance running?",
-                    name, e);
+                    name,
+                    e);
             throw new UnrecoverableException();
         }
 
@@ -200,40 +196,11 @@ public abstract class RheaKVLocalPersistence implements LocalPersistence, FilePe
     private RheaKVStoreOptions createRheaKVStoreOptions(final int bucketIndex) {
         final File persistenceFolder =
                 localPersistenceFileUtil.getVersionedLocalPersistenceFolder(getName(), getVersion());
-        final String clusterName = clusterConfigurationService.getClusterConfig().getName();
-        final int startPort = clusterConfigurationService.getClusterConfig().getStartPort();
-        final String bindAddress = clusterConfigurationService.getClusterConfig().getBindAddress();
-
-        final int port = startPort + getContentType().ordinal() * 100 + bucketIndex;
-        final RheaKVStoreOptions options = new RheaKVStoreOptions();
-        options.setClusterName(clusterName);
-        final PlacementDriverOptions pdOptions = new PlacementDriverOptions();
-        pdOptions.setFake(true);
-        options.setPlacementDriverOptions(pdOptions);
-        final StoreEngineOptions storeEngineOptions = new StoreEngineOptions();
-        final RocksDBOptions rocksDBOptions = new RocksDBOptions();
-        rocksDBOptions.setSync(true);
-        rocksDBOptions.setDbPath(new File(persistenceFolder, "rhea_db/").getPath());
-        storeEngineOptions.setRocksDBOptions(rocksDBOptions);
-        storeEngineOptions.setRaftDataPath(new File(persistenceFolder, "rhea_raft/").getPath());
-        storeEngineOptions.setServerAddress(new Endpoint(bindAddress, port));
-        options.setStoreEngineOptions(storeEngineOptions);
-        options.setInitialServerList(getInitialServerList(port));
-        options.setOnlyLeaderRead(false);
-        options.setFailoverRetries(2);
-        return options;
-    }
-
-    private String getInitialServerList(final int port) {
-        final StringBuilder sb = new StringBuilder();
-        final List<String> nodeList = clusterConfigurationService.getClusterConfig().getNodeList();
-        for (final String address : nodeList) {
-            if (sb.length() > 0) {
-                sb.append(',');
-            }
-            sb.append(address).append(':').append(port);
-        }
-        return sb.toString();
+        final int portOffset = getContentType().ordinal() * 100 + bucketIndex;
+        return clusterServerManager.createRheaKVStoreOptions(persistenceFolder,
+                portOffset,
+                getContentType().ordinal(),
+                getContentType().name());
     }
 
     protected enum ContentType {

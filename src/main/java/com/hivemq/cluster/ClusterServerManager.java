@@ -28,9 +28,15 @@ import com.alipay.sofa.jraft.conf.Configuration;
 import com.alipay.sofa.jraft.entity.PeerId;
 import com.alipay.sofa.jraft.option.CliOptions;
 import com.alipay.sofa.jraft.option.NodeOptions;
+import com.alipay.sofa.jraft.rhea.options.RheaKVStoreOptions;
+import com.alipay.sofa.jraft.rhea.options.configured.PlacementDriverOptionsConfigured;
+import com.alipay.sofa.jraft.rhea.options.configured.RheaKVStoreOptionsConfigured;
+import com.alipay.sofa.jraft.rhea.options.configured.RocksDBOptionsConfigured;
+import com.alipay.sofa.jraft.rhea.options.configured.StoreEngineOptionsConfigured;
 import com.alipay.sofa.jraft.rpc.RaftRpcServerFactory;
 import com.alipay.sofa.jraft.rpc.impl.BoltRpcServer;
 import com.alipay.sofa.jraft.rpc.impl.cli.CliClientServiceImpl;
+import com.alipay.sofa.jraft.util.Endpoint;
 import com.hivemq.cluster.serialization.HessianCustomSerializer;
 import com.hivemq.common.shutdown.HiveMQShutdownHook;
 import com.hivemq.common.shutdown.ShutdownHooks;
@@ -63,10 +69,12 @@ public class ClusterServerManager {
     private final @NotNull ShutdownHooks registry;
     private final @NotNull SystemInformation systemInformation;
     private final PeerId peerId;
-    private final Configuration initialConfiguration;
+    private final Configuration initialConfiguration = new Configuration();
 
-    private RpcServer rpcServer;
-    private CliClientServiceImpl cliClientService;
+    private final @NotNull ClusterEntity clusterConfig;
+
+    private final RpcServer rpcServer;
+    private final CliClientServiceImpl cliClientService = new CliClientServiceImpl();
 
     private final List<RaftGroupService> raftGroupServices = new ArrayList<>();
 
@@ -77,20 +85,16 @@ public class ClusterServerManager {
             final @NotNull FullConfigurationService fullConfigurationService) {
         this.registry = registry;
         this.systemInformation = systemInformation;
-        final ClusterEntity clusterConfig = fullConfigurationService.clusterConfigurationService().getClusterConfig();
+        this.clusterConfig = fullConfigurationService.clusterConfigurationService().getClusterConfig();
+        this.rpcServer = new RpcServer(clusterConfig.getBindAddress(), clusterConfig.getRpcPort());
         this.peerId = new PeerId(clusterConfig.getBindAddress(), clusterConfig.getRpcPort());
-        final List<PeerId> peerIds = new ArrayList<>();
-        for (final String address : clusterConfig.getNodeList()) {
-            peerIds.add(new PeerId(address, clusterConfig.getRpcPort()));
-        }
-        this.initialConfiguration = new Configuration(peerIds);
+        this.initialConfiguration.parse(getInitialServerList(clusterConfig.getRpcPort()));
         SerializerManager.addSerializer(HessianCustomSerializer.INDEX, HessianCustomSerializer.DEFAULT.getSerializer());
     }
 
     @PostConstruct
     public void postConstruct() {
         log.info("Initializing raft cluster: peerId-[{}], initialConfiguration-[{}]", peerId, initialConfiguration);
-        rpcServer = new RpcServer(peerId.getIp(), peerId.getPort());
         RaftRpcServerFactory.addRaftRequestProcessors(new BoltRpcServer(rpcServer));
         try {
             rpcServer.startup();
@@ -100,7 +104,6 @@ public class ClusterServerManager {
             throw new UnrecoverableException();
         }
 
-        cliClientService = new CliClientServiceImpl();
         cliClientService.init(new CliOptions());
 
         registry.add(new HiveMQShutdownHook() {
@@ -168,7 +171,7 @@ public class ClusterServerManager {
         // 设置状态机到启动参数
         nodeOptions.setFsm(stateMachine);
         // 设置存储路径
-        final String dataPath = getDataPath(stateMachine.getGroupId());
+        final String dataPath = getClusterDataFolder(stateMachine.getGroupId()).getAbsolutePath();
         // 日志, 必须
         nodeOptions.setLogUri(dataPath + File.separator + "log");
         // 元信息, 必须
@@ -180,7 +183,40 @@ public class ClusterServerManager {
         return nodeOptions;
     }
 
-    private synchronized String getDataPath(final String name) {
+    public RheaKVStoreOptions createRheaKVStoreOptions(final File folder, final int portOffset, final long clusterId, final String clusterName) {
+        final int port = clusterConfig.getStartPort() + portOffset;
+        return RheaKVStoreOptionsConfigured.newConfigured()
+                .withClusterId(clusterId)
+                .withClusterName(clusterName)
+                .withPlacementDriverOptions(PlacementDriverOptionsConfigured.newConfigured()
+                        .withFake(true)
+                        .config())
+                .withStoreEngineOptions(StoreEngineOptionsConfigured.newConfigured()
+                        .withRocksDBOptions(RocksDBOptionsConfigured.newConfigured()
+                                .withSync(true)
+                                .withDbPath(new File(folder, "rhea_db/").getPath())
+                                .config())
+                        .withRaftDataPath(new File(folder, "rhea_raft/").getPath())
+                        .withServerAddress(new Endpoint(clusterConfig.getBindAddress(), port))
+                        .config())
+                .withInitialServerList(getInitialServerList(port))
+                .withOnlyLeaderRead(false)
+                .withFailoverRetries(2)
+                .config();
+    }
+
+    private String getInitialServerList(final int port) {
+        final StringBuilder sb = new StringBuilder();
+        for (final String address : clusterConfig.getNodeList()) {
+            if (sb.length() > 0) {
+                sb.append(',');
+            }
+            sb.append(address).append(':').append(port);
+        }
+        return sb.toString();
+    }
+
+    private synchronized File getClusterDataFolder(final String name) {
         final File dataFolder = systemInformation.getDataFolder();
 
         final File clusterFolder = new File(dataFolder, "cluster" + File.separator + name);
@@ -191,6 +227,6 @@ public class ClusterServerManager {
                 log.debug("Created clusterFolder {}", dataFolder.getAbsolutePath());
             }
         }
-        return clusterFolder.getAbsolutePath();
+        return clusterFolder;
     }
 }

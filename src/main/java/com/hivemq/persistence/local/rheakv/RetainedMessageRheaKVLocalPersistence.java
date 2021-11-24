@@ -22,7 +22,7 @@ import com.alipay.sofa.jraft.rhea.storage.KVEntry;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.ImmutableMap;
 import com.hivemq.bootstrap.ioc.lazysingleton.LazySingleton;
-import com.hivemq.configuration.service.FullConfigurationService;
+import com.hivemq.cluster.ClusterServerManager;
 import com.hivemq.configuration.service.InternalConfigurations;
 import com.hivemq.exceptions.UnrecoverableException;
 import com.hivemq.extension.sdk.api.annotations.NotNull;
@@ -75,10 +75,10 @@ public class RetainedMessageRheaKVLocalPersistence extends RheaKVLocalPersistenc
             final @NotNull LocalPersistenceFileUtil localPersistenceFileUtil,
             final @NotNull PublishPayloadPersistence payloadPersistence,
             final @NotNull PersistenceStartup persistenceStartup,
-            final @NotNull FullConfigurationService configurationService) {
+            final @NotNull ClusterServerManager clusterServerManager) {
         super(localPersistenceFileUtil,
                 persistenceStartup,
-                configurationService.clusterConfigurationService(),
+                clusterServerManager,
                 InternalConfigurations.PERSISTENCE_BUCKET_COUNT.get(),
                 InternalConfigurations.RETAINED_MESSAGE_PERSISTENCE_TYPE.get() == PersistenceType.FILE_DISTRIBUTED);
 
