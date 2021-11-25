@@ -68,7 +68,7 @@ public class ClusterServerManager {
 
     private final @NotNull ShutdownHooks registry;
     private final @NotNull SystemInformation systemInformation;
-    private final PeerId peerId;
+    private final PeerId peerId = new PeerId();
     private final Configuration initialConfiguration = new Configuration();
 
     private final @NotNull ClusterEntity clusterConfig;
@@ -86,9 +86,9 @@ public class ClusterServerManager {
         this.registry = registry;
         this.systemInformation = systemInformation;
         this.clusterConfig = fullConfigurationService.clusterConfigurationService().getClusterConfig();
-        this.rpcServer = new RpcServer(clusterConfig.getBindAddress(), clusterConfig.getRpcPort());
-        this.peerId = new PeerId(clusterConfig.getBindAddress(), clusterConfig.getRpcPort());
-        this.initialConfiguration.parse(getInitialServerList(clusterConfig.getRpcPort()));
+        this.rpcServer = new RpcServer(clusterConfig.getBindAddress(), clusterConfig.getStartPort());
+        this.peerId.parse(clusterConfig.getLocalNode().getAddress(PortOffset.SOFA_RPC.ordinal()));
+        this.initialConfiguration.parse(getInitialServerList(PortOffset.SOFA_RPC));
         SerializerManager.addSerializer(HessianCustomSerializer.INDEX, HessianCustomSerializer.DEFAULT.getSerializer());
     }
 
@@ -183,35 +183,32 @@ public class ClusterServerManager {
         return nodeOptions;
     }
 
-    public RheaKVStoreOptions createRheaKVStoreOptions(final File folder, final int portOffset, final long clusterId, final String clusterName) {
-        final int port = clusterConfig.getStartPort() + portOffset;
+    public RheaKVStoreOptions createRheaKVStoreOptions(final File folder, final PortOffset portOffset) {
         return RheaKVStoreOptionsConfigured.newConfigured()
-                .withClusterId(clusterId)
-                .withClusterName(clusterName)
-                .withPlacementDriverOptions(PlacementDriverOptionsConfigured.newConfigured()
-                        .withFake(true)
-                        .config())
+                .withClusterId(portOffset.ordinal())
+                .withClusterName(portOffset.name())
+                .withPlacementDriverOptions(PlacementDriverOptionsConfigured.newConfigured().withFake(true).config())
                 .withStoreEngineOptions(StoreEngineOptionsConfigured.newConfigured()
                         .withRocksDBOptions(RocksDBOptionsConfigured.newConfigured()
                                 .withSync(true)
                                 .withDbPath(new File(folder, "rhea_db/").getPath())
                                 .config())
                         .withRaftDataPath(new File(folder, "rhea_raft/").getPath())
-                        .withServerAddress(new Endpoint(clusterConfig.getBindAddress(), port))
+                        .withServerAddress(new Endpoint(clusterConfig.getBindAddress(), clusterConfig.getStartPort() + portOffset.ordinal()))
                         .config())
-                .withInitialServerList(getInitialServerList(port))
+                .withInitialServerList(getInitialServerList(portOffset))
                 .withOnlyLeaderRead(false)
                 .withFailoverRetries(2)
                 .config();
     }
 
-    private String getInitialServerList(final int port) {
+    private String getInitialServerList(final PortOffset portOffset) {
         final StringBuilder sb = new StringBuilder();
-        for (final String address : clusterConfig.getNodeList()) {
+        for (final ClusterEntity.ClusterNode node : clusterConfig.getNodeList()) {
             if (sb.length() > 0) {
                 sb.append(',');
             }
-            sb.append(address).append(':').append(port);
+            sb.append(node.getAddress(portOffset.ordinal()));
         }
         return sb.toString();
     }

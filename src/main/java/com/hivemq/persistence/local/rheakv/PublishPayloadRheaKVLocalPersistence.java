@@ -24,6 +24,7 @@ import com.google.common.collect.ImmutableList;
 import com.google.inject.Inject;
 import com.hivemq.bootstrap.ioc.lazysingleton.LazySingleton;
 import com.hivemq.cluster.ClusterServerManager;
+import com.hivemq.cluster.PortOffset;
 import com.hivemq.configuration.service.InternalConfigurations;
 import com.hivemq.extension.sdk.api.annotations.NotNull;
 import com.hivemq.extension.sdk.api.annotations.Nullable;
@@ -80,8 +81,8 @@ public class PublishPayloadRheaKVLocalPersistence extends RheaKVLocalPersistence
 
     @Override
     @NotNull
-    protected ContentType getContentType() {
-        return ContentType.PUBLISH_PAYLOAD;
+    protected PortOffset getPortOffset() {
+        return PortOffset.PUBLISH_PAYLOAD_STORE;
     }
 
     @Override

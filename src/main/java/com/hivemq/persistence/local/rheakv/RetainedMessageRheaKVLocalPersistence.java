@@ -23,6 +23,7 @@ import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.ImmutableMap;
 import com.hivemq.bootstrap.ioc.lazysingleton.LazySingleton;
 import com.hivemq.cluster.ClusterServerManager;
+import com.hivemq.cluster.PortOffset;
 import com.hivemq.configuration.service.InternalConfigurations;
 import com.hivemq.exceptions.UnrecoverableException;
 import com.hivemq.extension.sdk.api.annotations.NotNull;
@@ -105,8 +106,8 @@ public class RetainedMessageRheaKVLocalPersistence extends RheaKVLocalPersistenc
 
     @NotNull
     @Override
-    protected ContentType getContentType() {
-        return ContentType.RETAINED_MESSAGE;
+    protected PortOffset getPortOffset() {
+        return PortOffset.RETAINED_MESSAGE_STORE;
     }
 
     @NotNull

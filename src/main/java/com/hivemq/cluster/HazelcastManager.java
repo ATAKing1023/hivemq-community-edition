@@ -230,13 +230,18 @@ public class HazelcastManager {
     }
 
     private Config createConfig(final ClusterEntity clusterConfig) {
-        final Config config = new Config("mqtt-hazelcast");
+        final Config config = new Config(clusterConfig.getNodeName());
+        config.setClusterName(clusterConfig.getClusterName());
 
         final NetworkConfig networkConfig = new NetworkConfig();
+        networkConfig.setPort(clusterConfig.getStartPort() + PortOffset.HAZELCAST.ordinal());
+        networkConfig.setPortAutoIncrement(false);
         final JoinConfig joinConfig = new JoinConfig();
         final TcpIpConfig tcpIpConfig = new TcpIpConfig();
         tcpIpConfig.setEnabled(true);
-        tcpIpConfig.setMembers(clusterConfig.getNodeList());
+        for (final ClusterEntity.ClusterNode node : clusterConfig.getNodeList()) {
+            tcpIpConfig.getMembers().add(node.getAddress(PortOffset.HAZELCAST.ordinal()));
+        }
         joinConfig.setTcpIpConfig(tcpIpConfig);
         networkConfig.setJoin(joinConfig);
         config.setNetworkConfig(networkConfig);

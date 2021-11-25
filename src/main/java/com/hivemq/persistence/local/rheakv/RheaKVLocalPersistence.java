@@ -20,6 +20,7 @@ import com.alipay.sofa.jraft.rhea.client.DefaultRheaKVStore;
 import com.alipay.sofa.jraft.rhea.client.RheaKVStore;
 import com.alipay.sofa.jraft.rhea.options.RheaKVStoreOptions;
 import com.hivemq.cluster.ClusterServerManager;
+import com.hivemq.cluster.PortOffset;
 import com.hivemq.exceptions.UnrecoverableException;
 import com.hivemq.extension.sdk.api.annotations.NotNull;
 import com.hivemq.persistence.FilePersistence;
@@ -71,12 +72,12 @@ public abstract class RheaKVLocalPersistence implements LocalPersistence, FilePe
     protected abstract String getVersion();
 
     /**
-     * 存储监听端口规则：6000+存储内容类型的序号*100+桶的序号
+     * 存储监听端口偏移量
      *
-     * @return 存储内容类型
+     * @return 存储监听端口偏移量
      */
     @NotNull
-    protected abstract ContentType getContentType();
+    protected abstract PortOffset getPortOffset();
 
     @NotNull
     protected abstract Logger getLogger();
@@ -194,13 +195,12 @@ public abstract class RheaKVLocalPersistence implements LocalPersistence, FilePe
     }
 
     private RheaKVStoreOptions createRheaKVStoreOptions(final int bucketIndex) {
+        if (bucketIndex > 0) {
+            throw new IllegalArgumentException("RheaKV store only support 1 bucket!");
+        }
         final File persistenceFolder =
                 localPersistenceFileUtil.getVersionedLocalPersistenceFolder(getName(), getVersion());
-        final int portOffset = getContentType().ordinal() * 100 + bucketIndex;
-        return clusterServerManager.createRheaKVStoreOptions(persistenceFolder,
-                portOffset,
-                getContentType().ordinal(),
-                getContentType().name());
+        return clusterServerManager.createRheaKVStoreOptions(persistenceFolder, getPortOffset());
     }
 
     protected enum ContentType {
