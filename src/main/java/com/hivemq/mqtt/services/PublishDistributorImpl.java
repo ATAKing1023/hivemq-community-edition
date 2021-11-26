@@ -17,10 +17,7 @@ package com.hivemq.mqtt.services;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.primitives.ImmutableIntArray;
-import com.google.common.util.concurrent.FutureCallback;
-import com.google.common.util.concurrent.Futures;
-import com.google.common.util.concurrent.ListenableFuture;
-import com.google.common.util.concurrent.SettableFuture;
+import com.google.common.util.concurrent.*;
 import com.hivemq.cluster.HazelcastManager;
 import com.hivemq.cluster.event.ClientQueuePublishEvent;
 import com.hivemq.cluster.event.HazelcastTopic;
@@ -38,12 +35,11 @@ import com.hivemq.persistence.clientsession.ClientSession;
 import com.hivemq.persistence.clientsession.ClientSessionPersistence;
 import com.hivemq.persistence.payload.PublishPayloadPersistence;
 import com.hivemq.persistence.util.FutureUtils;
+import com.hivemq.util.Exceptions;
 
 import javax.inject.Inject;
 import javax.inject.Singleton;
-import java.util.Map;
-import java.util.Objects;
-import java.util.Set;
+import java.util.*;
 import java.util.concurrent.ExecutorService;
 
 import static com.hivemq.mqtt.handler.publish.PublishStatus.*;
@@ -83,13 +79,24 @@ public class PublishDistributorImpl implements PublishDistributor {
         this.hazelcastManager = hazelcastManager;
         this.hazelcastManager.registerListener(HazelcastTopic.CLIENT_QUEUE_PUBLISH, message -> {
             final ClientQueuePublishEvent event = (ClientQueuePublishEvent) message.getMessageObject();
-            handlePublish(
+            final ListenableFuture<PublishStatus> publishFuture = handlePublish(
                     event.getPublish(),
                     event.getClient(),
                     event.getSubscriptionQos(),
                     event.isShared(),
                     event.isRetainAsPublished(),
                     event.getSubscriptionIdentifier());
+            Futures.addCallback(publishFuture, new FutureCallback<>() {
+                @Override
+                public void onSuccess(final PublishStatus result) {
+                    hazelcastManager.sendResponse(event.getId(), result);
+                }
+
+                @Override
+                public void onFailure(final Throwable t) {
+                    Exceptions.rethrowError("Unable to send message", t);
+                }
+            }, MoreExecutors.directExecutor());
         });
     }
 
@@ -136,15 +143,35 @@ public class PublishDistributorImpl implements PublishDistributor {
     public ListenableFuture<PublishStatus> sendMessageToSubscriber(@NotNull final PUBLISH publish, @NotNull final String clientId, final int subscriptionQos,
                                                                    final boolean sharedSubscription, final boolean retainAsPublished,
                                                                    @Nullable final ImmutableIntArray subscriptionIdentifier) {
-        hazelcastManager.publishAsync(
-                HazelcastTopic.CLIENT_QUEUE_PUBLISH,
-                new ClientQueuePublishEvent(clientId,
+        final ListenableFuture<PublishStatus> localPublishFuture = handlePublish(publish,
+                clientId,
+                subscriptionQos,
+                sharedSubscription,
+                retainAsPublished,
+                subscriptionIdentifier);
+        final ListenableFuture<PublishStatus> clusterPublishFuture =
+                hazelcastManager.sendRequest(HazelcastTopic.CLIENT_QUEUE_PUBLISH, new ClientQueuePublishEvent(clientId,
                         publish,
                         subscriptionQos,
                         sharedSubscription,
                         retainAsPublished,
-                        subscriptionIdentifier));
-        return handlePublish(publish, clientId, subscriptionQos, sharedSubscription, retainAsPublished, subscriptionIdentifier);
+                        subscriptionIdentifier), this::determinePublishStatus);
+        return Futures.whenAllComplete(localPublishFuture, clusterPublishFuture).call(
+                () -> determinePublishStatus(Arrays.asList(localPublishFuture.get(), clusterPublishFuture.get())),
+                MoreExecutors.directExecutor());
+    }
+
+    private PublishStatus determinePublishStatus(final List<PublishStatus> publishStatusList) {
+        boolean channelNotWritable = false;
+        for (final PublishStatus publishStatus : publishStatusList) {
+            if (publishStatus == DELIVERED || publishStatus == FAILED || publishStatus == IN_PROGRESS) {
+                return publishStatus;
+            }
+            if (publishStatus == CHANNEL_NOT_WRITABLE) {
+                channelNotWritable = true;
+            }
+        }
+        return channelNotWritable ? CHANNEL_NOT_WRITABLE : NOT_CONNECTED;
     }
 
     @NotNull

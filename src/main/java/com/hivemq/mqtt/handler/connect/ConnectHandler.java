@@ -158,9 +158,17 @@ public class ConnectHandler extends SimpleChannelInboundHandler<CONNECT> impleme
                     ClientSessionPersistenceImpl.DisconnectSource.CLUSTER,
                     Mqtt5DisconnectReasonCode.SESSION_TAKEN_OVER,
                     ReasonStrings.DISCONNECT_SESSION_TAKEN_OVER);
-            disconnectFuture.addListener(() -> {
-                // 等待Netty数据清理完成
-                hazelcastManager.sendDelayedResponse(event.getId(), 100);
+            Futures.addCallback(disconnectFuture, new FutureCallback<>() {
+                @Override
+                public void onSuccess(final Boolean result) {
+                    // 等待Netty数据清理完成
+                    hazelcastManager.sendDelayedResponse(event.getId(), result, 100);
+                }
+
+                @Override
+                public void onFailure(final Throwable t) {
+                    Exceptions.rethrowError("Exception on disconnecting client with same client identifier", t);
+                }
             }, MoreExecutors.directExecutor());
         });
     }

@@ -83,6 +83,7 @@ public class PublishDistributorImplTest {
         singleWriterService = TestSingleWriterFactory.defaultSingleWriter();
         publishDistributor = new PublishDistributorImpl(payloadPersistence, clientQueuePersistence, clientSessionPersistence,
                 singleWriterService, mqttConfigurationService, hazelcastManager);
+        when(hazelcastManager.sendRequest(any(), any(), any())).thenReturn(Futures.immediateFuture(PublishStatus.NOT_CONNECTED));
     }
 
     @After

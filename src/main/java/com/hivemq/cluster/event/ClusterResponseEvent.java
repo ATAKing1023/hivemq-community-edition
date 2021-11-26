@@ -17,6 +17,7 @@
 package com.hivemq.cluster.event;
 
 import com.hivemq.extension.sdk.api.annotations.NotNull;
+import com.hivemq.extension.sdk.api.annotations.Nullable;
 import lombok.Value;
 
 /**
@@ -28,4 +29,5 @@ import lombok.Value;
 @Value
 public class ClusterResponseEvent {
     @NotNull String id;
+    @Nullable Object result;
 }

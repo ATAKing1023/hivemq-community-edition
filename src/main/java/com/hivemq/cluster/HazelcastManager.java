@@ -37,16 +37,15 @@ import com.hivemq.common.shutdown.ShutdownHooks;
 import com.hivemq.configuration.entity.ClusterEntity;
 import com.hivemq.configuration.service.FullConfigurationService;
 import com.hivemq.extension.sdk.api.annotations.NotNull;
+import com.hivemq.extension.sdk.api.annotations.Nullable;
 import lombok.extern.slf4j.Slf4j;
 
 import javax.annotation.PostConstruct;
 import javax.inject.Inject;
 import javax.inject.Singleton;
-import java.util.HashSet;
-import java.util.Objects;
-import java.util.Set;
-import java.util.UUID;
+import java.util.*;
 import java.util.concurrent.*;
+import java.util.function.Function;
 
 /**
  * Hazelcast管理器
@@ -57,6 +56,9 @@ import java.util.concurrent.*;
 @Slf4j
 @Singleton
 public class HazelcastManager {
+
+    private static final long DEFAULT_TIMEOUT = 1000L;
+    private static final AnyToVoidFunction ANY_TO_VOID_FUNCTION = new AnyToVoidFunction();
 
     private final Config config;
 
@@ -152,10 +154,10 @@ public class HazelcastManager {
      *
      * @param topic 主题
      * @param event 事件
-     * @return 集群处理的Future对象
+     * @return 集群处理结果的Future对象
      */
     public ListenableFuture<Void> sendRequest(final HazelcastTopic topic, final IdEvent event) {
-        return sendRequest(topic, event, 1000);
+        return sendRequest(topic, event, DEFAULT_TIMEOUT);
     }
 
     /**
@@ -164,22 +166,72 @@ public class HazelcastManager {
      * @param topic   主题
      * @param event   事件
      * @param timeout 超时时间（毫秒）
-     * @return 集群处理的Future对象
+     * @return 集群处理结果的Future对象
      */
     public ListenableFuture<Void> sendRequest(final HazelcastTopic topic, final IdEvent event, final long timeout) {
-        final SettableFuture<Void> settableFuture = SettableFuture.create();
+        return sendRequest(topic, event, timeout, ANY_TO_VOID_FUNCTION);
+    }
+
+    /**
+     * 发送请求事件，等待集群中所有节点返回响应事件或者超时
+     *
+     * @param topic    主题
+     * @param event    事件
+     * @param combiner 汇总集群响应的函数
+     * @param <T>      集群节点响应内容类型
+     * @param <R>      集群最终响应内容类型
+     * @return 集群处理结果的Future对象
+     */
+    public <T, R> ListenableFuture<R> sendRequest(
+            final HazelcastTopic topic, final IdEvent event, final Function<List<T>, R> combiner) {
+        return sendRequest(topic, event, DEFAULT_TIMEOUT, combiner);
+    }
+
+    /**
+     * 发送请求事件，等待集群中所有节点返回响应事件或者超时
+     *
+     * @param topic    主题
+     * @param event    事件
+     * @param timeout  超时时间（毫秒）
+     * @param combiner 汇总集群响应的函数
+     * @param <T>      集群节点响应内容类型
+     * @param <R>      集群最终响应内容类型
+     * @return 集群处理结果的Future对象
+     */
+    public <T, R> ListenableFuture<R> sendRequest(
+            final HazelcastTopic topic, final IdEvent event, final long timeout, final Function<List<T>, R> combiner) {
+        final SettableFuture<R> settableFuture = SettableFuture.create();
         final Set<Member> members = new HashSet<>(hazelcastInstance.getCluster().getMembers());
         members.remove(hazelcastInstance.getCluster().getLocalMember());
+        if (members.isEmpty()) {
+            settableFuture.set(null);
+        } else {
+            publishForResponse(topic, event, members, timeout, combiner, settableFuture);
+        }
+        return settableFuture;
+    }
+
+    @SuppressWarnings("unchecked")
+    private <T, R> void publishForResponse(
+            final HazelcastTopic topic,
+            final IdEvent event,
+            final Set<Member> members,
+            final long timeout,
+            final Function<List<T>, R> combiner,
+            final SettableFuture<R> settableFuture) {
+        final List<T> resultList = new ArrayList<>();
         final ITopic<ClusterResponseEvent> clusterResponseTopic =
                 hazelcastInstance.getReliableTopic(HazelcastTopic.CLUSTER_RESPONSE.name());
         final UUID registrationId = clusterResponseTopic.addMessageListener(message -> {
             final Member publishingMember = message.getPublishingMember();
             if (Objects.equals(event.getId(), message.getMessageObject().getId())) {
-                log.debug("event {} received cluster response from {}", event.getId(), publishingMember);
+                final T result = (T) message.getMessageObject().getResult();
+                log.debug("event {} received cluster response {} from {}", event.getId(), result, publishingMember);
+                resultList.add(result);
                 members.remove(publishingMember);
                 if (members.isEmpty()) {
                     log.debug("event {} finished waiting for cluster response", event.getId());
-                    settableFuture.set(null);
+                    settableFuture.set(combiner.apply(resultList));
                 }
             }
         });
@@ -188,30 +240,31 @@ public class HazelcastManager {
         scheduledExecutorService.schedule(() -> {
             if (!settableFuture.isDone()) {
                 log.info("event {} timeout waiting for cluster response from {}", event.getId(), members);
-                settableFuture.set(null);
+                settableFuture.set(combiner.apply(resultList));
             }
             clusterResponseTopic.removeMessageListener(registrationId);
         }, timeout, TimeUnit.MILLISECONDS);
-        return settableFuture;
     }
 
     /**
      * 发送响应事件
      *
      * @param eventId 请求事件ID
+     * @param result  处理结果
      */
-    public void sendResponse(final String eventId) {
-        publish(HazelcastTopic.CLUSTER_RESPONSE, new ClusterResponseEvent(eventId));
+    public void sendResponse(final String eventId, final Object result) {
+        publish(HazelcastTopic.CLUSTER_RESPONSE, new ClusterResponseEvent(eventId, result));
     }
 
     /**
      * 延迟发布响应事件，用于等待其他异步任务完成
      *
      * @param eventId 请求事件ID
+     * @param result  处理结果
      * @param delay   延迟（毫秒）
      */
-    public void sendDelayedResponse(final String eventId, final long delay) {
-        scheduledExecutorService.schedule(() -> sendResponse(eventId), delay, TimeUnit.MILLISECONDS);
+    public void sendDelayedResponse(final String eventId, final Object result, final long delay) {
+        scheduledExecutorService.schedule(() -> sendResponse(eventId, result), delay, TimeUnit.MILLISECONDS);
     }
 
     /**
@@ -259,6 +312,14 @@ public class HazelcastManager {
         serializationConfig.setGlobalSerializerConfig(globalSerializerConfig);
         config.setSerializationConfig(serializationConfig);
         return config;
+    }
+
+    private static class AnyToVoidFunction implements Function<List<Object>, Void> {
+
+        @Override
+        public Void apply(final @Nullable List<Object> input) {
+            return null;
+        }
     }
 
     private static class MessageListenerWrapper<E> implements MessageListener<E> {

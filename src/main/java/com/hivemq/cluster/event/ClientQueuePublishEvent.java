@@ -20,6 +20,8 @@ import com.google.common.primitives.ImmutableIntArray;
 import com.hivemq.extension.sdk.api.annotations.NotNull;
 import com.hivemq.extension.sdk.api.annotations.Nullable;
 import com.hivemq.mqtt.message.publish.PUBLISH;
+import lombok.EqualsAndHashCode;
+import lombok.ToString;
 import lombok.Value;
 
 /**
@@ -29,7 +31,9 @@ import lombok.Value;
  * @since 2021/11/12
  */
 @Value
-public class ClientQueuePublishEvent {
+@ToString(callSuper = true)
+@EqualsAndHashCode(callSuper = true)
+public class ClientQueuePublishEvent extends IdEvent {
 
     @NotNull String client;
     @NotNull PUBLISH publish;
